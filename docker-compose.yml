@@ -1,14 +1,22 @@
 services:
   classly:
     build: .
-    container_name: classly
+    container_name: classly-${COOLIFY_RESOURCE_UUID:-local}
+    expose:
+      - "8000"
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     volumes:
-      - classly_data:/data
+      - classly-data:/data
     environment:
       - DATABASE_URL=sqlite:////data/classly.db
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
-  classly_data:
+  classly-data:
