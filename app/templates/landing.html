@@ -24,10 +24,24 @@
                 <label>Dein Name</label>
                 <input type="text" name="user_name" placeholder="z.B. Max Mustermann" required>
             </div>
+            <hr>
+            <p class="text-sm text-muted mb-4">Optional: Mit Email registrieren für dauerhaften Zugang</p>
+            <div class="form-group">
+                <label>Email (optional)</label>
+                <input type="email" name="email" placeholder="deine@email.de">
+            </div>
+            <div class="form-group">
+                <label>Passwort (optional)</label>
+                <input type="password" name="password" placeholder="••••••••" minlength="8">
+            </div>
             <button type="submit" class="btn btn-primary" style="width: 100%;">
                 Klasse erstellen
             </button>
         </form>
     </div>
+
+    <p class="text-sm text-muted mt-4">
+        Bereits registriert? <a href="/login" style="color: var(--fg); text-decoration: underline;">Einloggen</a>
+    </p>
 </div>
 {% endblock %}

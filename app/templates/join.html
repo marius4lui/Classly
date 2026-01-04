@@ -11,7 +11,11 @@
 
     <div class="card">
         <form hx-post="/auth/join" hx-swap="none">
+            {% if token_type == 'class' %}
             <input type="hidden" name="join_token" value="{{ clazz.join_token }}">
+            {% elif token_type == 'login' %}
+            <input type="hidden" name="login_token" value="{{ login_token }}">
+            {% endif %}
 
             <div class="form-group">
                 <label>Dein Name</label>

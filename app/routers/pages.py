@@ -28,8 +28,10 @@ def index(
         calendar_data = calendar_utils.get_month_calendar(year, month, events)
         
         members = []
+        login_tokens = []
         if user.role in [models.UserRole.OWNER, models.UserRole.ADMIN]:
             members = crud.get_class_members(db, clazz.id)
+            login_tokens = crud.get_login_tokens_for_class(db, clazz.id)
         
         return templates.TemplateResponse("dashboard.html", {
             "request": request, 
@@ -42,6 +44,7 @@ def index(
             "today": today,
             "members": members,
             "subjects": subjects,
+            "login_tokens": login_tokens,
             "base_url": str(request.base_url).rstrip("/")
         })
     else:

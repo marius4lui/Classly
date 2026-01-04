@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Classly{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto; text-align: center;">
+    <div class="mb-4">
+        <h1 style="margin-bottom: 0.5rem;">Login</h1>
+        <p class="text-muted">Mit deinem registrierten Account anmelden</p>
+    </div>
+
+    <div class="card">
+        <form hx-post="/auth/login" hx-swap="none">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" required placeholder="deine@email.de">
+            </div>
+            <div class="form-group">
+                <label>Passwort</label>
+                <input type="password" name="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Anmelden
+            </button>
+        </form>
+    </div>
+
+    <p class="text-sm text-muted mt-4">
+        Noch keine Klasse? <a href="/" style="color: var(--fg); text-decoration: underline;">Klasse erstellen</a>
+    </p>
+</div>
+{% endblock %}
