@@ -27,6 +27,10 @@ def index(
         subjects = crud.get_subjects_for_class(db, clazz.id)
         calendar_data = calendar_utils.get_month_calendar(year, month, events)
         
+        # Filter upcoming events (today or future, sorted by date)
+        upcoming_events = [e for e in events if e.date.date() >= today.date()]
+        upcoming_events = sorted(upcoming_events, key=lambda x: x.date)[:10]  # Top 10
+        
         members = []
         login_tokens = []
         if user.role in [models.UserRole.OWNER, models.UserRole.ADMIN]:
@@ -45,6 +49,7 @@ def index(
             "members": members,
             "subjects": subjects,
             "login_tokens": login_tokens,
+            "upcoming_events": upcoming_events,
             "base_url": str(request.base_url).rstrip("/")
         })
     else:

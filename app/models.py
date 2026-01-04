@@ -74,12 +74,16 @@ class Subject(Base):
     clazz = relationship("Class", back_populates="subjects")
 
 class LoginToken(Base):
-    """Shareable login tokens - single or multi-use"""
+    """Login tokens for specific users - existing or new"""
     __tablename__ = "login_tokens"
     
     id = Column(String, primary_key=True, default=generate_uuid)
     class_id = Column(String, ForeignKey("classes.id"), nullable=False)
     token = Column(String, unique=True, index=True, default=generate_token)
+    
+    # Link to existing user OR name for new user
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)  # Existing user
+    user_name = Column(String, nullable=True)  # Name for new user if user_id is None
     
     # Usage limits
     max_uses = Column(Integer, nullable=True)  # None = unlimited
@@ -89,12 +93,12 @@ class LoginToken(Base):
     expires_at = Column(DateTime, nullable=True)
     
     # Metadata
-    label = Column(String, nullable=True)  # e.g. "Link für Tom"
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
     clazz = relationship("Class", back_populates="login_tokens")
-    creator = relationship("User")
+    user = relationship("User", foreign_keys=[user_id])
+    creator = relationship("User", foreign_keys=[created_by])
 
 class Event(Base):
     __tablename__ = "events"

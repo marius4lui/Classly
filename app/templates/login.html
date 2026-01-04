@@ -3,10 +3,10 @@
 {% block title %}Login - Classly{% endblock %}
 
 {% block content %}
-<div style="max-width: 400px; margin: 4rem auto; text-align: center;">
-    <div class="mb-4">
-        <h1 style="margin-bottom: 0.5rem;">Login</h1>
-        <p class="text-muted">Mit deinem registrierten Account anmelden</p>
+<div style="max-width: 400px; margin: 0 auto; padding-top: 3rem;">
+    <div class="text-center mb-4">
+        <h1>Login</h1>
+        <p class="text-muted">Mit deinem Account anmelden</p>
     </div>
 
     <div class="card">
@@ -19,14 +19,12 @@
                 <label>Passwort</label>
                 <input type="password" name="password" required placeholder="••••••••">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
-                Anmelden
-            </button>
+            <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
         </form>
     </div>
 
-    <p class="text-sm text-muted mt-4">
-        Noch keine Klasse? <a href="/" style="color: var(--fg); text-decoration: underline;">Klasse erstellen</a>
+    <p class="text-sm text-muted text-center mt-4">
+        Noch keine Klasse? <a href="/" style="color: var(--fg); text-decoration: underline;">Erstellen</a>
     </p>
 </div>
 {% endblock %}

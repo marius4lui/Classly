@@ -122,13 +122,15 @@ def get_subject(db: Session, subject_id: str):
     return db.query(models.Subject).filter(models.Subject.id == subject_id).first()
 
 # --- Login Token CRUD ---
-def create_login_token(db: Session, class_id: str, created_by: str, max_uses: int = None, expires_at: datetime.datetime = None, label: str = None):
+def create_login_token(db: Session, class_id: str, created_by: str, user_id: str = None, user_name: str = None, max_uses: int = None, expires_at: datetime.datetime = None):
+    """Create a login token for a specific user (existing or new by name)"""
     db_token = models.LoginToken(
         class_id=class_id,
         created_by=created_by,
+        user_id=user_id,
+        user_name=user_name,
         max_uses=max_uses,
-        expires_at=expires_at,
-        label=label
+        expires_at=expires_at
     )
     db.add(db_token)
     db.commit()

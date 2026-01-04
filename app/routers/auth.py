@@ -103,6 +103,8 @@ def show_join_page(
     request: Request,
     db: Session = Depends(get_db)
 ):
+    from fastapi.responses import RedirectResponse
+    
     # First check if it's a class join token
     clazz = crud.get_class_by_token(db, token)
     if clazz:
@@ -110,19 +112,25 @@ def show_join_page(
             raise HTTPException(status_code=403, detail="Joining is disabled")
         return templates.TemplateResponse("join.html", {"request": request, "clazz": clazz, "token_type": "class"})
     
-    # Then check if it's a login token
-    login_token = crud.get_login_token(db, token)
+    # Then check if it's a login token - DIRECT LOGIN
+    login_token = crud.use_login_token(db, token)
     if login_token:
-        # Validate token
-        if login_token.expires_at and login_token.expires_at < __import__('datetime').datetime.utcnow():
-            raise HTTPException(status_code=403, detail="Link expired")
-        if login_token.max_uses is not None and login_token.uses >= login_token.max_uses:
-            raise HTTPException(status_code=403, detail="Link already used")
+        # Get or create user
+        if login_token.user_id:
+            # Existing user - log them in directly
+            user = crud.get_user(db, login_token.user_id)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+        else:
+            # New user - create with predefined name
+            user = crud.create_user(db, name=login_token.user_name, class_id=login_token.class_id)
         
-        clazz = crud.get_class(db, login_token.class_id)
-        return templates.TemplateResponse("join.html", {"request": request, "clazz": clazz, "token_type": "login", "login_token": token})
+        # Create redirect response and set cookie on IT
+        redirect = RedirectResponse(url="/", status_code=303)
+        redirect.set_cookie(key="session_token", value=user.session_token, httponly=True)
+        return redirect
     
-    raise HTTPException(status_code=404, detail="Invalid link")
+    raise HTTPException(status_code=404, detail="Invalid or expired link")
 
 @router.post("/auth/join")
 def join_class(

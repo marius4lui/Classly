@@ -86,12 +86,24 @@ def demote_user(
 @router.post("/admin/login-tokens")
 def create_login_token(
     response: Response,
-    label: str = Form(None),
+    user_id: str = Form(None),  # Existing user
+    user_name: str = Form(None),  # New user name
     max_uses: int = Form(None),
     expires_hours: int = Form(None),
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
+    # Must have either user_id OR user_name
+    if not user_id and not user_name:
+        raise HTTPException(status_code=400, detail="User ID or Name required")
+    
+    # If user_id, verify user exists
+    if user_id:
+        target = crud.get_user(db, user_id)
+        if not target or target.class_id != admin.class_id:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_name = None  # Clear user_name if user_id is set
+    
     expires_at = None
     if expires_hours:
         expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=expires_hours)
@@ -100,9 +112,10 @@ def create_login_token(
         db,
         class_id=admin.class_id,
         created_by=admin.id,
+        user_id=user_id,
+        user_name=user_name.strip() if user_name else None,
         max_uses=max_uses if max_uses and max_uses > 0 else None,
-        expires_at=expires_at,
-        label=label
+        expires_at=expires_at
     )
     
     response.headers["HX-Redirect"] = "/"

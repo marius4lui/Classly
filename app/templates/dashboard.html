@@ -5,33 +5,20 @@
 <header class="header">
     <div>
         <h1>{{ clazz.name }}</h1>
-        <p class="text-sm text-muted">
-            Angemeldet als <strong>{{ user.name }}</strong>
-            {% if user.is_registered %}<span class="badge">✓ Registriert</span>{% endif %}
-        </p>
+        <p class="text-sm text-muted">{{ user.name }}</p>
     </div>
-    <div class="flex gap-2">
-        {% if not user.is_registered and user.role.value in ['owner', 'admin'] %}
-        <button class="btn btn-secondary btn-sm" onclick="openRegisterModal()">Registrieren</button>
-        {% endif %}
-        <a href="/auth/logout" class="btn btn-ghost btn-sm">Abmelden</a>
-    </div>
+    <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
 </header>
 
-<!-- Quick Add Button -->
-<div class="flex justify-between items-center mb-4">
+<!-- Calendar Title -->
+<div class="flex justify-between items-center mb-4 desktop-only">
     <h2>Kalender</h2>
-    <button class="btn btn-primary" onclick="openModal()">
-        + Event hinzufügen
-    </button>
+    <button class="btn btn-primary" onclick="openModal()">+ Event</button>
 </div>
 
 <!-- Calendar -->
 <div class="calendar-wrapper">
-    <div class="calendar-header">
-        <span style="font-weight: 600;">{{ current_month }}</span>
-    </div>
-
+    <div class="calendar-header">{{ current_month }}</div>
     <div class="calendar-grid">
         <div class="calendar-day-header">Mo</div>
         <div class="calendar-day-header">Di</div>
@@ -49,9 +36,8 @@
                 {{ day.day }}
             </div>
             {% for event in day.events %}
-            <div class="event-pill {{ event.type.value|lower }}"
-                title="{{ event.subject_name or 'Event' }}: {{ event.title or '' }}">
-                {{ event.subject_name or event.title or event.type.value }}
+            <div class="event-pill {{ event.type.value|lower }}">
+                {{ event.subject_name or event.type.value }}
             </div>
             {% endfor %}
         </div>
@@ -60,42 +46,84 @@
     </div>
 </div>
 
-<!-- Admin Section with Tabs -->
+<!-- Upcoming Events List -->
+<div class="upcoming-section">
+    <h2 class="mb-4">Nächste Termine</h2>
+    {% if upcoming_events %}
+    <div class="upcoming-list">
+        {% for event in upcoming_events %}
+        <div class="upcoming-item">
+            <div class="upcoming-date">
+                <span class="day">{{ event.date.strftime('%d') }}</span>
+                <span class="month">{{ event.date.strftime('%b') }}</span>
+            </div>
+            <div class="upcoming-content">
+                <div class="upcoming-type {{ event.type.value|lower }}">{{ event.type.value }}</div>
+                <div class="upcoming-subject">{{ event.subject_name or 'Allgemein' }}</div>
+                {% if event.title %}
+                <div class="upcoming-title">{{ event.title }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center">Keine kommenden Termine 🎉</p>
+    {% endif %}
+</div>
+
+<!-- Expandable FAB Menu -->
+{% if user.role.value == "owner" or user.role.value == "admin" %}
+<div class="fab-container" id="fabContainer">
+    <div class="fab-options" id="fabOptions">
+        <button class="fab-option" onclick="showTab('subjects'); closeFab();">
+            <span>📚</span> Fach
+        </button>
+        <button class="fab-option" onclick="showTab('links'); closeFab();">
+            <span>👤</span> User-Link
+        </button>
+        <button class="fab-option" onclick="openModal(); closeFab();">
+            <span>📅</span> Termin
+        </button>
+    </div>
+    <button class="fab" onclick="toggleFab()">
+        <span id="fabIcon">+</span>
+    </button>
+</div>
+{% else %}
+<button class="fab" onclick="openModal()">+</button>
+{% endif %}
+
+<!-- Admin Section -->
 {% if user.role.value == "owner" or user.role.value == "admin" %}
 <div class="admin-section">
     <div class="tabs">
         <button class="tab active" onclick="showTab('users')">Benutzer</button>
-        <button class="tab" onclick="showTab('links')">Einladungs-Links</button>
+        <button class="tab" onclick="showTab('links')">Links</button>
         <button class="tab" onclick="showTab('subjects')">Fächer</button>
         <button class="tab" onclick="showTab('advanced')">Erweitert</button>
     </div>
 
     <!-- Users Tab -->
     <div id="tab-users" class="tab-content active">
-        <h3>Mitglieder ({{ members|length }})</h3>
         {% for member in members %}
         <div class="member-item">
             <div>
-                <span style="font-weight: 500;">{{ member.name }}</span>
+                <strong>{{ member.name }}</strong>
                 <span
                     class="badge {% if member.role.value == 'owner' %}badge-primary{% elif member.role.value == 'admin' %}badge-success{% endif %}">
                     {{ member.role.value }}
                 </span>
-                {% if member.is_registered %}
-                <span class="badge">✓ Registriert</span>
-                {% endif %}
             </div>
             {% if member.id != user.id and member.role.value != 'owner' %}
-            <div class="flex gap-2">
+            <div class="actions">
                 {% if member.role.value == 'member' %}
-                <button hx-post="/admin/promote/{{ member.id }}" class="btn btn-sm btn-secondary">→ Admin</button>
+                <button hx-post="/admin/promote/{{ member.id }}" class="btn btn-secondary btn-sm">Admin</button>
                 {% else %}
-                <button hx-post="/admin/demote/{{ member.id }}" class="btn btn-sm btn-secondary">→ Member</button>
+                <button hx-post="/admin/demote/{{ member.id }}" class="btn btn-secondary btn-sm">Member</button>
                 {% endif %}
-                <button hx-delete="/admin/members/{{ member.id }}" hx-confirm="Wirklich entfernen?"
-                    class="btn btn-sm btn-danger">
-                    Entfernen
-                </button>
+                <button hx-delete="/admin/members/{{ member.id }}" hx-confirm="Entfernen?"
+                    class="btn btn-danger btn-sm">×</button>
             </div>
             {% endif %}
         </div>
@@ -104,119 +132,105 @@
 
     <!-- Links Tab -->
     <div id="tab-links" class="tab-content">
-        <h3>Klassen-Einladungslink</h3>
+        <h3 class="text-sm mb-2">Klassen-Link</h3>
         <div class="invite-link-box">
             <input type="text" readonly value="{{ base_url }}/join/{{ clazz.join_token }}" id="classLink"
                 onclick="this.select()">
             <button class="btn btn-secondary btn-sm" onclick="copyText('classLink')">Kopieren</button>
         </div>
-        <form hx-post="/admin/rotate-token" hx-confirm="Sicher? Der alte Link wird ungültig." class="mt-2">
-            <button type="submit" class="btn btn-danger btn-sm">Link ungültig machen</button>
-        </form>
 
-        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--gray-200);">
+        <hr>
 
-        <h3>Persönliche Login-Links</h3>
-        <p class="text-sm text-muted mb-4">Erstelle einmalige oder mehrfach nutzbare Links für bestimmte Schüler.</p>
-
-        <form hx-post="/admin/login-tokens" hx-swap="none" class="card mb-4" style="padding: 1rem;">
-            <div class="form-row mb-2">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label>Bezeichnung (optional)</label>
-                    <input type="text" name="label" placeholder="z.B. Link für Tom">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label>Max. Nutzungen</label>
-                    <input type="number" name="max_uses" placeholder="leer = unbegrenzt" min="1">
-                </div>
-            </div>
+        <h3 class="text-sm mb-2">Login-Link für Benutzer</h3>
+        <form hx-post="/admin/login-tokens" hx-swap="none" class="card mb-4">
             <div class="form-group">
-                <label>Gültig für</label>
-                <select name="expires_hours">
-                    <option value="">Unbegrenzt</option>
-                    <option value="1">1 Stunde</option>
-                    <option value="24">24 Stunden</option>
-                    <option value="168">1 Woche</option>
+                <label>Benutzer auswählen ODER neuen Namen eingeben</label>
+                <select name="user_id" id="userSelect" onchange="toggleNameInput()">
+                    <option value="">— Neuer Benutzer —</option>
+                    {% for member in members %}
+                    <option value="{{ member.id }}">{{ member.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Link erstellen</button>
-        </form>
-
-        {% if login_tokens %}
-        <div class="token-list">
-            {% for token in login_tokens %}
-            <div class="token-item">
-                <div>
-                    <div class="font-mono text-sm" style="word-break: break-all;">{{ base_url }}/join/{{ token.token }}
-                    </div>
-                    <div class="text-sm text-muted mt-1">
-                        {{ token.label or 'Kein Label' }} ·
-                        {{ token.uses }}/{{ token.max_uses or '∞' }} Nutzungen
-                        {% if token.expires_at %}· Läuft ab: {{ token.expires_at.strftime('%d.%m.%Y %H:%M') }}{% endif
-                        %}
-                    </div>
+            <div class="form-group" id="nameInputGroup">
+                <label>Name für neuen Benutzer</label>
+                <input type="text" name="user_name" id="userNameInput" placeholder="z.B. Max">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Max. Nutzungen</label>
+                    <input type="number" name="max_uses" placeholder="∞" min="1" value="1">
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="copyToClipboard('{{ base_url }}/join/{{ token.token }}')"
-                        class="btn btn-sm btn-secondary">Kopieren</button>
-                    <button hx-delete="/admin/login-tokens/{{ token.id }}" hx-confirm="Link löschen?"
-                        class="btn btn-sm btn-danger">×</button>
+                <div class="form-group">
+                    <label>Gültig für</label>
+                    <select name="expires_hours">
+                        <option value="">Unbegrenzt</option>
+                        <option value="24">24h</option>
+                        <option value="168">1 Woche</option>
+                    </select>
                 </div>
             </div>
-            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-block">Link erstellen</button>
+        </form>
+
+        {% for token in login_tokens %}
+        <div class="token-item">
+            <div>
+                <div class="text-sm">
+                    <strong>{% if token.user %}{{ token.user.name }}{% else %}{{ token.user_name }} (neu){% endif
+                        %}</strong>
+                </div>
+                <div class="text-xs text-muted">{{ token.uses }}/{{ token.max_uses or '∞' }} Nutzungen</div>
+            </div>
+            <div class="actions">
+                <button onclick="copyToClipboard('{{ base_url }}/join/{{ token.token }}')"
+                    class="btn btn-sm btn-secondary">Kopieren</button>
+                <button hx-delete="/admin/login-tokens/{{ token.id }}" class="btn btn-sm btn-danger">×</button>
+            </div>
         </div>
-        {% else %}
-        <p class="text-muted text-sm">Noch keine Login-Links erstellt.</p>
-        {% endif %}
+        {% endfor %}
     </div>
 
     <!-- Subjects Tab -->
     <div id="tab-subjects" class="tab-content">
-        <h3>Fächer verwalten</h3>
         <form hx-post="/subjects" hx-swap="none" class="flex gap-2 mb-4">
-            <input type="text" name="name" placeholder="Neues Fach (z.B. Mathe)" required style="flex: 1;">
-            <button type="submit" class="btn btn-secondary">Hinzufügen</button>
+            <input type="text" name="name" placeholder="Neues Fach" required style="flex: 1;">
+            <button type="submit" class="btn btn-secondary">+</button>
         </form>
         <div class="subject-list">
             {% for subject in subjects %}
             <div class="subject-tag">
                 {{ subject.name }}
-                <button hx-delete="/subjects/{{ subject.id }}" hx-confirm="Fach löschen?">×</button>
+                <button hx-delete="/subjects/{{ subject.id }}">×</button>
             </div>
             {% endfor %}
-            {% if not subjects %}
-            <span class="text-sm text-muted">Noch keine Fächer angelegt</span>
-            {% endif %}
         </div>
     </div>
 
     <!-- Advanced Tab -->
     <div id="tab-advanced" class="tab-content">
-        <h3>CalDAV-Integration</h3>
-        <p class="text-sm text-muted mb-4">Synchronisiere den Kalender mit Apple Kalender, Outlook, etc.</p>
-
+        <h3 class="text-sm mb-2">CalDAV</h3>
         {% if user.caldav_enabled %}
-        <div class="card mb-4" style="padding: 1rem;">
-            <label>Deine CalDAV-URL</label>
-            <div class="invite-link-box">
-                <input type="text" readonly value="{{ base_url }}/caldav/{{ user.caldav_token }}/calendar.ics"
-                    id="caldavUrl" onclick="this.select()">
-                <button class="btn btn-secondary btn-sm" onclick="copyText('caldavUrl')">Kopieren</button>
-            </div>
-            <p class="text-sm text-muted mt-2">Füge diese URL in deiner Kalender-App als "Abonnement" hinzu.</p>
+        <div class="invite-link-box">
+            <input type="text" readonly value="{{ base_url }}/caldav/{{ user.caldav_token }}/calendar.ics"
+                id="caldavUrl" onclick="this.select()">
+            <button class="btn btn-secondary btn-sm" onclick="copyText('caldavUrl')">Kopieren</button>
         </div>
-        <div class="flex gap-2">
-            <form hx-post="/caldav/regenerate" class="inline">
-                <button type="submit" class="btn btn-secondary btn-sm">Token neu generieren</button>
+        <div class="flex gap-2 mt-4">
+            <form hx-post="/caldav/regenerate"><button type="submit" class="btn btn-secondary btn-sm">Neu</button>
             </form>
-            <form hx-post="/caldav/disable" class="inline">
-                <button type="submit" class="btn btn-danger btn-sm">CalDAV deaktivieren</button>
-            </form>
+            <form hx-post="/caldav/disable"><button type="submit" class="btn btn-danger btn-sm">Aus</button></form>
         </div>
         {% else %}
         <form hx-post="/caldav/enable">
-            <button type="submit" class="btn btn-primary">CalDAV aktivieren</button>
+            <button type="submit" class="btn btn-primary btn-block">CalDAV aktivieren</button>
         </form>
+        {% endif %}
+
+        {% if not user.is_registered %}
+        <hr>
+        <h3 class="text-sm mb-2">Account sichern</h3>
+        <button class="btn btn-secondary btn-block" onclick="openRegisterModal()">Mit Email registrieren</button>
         {% endif %}
     </div>
 </div>
@@ -227,16 +241,16 @@
     <div class="modal">
         <div class="modal-header">
             <h2>Neues Event</h2>
-            <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
         </div>
         <form hx-post="/events" hx-swap="none">
             <div class="modal-body">
                 <div class="form-group">
                     <label>Typ</label>
-                    <div class="type-selector" id="typeSelector">
+                    <div class="type-selector">
                         <label class="type-option selected" onclick="selectType('HA')">
                             <input type="radio" name="type" value="HA" checked>
-                            <span style="color: var(--event-ha);">●</span> Hausaufgabe
+                            <span style="color: var(--event-ha);">●</span> HA
                         </label>
                         <label class="type-option" onclick="selectType('TEST')">
                             <input type="radio" name="type" value="TEST">
@@ -244,7 +258,7 @@
                         </label>
                         <label class="type-option" onclick="selectType('KA')">
                             <input type="radio" name="type" value="KA">
-                            <span style="color: var(--event-ka);">●</span> Klausur
+                            <span style="color: var(--event-ka);">●</span> KA
                         </label>
                     </div>
                 </div>
@@ -253,13 +267,13 @@
                     <label>Fach</label>
                     {% if subjects %}
                     <select name="subject_id">
-                        <option value="">— Fach wählen —</option>
+                        <option value="">Wählen...</option>
                         {% for subject in subjects %}
                         <option value="{{ subject.id }}">{{ subject.name }}</option>
                         {% endfor %}
                     </select>
                     {% else %}
-                    <input type="text" name="subject_name" placeholder="Fach eingeben (z.B. Mathe)">
+                    <input type="text" name="subject_name" placeholder="z.B. Mathe">
                     {% endif %}
                 </div>
 
@@ -269,8 +283,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Details (optional)</label>
-                    <input type="text" name="title" placeholder="z.B. Kapitel 5, Seite 42-50">
+                    <label>Details</label>
+                    <input type="text" name="title" placeholder="Optional">
                 </div>
             </div>
             <div class="modal-footer">
@@ -285,19 +299,18 @@
 <div class="modal-backdrop" id="registerModal">
     <div class="modal">
         <div class="modal-header">
-            <h2>Account registrieren</h2>
-            <button class="btn btn-ghost btn-sm" onclick="closeRegisterModal()">✕</button>
+            <h2>Registrieren</h2>
+            <button class="btn btn-ghost" onclick="closeRegisterModal()">✕</button>
         </div>
         <form hx-post="/auth/register" hx-swap="none">
             <div class="modal-body">
-                <p class="text-sm text-muted mb-4">Mit Email und Passwort kannst du dich jederzeit wieder einloggen.</p>
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email" required placeholder="deine@email.de">
                 </div>
                 <div class="form-group">
                     <label>Passwort</label>
-                    <input type="password" name="password" required placeholder="••••••••" minlength="8">
+                    <input type="password" name="password" required placeholder="Min. 8 Zeichen" minlength="8">
                 </div>
             </div>
             <div class="modal-footer">
@@ -309,21 +322,14 @@
 </div>
 
 <script>
-    // Modal functions
     function openModal(date) {
         document.getElementById('eventModal').classList.add('active');
         if (date) document.getElementById('eventDate').value = date;
         selectType('HA');
     }
-    function closeModal() {
-        document.getElementById('eventModal').classList.remove('active');
-    }
-    function openRegisterModal() {
-        document.getElementById('registerModal').classList.add('active');
-    }
-    function closeRegisterModal() {
-        document.getElementById('registerModal').classList.remove('active');
-    }
+    function closeModal() { document.getElementById('eventModal').classList.remove('active'); }
+    function openRegisterModal() { document.getElementById('registerModal').classList.add('active'); }
+    function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
 
     function selectType(type) {
         document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
@@ -331,35 +337,55 @@
         document.querySelector(`input[value="${type}"]`).closest('.type-option').classList.add('selected');
     }
 
-    // Tab functions
     function showTab(name) {
+        // Activate tab button
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(t => { if (t.textContent.toLowerCase().includes(name.substring(0, 3))) t.classList.add('active'); });
+        // Activate tab content
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
         document.getElementById('tab-' + name).classList.add('active');
+        // Scroll to admin section on mobile
+        document.querySelector('.admin-section')?.scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Copy functions
-    function copyText(id) {
-        const input = document.getElementById(id);
-        input.select();
-        navigator.clipboard.writeText(input.value);
+    // FAB functions
+    function toggleFab() {
+        const container = document.getElementById('fabContainer');
+        const icon = document.getElementById('fabIcon');
+        container.classList.toggle('open');
+        icon.textContent = container.classList.contains('open') ? '×' : '+';
     }
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text);
+    function closeFab() {
+        const container = document.getElementById('fabContainer');
+        const icon = document.getElementById('fabIcon');
+        container.classList.remove('open');
+        icon.textContent = '+';
     }
 
-    // Close modals on backdrop click or Escape
-    document.querySelectorAll('.modal-backdrop').forEach(modal => {
-        modal.addEventListener('click', function (e) {
-            if (e.target === this) this.classList.remove('active');
-        });
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+    function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).value); }
+    function copyToClipboard(text) { navigator.clipboard.writeText(text); }
+
+    function toggleNameInput() {
+        const select = document.getElementById('userSelect');
+        const nameGroup = document.getElementById('nameInputGroup');
+        const nameInput = document.getElementById('userNameInput');
+        if (select.value) {
+            nameGroup.style.display = 'none';
+            nameInput.required = false;
+        } else {
+            nameGroup.style.display = 'block';
+            nameInput.required = true;
         }
+    }
+    // Initialize on page load
+    if (document.getElementById('userSelect')) toggleNameInput();
+
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
     });
 </script>
-
 {% endblock %}

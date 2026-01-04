@@ -1,20 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Classly - Klassenkalender{% endblock %}
+{% block title %}Classly{% endblock %}
 
 {% block content %}
-<div style="max-width: 400px; margin: 4rem auto; text-align: center;">
-    <div class="mb-4">
-        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Classly</h1>
-        <p class="text-muted">Der einfache Klassenkalender.<br>Kein Passwort. Kein Stress.</p>
+<div style="max-width: 400px; margin: 0 auto; padding-top: 3rem;">
+    <div class="text-center mb-4">
+        <h1 style="font-size: 2rem;">Classly</h1>
+        <p class="text-muted">Klassenkalender ohne Stress</p>
     </div>
 
-    <p class="text-sm text-muted mb-4">
-        Um einer Klasse beizutreten, nutze den Einladungs-Link von deinem Klassensprecher.
-    </p>
-
     <div class="card">
-        <h2 class="mb-4">Neue Klasse erstellen</h2>
         <form hx-post="/auth/create-class" hx-swap="none">
             <div class="form-group">
                 <label>Klassenname</label>
@@ -22,26 +17,27 @@
             </div>
             <div class="form-group">
                 <label>Dein Name</label>
-                <input type="text" name="user_name" placeholder="z.B. Max Mustermann" required>
+                <input type="text" name="user_name" placeholder="z.B. Max" required>
             </div>
+
             <hr>
-            <p class="text-sm text-muted mb-4">Optional: Mit Email registrieren für dauerhaften Zugang</p>
+            <p class="text-sm text-muted text-center mb-4">Optional: Für dauerhaften Zugang</p>
+
             <div class="form-group">
-                <label>Email (optional)</label>
+                <label>Email</label>
                 <input type="email" name="email" placeholder="deine@email.de">
             </div>
             <div class="form-group">
-                <label>Passwort (optional)</label>
-                <input type="password" name="password" placeholder="••••••••" minlength="8">
+                <label>Passwort</label>
+                <input type="password" name="password" placeholder="Min. 8 Zeichen" minlength="8">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
-                Klasse erstellen
-            </button>
+
+            <button type="submit" class="btn btn-primary btn-block">Klasse erstellen</button>
         </form>
     </div>
 
-    <p class="text-sm text-muted mt-4">
-        Bereits registriert? <a href="/login" style="color: var(--fg); text-decoration: underline;">Einloggen</a>
+    <p class="text-sm text-muted text-center mt-4">
+        Bereits registriert? <a href="/login" style="color: var(--fg); text-decoration: underline;">Login</a>
     </p>
 </div>
 {% endblock %}
