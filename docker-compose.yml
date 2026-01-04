@@ -1,8 +1,5 @@
 # Docker Compose mit Radicale Support
 # Classly + Radicale (CalDAV)
-# 
-# Nutzung: 
-#   docker compose up -d
 
 services:
   classly:
@@ -13,7 +10,7 @@ services:
       - "${PORT:-8000}:8000"
     volumes:
       - classly_data:/data
-      - radicale_data:/radicale-data  # Shared Volume für Kalender
+      - radicale_data:/radicale-data  # Shared Volume
     environment:
       - DATABASE_URL=sqlite:////data/classly.db
       - RADICALE_DIR=/radicale-data
@@ -28,23 +25,18 @@ services:
       - "5232:5232"
     volumes:
       - radicale_data:/data
-    init: true
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-      - CHOWN
-      - KILL
+    # Entferne read_only und security_opt, die auf Windows/WSL Probleme machen können
+    # init: true
+    # read_only: false 
     restart: unless-stopped
     environment:
       - RADICALE_AUTH_TYPE=htpasswd
       - RADICALE_AUTH_HTPASSWD_FILENAME=/data/users
       - RADICALE_AUTH_HTPASSWD_ENCRYPTION=bcrypt
       - RADICALE_STORAGE_FILESYSTEM_FOLDER=/data/collections
+      # Erlaube Radicale, Dateien zu schreiben ohne chown Probleme
+      - TA_UID=1000
+      - TA_GID=1000
 
 volumes:
   classly_data:
