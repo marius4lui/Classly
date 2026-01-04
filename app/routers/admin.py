@@ -142,13 +142,16 @@ def download_db(
     import os
     
     # Check default location
-    db_path = "classly.db"
+    # Determine path based on environment
+    paths_to_check = ["/data/classly.db", "classly.db"]
+    db_path = None
     
-    # If using absolute path in docker (e.g. /app/data/classly.db)
-    # logic depends on where classly.db is.
-    # Assuming it is in CWD as per database.py default.
-    
-    if not os.path.exists(db_path):
+    for path in paths_to_check:
+        if os.path.exists(path):
+            db_path = path
+            break
+            
+    if not db_path:
         raise HTTPException(status_code=404, detail="Database file not found")
         
     return FileResponse(db_path, media_type='application/octet-stream', filename=f"classly_backup_{datetime.date.today()}.db")
