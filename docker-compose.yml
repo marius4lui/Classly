@@ -10,7 +10,7 @@ services:
     ports:
       - "${PORT:-8000}:8000"
     volumes:
-      - ./classly.db:/data/classly.db
+      - ./classly.db:/data/classly.db/classly.db
     environment:
       - PORT=8000
       - DATABASE_URL=sqlite:////data/classly.db
