@@ -1,0 +1,56 @@
+import sqlite3
+import os
+
+def fix_schema(db_url):
+    # Only fix if using sqlite
+    if "sqlite" not in db_url:
+        return
+
+    # Extract path from sqlite:////data/classly.db or sqlite:///./classly.db
+    # Remove prefix
+    path = db_url.replace("sqlite:///", "")
+    # Handle absolute path (start with /)
+    if not os.path.isabs(path) and path.startswith("/"):
+        path = path # It was sqlite:////path -> /path
+    
+    # If path relies on CWD (./classly.db)
+    if path.startswith("./"):
+        path = path[2:]
+        
+    if not os.path.exists(path):
+        print(f"DB Fix: File {path} not found, skipping fix.")
+        return
+
+    print(f"Fixing SQLite schema for {path}...")
+    try:
+        conn = sqlite3.connect(path)
+        cursor = conn.cursor()
+
+        # 1. Add 'role' column to login_tokens if missing
+        try:
+            cursor.execute("SELECT role FROM login_tokens LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Adding 'role' column to login_tokens...")
+            cursor.execute("ALTER TABLE login_tokens ADD COLUMN role VARCHAR DEFAULT 'member'")
+        
+        # 2. Add 'event_links' table if missing
+        try:
+            cursor.execute("SELECT * FROM event_links LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Creating 'event_links' table...")
+            cursor.execute("""
+                CREATE TABLE event_links (
+                    id VARCHAR NOT NULL, 
+                    event_id VARCHAR, 
+                    url VARCHAR, 
+                    label VARCHAR, 
+                    PRIMARY KEY (id), 
+                    FOREIGN KEY(event_id) REFERENCES events (id) ON DELETE CASCADE
+                )
+            """)
+
+        conn.commit()
+        conn.close()
+        print("Schema fix executed.")
+    except Exception as e:
+        print(f"Schema fix failed: {e}")

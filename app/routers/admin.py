@@ -143,7 +143,7 @@ def download_db(
     
     # Check default location
     # Determine path based on environment
-    paths_to_check = ["/data/classly_v2.db", "/data/classly.db", "classly.db"]
+    paths_to_check = ["/data/classly.db", "classly.db"]
     db_path = None
     
     for path in paths_to_check:

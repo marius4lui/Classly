@@ -7,10 +7,10 @@ services:
     expose:
       - "8000"
     volumes:
-      - ./classly.db:/data/classly_v2.db
+      - classly-data:/data
     environment:
       - PORT=8000
-      - DATABASE_URL=sqlite:////data/classly_v2.db
+      - DATABASE_URL=sqlite:////data/classly.db
     restart: unless-stopped
     networks:
       - coolify

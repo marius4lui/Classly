@@ -10,10 +10,10 @@ services:
     ports:
       - "${PORT:-8000}:8000"
     volumes:
-      - ./classly.db:/data/classly_v2.db
+      - classly_data:/data
     environment:
       - PORT=8000
-      - DATABASE_URL=sqlite:////data/classly_v2.db
+      - DATABASE_URL=sqlite:////data/classly.db
       # - SECRET_KEY=changeme
       # - TZ=Europe/Berlin
     restart: unless-stopped
