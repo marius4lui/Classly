@@ -267,6 +267,26 @@ def delete_topic(db: Session, topic_id: str):
         return True
     return False
 
+# --- Event Links ---
+def create_event_link(db: Session, event_id: str, url: str, label: str):
+    db_link = models.EventLink(
+        event_id=event_id,
+        url=url,
+        label=label
+    )
+    db.add(db_link)
+    db.commit()
+    db.refresh(db_link)
+    return db_link
+
+def delete_link(db: Session, link_id: str):
+    link = db.query(models.EventLink).filter(models.EventLink.id == link_id).first()
+    if link:
+        db.delete(link)
+        db.commit()
+        return True
+    return False
+
 # --- Audit Logs ---
 def create_audit_log(db: Session, class_id: str, user_id: str, action: models.AuditAction, 
                      target_id: str = None, data: str = None, permanent: bool = False):

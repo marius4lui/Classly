@@ -501,9 +501,10 @@
                 if (!res.ok) throw new Error('Not found');
                 const event = await res.json();
 
+                const canEdit = USER_ROLE !== 'guest';
+
                 let topicsHtml = '';
                 if (event.type === 'KA' || event.type === 'TEST') {
-                    const canEdit = USER_ROLE !== 'guest';
                     topicsHtml = `
                         <hr>
                         <h3 class="text-sm mb-2">Themen</h3>
@@ -525,8 +526,28 @@
                     `;
                 }
 
+                // Links Section
+                let linksHtml = `
+                    <hr>
+                    <h3 class="text-sm mb-2">Links</h3>
+                    <div id="linksList">
+                        ${(event.links || []).map(l => `
+                            <div class="topic-item" style="justify-content: space-between;">
+                                <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                                ${canEdit ? `<button class="btn btn-ghost btn-sm text-danger" onclick="deleteLink('${eventId}', '${l.id}')">×</button>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${canEdit ? `
+                    <form onsubmit="addLink(event, '${eventId}')" class="flex gap-2 mt-2">
+                        <input type="text" name="label" placeholder="Name (z.B. Moodle)" required style="flex:1;">
+                        <input type="url" name="url" placeholder="URL (https://...)" required style="flex:2;">
+                        <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                    </form>` : ''}
+                `;
+
                 let editFormHtml = '';
-                if (USER_ROLE !== 'guest') {
+                if (canEdit) {
                     editFormHtml = `
                     <hr>
                     <h3 class="text-sm mb-2">Bearbeiten</h3>
@@ -559,10 +580,12 @@
                 <p class="text-xs text-muted mt-2">Erstellt von ${event.author}</p>
                 
                 ${topicsHtml}
+                ${linksHtml}
                 
                 ${editFormHtml}
             `;
             } catch (e) {
+                console.error(e); // Debug
                 document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
             }
         }
@@ -599,6 +622,21 @@
         function deleteTopic(eventId, topicId) {
             showConfirm('Thema löschen?', async () => {
                 await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
+                openEventDetail(eventId); // Refresh
+            });
+        }
+
+        async function addLink(e, eventId) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
+            openEventDetail(eventId); // Refresh
+        }
+
+        function deleteLink(eventId, linkId) {
+            showConfirm('Link löschen?', async () => {
+                await fetch(`/events/${eventId}/links/${linkId}`, { method: 'DELETE' });
                 openEventDetail(eventId); // Refresh
             });
         }
