@@ -4,3 +4,6 @@ sqlalchemy
 jinja2
 python-multipart
 httpx
+passlib
+argon2-cffi
+icalendar

@@ -215,3 +215,75 @@ def disable_caldav(db: Session, user_id: str):
         db.commit()
         return user
     return None
+
+# --- Event Extended ---
+def get_event(db: Session, event_id: str):
+    return db.query(models.Event).filter(models.Event.id == event_id).first()
+
+def update_event(db: Session, event_id: str, type: models.EventType = None, subject_name: str = None, 
+                 title: str = None, date: datetime.datetime = None):
+    event = get_event(db, event_id)
+    if event:
+        if type: event.type = type
+        if subject_name is not None: event.subject_name = subject_name
+        if title is not None: event.title = title
+        if date: event.date = date
+        db.commit()
+        db.refresh(event)
+        return event
+    return None
+
+# --- Event Topics ---
+def create_event_topic(db: Session, event_id: str, topic_type: str, content: str = None, count: int = None, order: int = 0):
+    db_topic = models.EventTopic(
+        event_id=event_id,
+        topic_type=topic_type,
+        content=content,
+        count=count,
+        order=order
+    )
+    db.add(db_topic)
+    db.commit()
+    db.refresh(db_topic)
+    return db_topic
+
+def get_topics_for_event(db: Session, event_id: str):
+    return db.query(models.EventTopic).filter(models.EventTopic.event_id == event_id).order_by(models.EventTopic.order).all()
+
+def delete_topic(db: Session, topic_id: str):
+    topic = db.query(models.EventTopic).filter(models.EventTopic.id == topic_id).first()
+    if topic:
+        db.delete(topic)
+        db.commit()
+        return True
+    return False
+
+# --- Audit Logs ---
+def create_audit_log(db: Session, class_id: str, user_id: str, action: models.AuditAction, 
+                     target_id: str = None, data: str = None, permanent: bool = False):
+    db_log = models.AuditLog(
+        class_id=class_id,
+        user_id=user_id,
+        action=action,
+        target_id=target_id,
+        data=data,
+        permanent=permanent
+    )
+    db.add(db_log)
+    db.commit()
+    return db_log
+
+def cleanup_old_audit_logs(db: Session):
+    """Delete non-permanent audit logs older than 90 days"""
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=90)
+    deleted = db.query(models.AuditLog).filter(
+        models.AuditLog.permanent == False,
+        models.AuditLog.created_at < cutoff
+    ).delete()
+    db.commit()
+    return deleted
+
+def get_audit_logs_for_class(db: Session, class_id: str, limit: int = 50):
+    return db.query(models.AuditLog).filter(
+        models.AuditLog.class_id == class_id
+    ).order_by(models.AuditLog.created_at.desc()).limit(limit).all()

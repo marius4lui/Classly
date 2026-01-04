@@ -52,7 +52,7 @@
     {% if upcoming_events %}
     <div class="upcoming-list">
         {% for event in upcoming_events %}
-        <div class="upcoming-item">
+        <div class="upcoming-item" onclick="openEventDetail('{{ event.id }}')" style="cursor: pointer;">
             <div class="upcoming-date">
                 <span class="day">{{ event.date.strftime('%d') }}</span>
                 <span class="month">{{ event.date.strftime('%b') }}</span>
@@ -63,7 +63,11 @@
                 {% if event.title %}
                 <div class="upcoming-title">{{ event.title }}</div>
                 {% endif %}
+                {% if event.topics|length > 0 %}
+                <div class="text-xs text-muted mt-2">{{ event.topics|length }} Themen</div>
+                {% endif %}
             </div>
+            <div class="upcoming-arrow">›</div>
         </div>
         {% endfor %}
     </div>
@@ -321,6 +325,24 @@
     </div>
 </div>
 
+<!-- Event Detail Modal -->
+<div class="modal-backdrop" id="eventDetailModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Termin Details</h2>
+            <button class="btn btn-ghost" onclick="closeEventDetail()">✕</button>
+        </div>
+        <div class="modal-body" id="eventDetailContent">
+            <p class="text-muted text-center">Laden...</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger btn-sm" id="deleteEventBtn"
+                onclick="deleteCurrentEvent()">Löschen</button>
+            <button type="button" class="btn btn-secondary" onclick="closeEventDetail()">Schließen</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function openModal(date) {
         document.getElementById('eventModal').classList.add('active');
@@ -380,6 +402,109 @@
     }
     // Initialize on page load
     if (document.getElementById('userSelect')) toggleNameInput();
+
+    // Event Detail Functions
+    let currentEventId = null;
+
+    async function openEventDetail(eventId) {
+        currentEventId = eventId;
+        document.getElementById('eventDetailModal').classList.add('active');
+        document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Laden...</p>';
+
+        try {
+            const res = await fetch(`/events/${eventId}`);
+            if (!res.ok) throw new Error('Not found');
+            const event = await res.json();
+
+            let topicsHtml = '';
+            if (event.type === 'KA' || event.type === 'TEST') {
+                topicsHtml = `
+                    <hr>
+                    <h3 class="text-sm mb-2">Themen</h3>
+                    <div id="topicsList">
+                        ${event.topics.map(t => `
+                            <div class="topic-item">
+                                <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
+                                <button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${t.id}')">×</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <form onsubmit="addTopic(event, '${eventId}')" class="flex gap-2 mt-2">
+                        <input type="text" name="topic_type" placeholder="Thema (z.B. Vokabeln)" required style="flex:2;">
+                        <input type="text" name="content" placeholder="Details" style="flex:2;">
+                        <input type="number" name="count" placeholder="Anzahl" style="flex:1;">
+                        <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                    </form>
+                `;
+            }
+
+            document.getElementById('eventDetailContent').innerHTML = `
+                <div class="event-detail-header">
+                    <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
+                    <span class="text-muted text-sm">${event.date}</span>
+                </div>
+                <h2 class="mt-2">${event.subject_name || 'Allgemein'}</h2>
+                ${event.title ? `<p class="text-muted">${event.title}</p>` : ''}
+                <p class="text-xs text-muted mt-2">Erstellt von ${event.author}</p>
+                
+                ${topicsHtml}
+                
+                <hr>
+                <h3 class="text-sm mb-2">Bearbeiten</h3>
+                <form id="editEventForm" onsubmit="submitEditEvent(event, '${eventId}')">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fach</label>
+                            <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Datum</label>
+                            <input type="date" name="date" value="${event.date}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Details</label>
+                        <input type="text" name="title" value="${event.title || ''}">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Speichern</button>
+                </form>
+            `;
+        } catch (e) {
+            document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
+        }
+    }
+
+    function closeEventDetail() {
+        document.getElementById('eventDetailModal').classList.remove('active');
+        currentEventId = null;
+    }
+
+    async function deleteCurrentEvent() {
+        if (!currentEventId || !confirm('Termin wirklich löschen?')) return;
+        await fetch(`/events/${currentEventId}`, { method: 'DELETE' });
+        location.reload();
+    }
+
+    async function submitEditEvent(e, eventId) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        await fetch(`/events/${eventId}`, { method: 'PUT', body: formData });
+        location.reload();
+    }
+
+    async function addTopic(e, eventId) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
+        openEventDetail(eventId); // Refresh
+    }
+
+    async function deleteTopic(eventId, topicId) {
+        await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
+        openEventDetail(eventId); // Refresh
+    }
 
     document.querySelectorAll('.modal-backdrop').forEach(m => {
         m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });

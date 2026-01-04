@@ -112,6 +112,46 @@ class Event(Base):
     date = Column(DateTime, nullable=False)
     author_id = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     clazz = relationship("Class", back_populates="events")
     author = relationship("User", back_populates="events")
+    topics = relationship("EventTopic", back_populates="event", cascade="all, delete-orphan")
+
+class EventTopic(Base):
+    """Topics for KA/TEST events"""
+    __tablename__ = "event_topics"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    event_id = Column(String, ForeignKey("events.id"), nullable=False)
+    topic_type = Column(String, nullable=False)  # e.g. "Vokabeln", "Grammatik"
+    content = Column(String, nullable=True)  # e.g. "Page 20"
+    count = Column(Integer, nullable=True)  # e.g. 50 words
+    order = Column(Integer, default=0)
+    
+    event = relationship("Event", back_populates="topics")
+
+class AuditAction(str, enum.Enum):
+    EVENT_CREATE = "event_create"
+    EVENT_EDIT = "event_edit"
+    EVENT_DELETE = "event_delete"
+    TOPIC_ADD = "topic_add"
+    USER_JOIN = "user_join"
+    USER_LEAVE = "user_leave"
+    LOGIN = "login"
+
+class AuditLog(Base):
+    """Audit logs - auto-delete after 90 days except permanent ones"""
+    __tablename__ = "audit_logs"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    action = Column(Enum(AuditAction), nullable=False)
+    target_id = Column(String, nullable=True)  # Event ID, User ID, etc.
+    data = Column(String, nullable=True)  # JSON for extra details
+    permanent = Column(Boolean, default=False)  # Event-related logs are permanent
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    clazz = relationship("Class")
+    user = relationship("User")

@@ -1,0 +1,14 @@
+services:
+  classly:
+    build: .
+    container_name: classly
+    ports:
+      - "8000:8000"
+    volumes:
+      - classly_data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/classly.db
+    restart: unless-stopped
+
+volumes:
+  classly_data:

@@ -796,6 +796,37 @@ hr {
     color: var(--gray-600);
 }
 
+.upcoming-arrow {
+    display: flex;
+    align-items: center;
+    font-size: 1.25rem;
+    color: var(--gray-400);
+    margin-left: auto;
+}
+
+.upcoming-item:hover .upcoming-arrow {
+    color: var(--fg);
+}
+
+/* === Event Detail === */
+.event-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* === Topic Items === */
+.topic-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
 /* === Expandable FAB === */
 .fab-container {
     position: fixed;
