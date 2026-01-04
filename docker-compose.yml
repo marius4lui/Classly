@@ -13,7 +13,7 @@ services:
       - classly_data:/data
     environment:
       - PORT=8000
-      - DATABASE_URL
+      - DATABASE_URL=sqlite:////data/classly.db
       # - SECRET_KEY=changeme
       # - TZ=Europe/Berlin
     restart: unless-stopped

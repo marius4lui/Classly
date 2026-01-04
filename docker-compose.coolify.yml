@@ -1,5 +1,5 @@
 # Coolify-spezifische docker-compose
-# Classly (No Radicale)
+# Classly
 
 services:
   classly:
@@ -10,7 +10,7 @@ services:
       - classly-data:/data
     environment:
       - PORT=8000
-      - DATABASE_URL
+      - DATABASE_URL=sqlite:////data/classly.db
     restart: unless-stopped
     networks:
       - coolify
