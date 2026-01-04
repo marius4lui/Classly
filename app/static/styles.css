@@ -927,3 +927,78 @@ hr {
         display: none;
     }
 }
+
+/* === Toasts === */
+.toast-container {
+    position: fixed;
+    top: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+    width: 90%;
+    max-width: 400px;
+}
+
+.toast {
+    background: white;
+    padding: 1rem;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideDown 0.3s ease forwards;
+    pointer-events: auto;
+    border-left: 4px solid var(--primary);
+}
+
+.toast-success {
+    border-color: var(--event-ka);
+}
+
+/* Green-ish */
+.toast-error {
+    border-color: var(--event-test);
+}
+
+/* Red-ish */
+.toast-message {
+    font-size: 0.9rem;
+    color: var(--fg);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* === Confirm Modal === */
+.confirm-modal-content {
+    text-align: center;
+    padding: 1rem;
+}
+
+.confirm-modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}

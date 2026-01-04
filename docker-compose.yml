@@ -1,9 +1,7 @@
-# Docker Compose für Classly
+# Docker Compose mit Radicale Support
+# Classly + Radicale (CalDAV)
 # 
-# Für normale Nutzung (mit Port 8000):
-#   PORT=8000 docker compose up -d
-#
-# Für Coolify (ohne Port, Traefik verwaltet das):
+# Nutzung: 
 #   docker compose up -d
 
 services:
@@ -11,11 +9,43 @@ services:
     build: .
     expose:
       - "8000"
+    ports:
+      - "${PORT:-8000}:8000"
     volumes:
       - classly_data:/data
+      - radicale_data:/radicale-data  # Shared Volume für Kalender
     environment:
       - DATABASE_URL=sqlite:////data/classly.db
+      - RADICALE_DIR=/radicale-data
     restart: unless-stopped
+    depends_on:
+      - radicale
+
+  radicale:
+    image: tomsquest/docker-radicale
+    container_name: radicale
+    ports:
+      - "5232:5232"
+    volumes:
+      - radicale_data:/data
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+      - KILL
+    restart: unless-stopped
+    environment:
+      - RADICALE_AUTH_TYPE=htpasswd
+      - RADICALE_AUTH_HTPASSWD_FILENAME=/data/users
+      - RADICALE_AUTH_HTPASSWD_ENCRYPTION=bcrypt
+      - RADICALE_STORAGE_FILESYSTEM_FOLDER=/data/collections
 
 volumes:
   classly_data:
+  radicale_data:

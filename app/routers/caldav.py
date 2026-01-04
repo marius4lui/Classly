@@ -72,9 +72,6 @@ def regenerate_caldav_token(
     user: models.User = Depends(require_user),
     db: Session = Depends(get_db)
 ):
-    import secrets
-    user_obj = crud.get_user(db, user.id)
-    user_obj.caldav_token = secrets.token_urlsafe(32)
-    db.commit()
+    crud.regenerate_caldav_token(db, user.id)
     response.headers["HX-Redirect"] = "/"
     return {"status": "regenerated"}

@@ -7,3 +7,4 @@ httpx
 passlib
 argon2-cffi
 icalendar
+bcrypt
