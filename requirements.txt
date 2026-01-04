@@ -7,4 +7,5 @@ httpx
 passlib
 argon2-cffi
 icalendar
+psycopg2-binary
 bcrypt

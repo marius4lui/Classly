@@ -9,7 +9,8 @@ services:
     volumes:
       - classly-data:/data
     environment:
-      - DATABASE_URL=sqlite:////data/classly.db
+      - PORT=8000
+      - DATABASE_URL
     restart: unless-stopped
     networks:
       - coolify
