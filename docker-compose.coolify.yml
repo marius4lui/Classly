@@ -1,0 +1,23 @@
+# Coolify-spezifische docker-compose
+# Nutze diese Datei wenn du Classly mit Coolify deployst:
+# In Coolify: "Docker Compose" auswählen und diese Datei als Pfad angeben
+
+services:
+  classly:
+    build: .
+    expose:
+      - "8000"
+    volumes:
+      - classly-data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/classly.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  classly-data:
