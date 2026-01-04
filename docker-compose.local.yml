@@ -1,0 +1,9 @@
+# Docker Compose Override für lokale Entwicklung / Self-Hosting
+# Fügt Port-Mapping hinzu
+#
+# Nutzung: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+
+services:
+  classly:
+    ports:
+      - "8000:8000"

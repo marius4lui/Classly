@@ -1,9 +1,16 @@
+# Docker Compose für Classly
+# 
+# Für normale Nutzung (mit Port 8000):
+#   PORT=8000 docker compose up -d
+#
+# Für Coolify (ohne Port, Traefik verwaltet das):
+#   docker compose up -d
+
 services:
   classly:
     build: .
-    container_name: classly
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - classly_data:/data
     environment:
