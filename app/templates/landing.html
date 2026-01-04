@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Classly - Klassenkalender{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto; text-align: center;">
+    <div class="mb-4">
+        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Classly</h1>
+        <p class="text-muted">Der einfache Klassenkalender.<br>Kein Passwort. Kein Stress.</p>
+    </div>
+
+    <p class="text-sm text-muted mb-4">
+        Um einer Klasse beizutreten, nutze den Einladungs-Link von deinem Klassensprecher.
+    </p>
+
+    <div class="card">
+        <h2 class="mb-4">Neue Klasse erstellen</h2>
+        <form hx-post="/auth/create-class" hx-swap="none">
+            <div class="form-group">
+                <label>Klassenname</label>
+                <input type="text" name="class_name" placeholder="z.B. 10B" required>
+            </div>
+            <div class="form-group">
+                <label>Dein Name</label>
+                <input type="text" name="user_name" placeholder="z.B. Max Mustermann" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Klasse erstellen
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

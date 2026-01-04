@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Beitreten: {{ clazz.name }} - Classly{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto; text-align: center;">
+    <div class="mb-4">
+        <h1 style="margin-bottom: 0.5rem;">{{ clazz.name }}</h1>
+        <p class="text-muted">Tritt dieser Klasse bei</p>
+    </div>
+
+    <div class="card">
+        <form hx-post="/auth/join" hx-swap="none">
+            <input type="hidden" name="join_token" value="{{ clazz.join_token }}">
+
+            <div class="form-group">
+                <label>Dein Name</label>
+                <input type="text" name="user_name" placeholder="z.B. Max Mustermann" required autofocus>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Klasse beitreten
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

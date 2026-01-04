@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Header -->
+<header class="header">
+    <div>
+        <h1>{{ clazz.name }}</h1>
+        <p class="text-sm text-muted">Angemeldet als <strong>{{ user.name }}</strong></p>
+    </div>
+    <a href="/auth/logout" class="btn btn-ghost btn-sm">Abmelden</a>
+</header>
+
+<!-- Quick Add Button -->
+<div class="flex justify-between items-center mb-4">
+    <h2>Kalender</h2>
+    <button class="btn btn-primary" onclick="openModal()">
+        + Event hinzufügen
+    </button>
+</div>
+
+<!-- Calendar -->
+<div class="calendar-wrapper">
+    <div class="calendar-header">
+        <span style="font-weight: 600;">{{ current_month }}</span>
+    </div>
+
+    <div class="calendar-grid">
+        <!-- Day Headers -->
+        <div class="calendar-day-header">Mo</div>
+        <div class="calendar-day-header">Di</div>
+        <div class="calendar-day-header">Mi</div>
+        <div class="calendar-day-header">Do</div>
+        <div class="calendar-day-header">Fr</div>
+        <div class="calendar-day-header">Sa</div>
+        <div class="calendar-day-header">So</div>
+
+        <!-- Calendar Days -->
+        {% for week in calendar %}
+        {% for day in week %}
+        <div class="calendar-cell {% if not day.is_current_month %}other-month{% endif %}"
+            onclick="openModal('{{ day.date.strftime('%Y-%m-%d') }}')">
+            <div class="calendar-day-number {% if day.date == today.date() %}today{% endif %}">
+                {{ day.day }}
+            </div>
+            {% for event in day.events %}
+            <div class="event-pill {{ event.type.value|lower }}"
+                title="{{ event.subject_name or 'Event' }}: {{ event.title or '' }}">
+                {{ event.subject_name or event.title or event.type.value }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Admin Section -->
+{% if user.role.value == "owner" or user.role.value == "admin" %}
+<div class="admin-section">
+    <h3>Admin-Bereich</h3>
+
+    <!-- Invite Link -->
+    <div class="mb-4">
+        <label>Einladungs-Link</label>
+        <div class="invite-link-box">
+            <input type="text" readonly value="{{ base_url }}/join/{{ clazz.join_token }}" id="inviteLink"
+                onclick="this.select()">
+            <button class="btn btn-secondary btn-sm" onclick="copyLink()">Kopieren</button>
+        </div>
+        <form hx-post="/admin/rotate-token" hx-confirm="Sicher? Der alte Link wird ungültig."
+            style="margin-top: 0.5rem;">
+            <button type="submit" class="btn btn-danger btn-sm">Link neu generieren</button>
+        </form>
+    </div>
+
+    <!-- Subjects Management -->
+    <div class="mb-4">
+        <label>Fächer verwalten</label>
+        <form hx-post="/subjects" hx-swap="none" class="flex gap-2 mt-2">
+            <input type="text" name="name" placeholder="Neues Fach (z.B. Mathe)" required style="flex: 1;">
+            <button type="submit" class="btn btn-secondary btn-sm">Hinzufügen</button>
+        </form>
+        <div class="subject-list">
+            {% for subject in subjects %}
+            <div class="subject-tag">
+                {{ subject.name }}
+                <button hx-delete="/subjects/{{ subject.id }}" hx-confirm="Fach löschen?">×</button>
+            </div>
+            {% endfor %}
+            {% if not subjects %}
+            <span class="text-sm text-muted">Noch keine Fächer angelegt</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Members -->
+    <div>
+        <label>Mitglieder ({{ members|length }})</label>
+        {% for member in members %}
+        <div class="member-item">
+            <span>{{ member.name }} <span class="text-muted text-sm">({{ member.role.value }})</span></span>
+            {% if member.id != user.id %}
+            <button hx-delete="/admin/members/{{ member.id }}" hx-confirm="Wirklich entfernen?"
+                class="btn btn-danger btn-sm">
+                Entfernen
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Add Event Modal -->
+<div class="modal-backdrop" id="eventModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Neues Event</h2>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <form hx-post="/events" hx-swap="none">
+            <div class="modal-body">
+                <!-- Event Type -->
+                <div class="form-group">
+                    <label>Typ</label>
+                    <div class="type-selector" id="typeSelector">
+                        <label class="type-option" onclick="selectType('HA')">
+                            <input type="radio" name="type" value="HA" checked>
+                            <span style="color: var(--event-ha);">●</span> Hausaufgabe
+                        </label>
+                        <label class="type-option selected" onclick="selectType('TEST')">
+                            <input type="radio" name="type" value="TEST">
+                            <span style="color: var(--event-test);">●</span> Test
+                        </label>
+                        <label class="type-option" onclick="selectType('KA')">
+                            <input type="radio" name="type" value="KA">
+                            <span style="color: var(--event-ka);">●</span> Klausur
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="form-group">
+                    <label>Fach</label>
+                    {% if subjects %}
+                    <select name="subject_id">
+                        <option value="">— Fach wählen —</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" name="subject_name" placeholder="Fach eingeben (z.B. Mathe)">
+                    <p class="text-sm text-muted mt-2">Tipp: Lege Fächer im Admin-Bereich an für schnellere Auswahl!</p>
+                    {% endif %}
+                </div>
+
+                <!-- Date -->
+                <div class="form-group">
+                    <label>Datum</label>
+                    <input type="date" name="date" id="eventDate" required value="{{ today.strftime('%Y-%m-%d') }}">
+                </div>
+
+                <!-- Title -->
+                <div class="form-group">
+                    <label>Details (optional)</label>
+                    <input type="text" name="title" placeholder="z.B. Kapitel 5, Seite 42-50">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(date) {
+        document.getElementById('eventModal').classList.add('active');
+        if (date) {
+            document.getElementById('eventDate').value = date;
+        }
+        // Reset type selection
+        selectType('HA');
+    }
+
+    function closeModal() {
+        document.getElementById('eventModal').classList.remove('active');
+    }
+
+    function selectType(type) {
+        document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+        document.querySelector(`input[value="${type}"]`).checked = true;
+        document.querySelector(`input[value="${type}"]`).closest('.type-option').classList.add('selected');
+    }
+
+    function copyLink() {
+        const input = document.getElementById('inviteLink');
+        input.select();
+        navigator.clipboard.writeText(input.value);
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('eventModal').addEventListener('click', function (e) {
+        if (e.target === this) closeModal();
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+
+{% endblock %}
