@@ -16,6 +16,7 @@ class UserRole(str, enum.Enum):
     OWNER = "owner"
     ADMIN = "admin"
     MEMBER = "member"
+    GUEST = "guest"
 
 class EventType(str, enum.Enum):
     KA = "KA"
@@ -88,6 +89,9 @@ class LoginToken(Base):
     # Usage limits
     max_uses = Column(Integer, nullable=True)  # None = unlimited
     uses = Column(Integer, default=0)
+    
+    # Role for new users
+    role = Column(Enum(UserRole), default=UserRole.MEMBER)
     
     # Expiration
     expires_at = Column(DateTime, nullable=True)
