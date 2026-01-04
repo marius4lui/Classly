@@ -71,7 +71,8 @@ def get_event_details(
         "date": event.date.strftime("%Y-%m-%d"),
         "author": event.author.name if event.author else "Unbekannt",
         "created_at": event.created_at.isoformat() if event.created_at else None,
-        "topics": [{"id": t.id, "type": t.topic_type, "content": t.content, "count": t.count} for t in topics]
+        "topics": [{"id": t.id, "type": t.topic_type, "content": t.content, "count": t.count} for t in topics],
+        "links": [{"id": l.id, "url": l.url, "label": l.label} for l in event.links]
     }
 
 @router.put("/events/{event_id}")
@@ -177,6 +178,40 @@ def delete_topic_endpoint(
         raise HTTPException(status_code=404, detail="Event not found")
     
     crud.delete_topic(db, topic_id)
+    return {"status": "deleted"}
+
+# --- Link Endpoints ---
+@router.post("/events/{event_id}/links")
+def add_link(
+    event_id: str,
+    url: str = Form(...),
+    label: str = Form(...),
+    user: models.User = Depends(require_user),
+    db: Session = Depends(get_db)
+):
+    event = crud.get_event(db, event_id)
+    if not event or event.class_id != user.class_id:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Check max links?
+    if len(event.links) >= 10:
+        raise HTTPException(status_code=400, detail="Max 10 links")
+
+    link = crud.create_event_link(db, event_id, url, label)
+    return {"status": "created", "link_id": link.id}
+
+@router.delete("/events/{event_id}/links/{link_id}")
+def delete_link_endpoint(
+    event_id: str,
+    link_id: str,
+    user: models.User = Depends(require_user),
+    db: Session = Depends(get_db)
+):
+    event = crud.get_event(db, event_id)
+    if not event or event.class_id != user.class_id:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    crud.delete_link(db, link_id)
     return {"status": "deleted"}
 
 # --- Subject Endpoints ---

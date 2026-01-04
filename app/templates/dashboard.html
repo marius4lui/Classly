@@ -13,7 +13,9 @@
 <!-- Calendar Title -->
 <div class="flex justify-between items-center mb-4 desktop-only">
     <h2>Kalender</h2>
+    {% if user.role.value != 'guest' %}
     <button class="btn btn-primary" onclick="openModal()">+ Event</button>
+    {% endif %}
 </div>
 
 <!-- Calendar -->
@@ -94,7 +96,7 @@
         <span id="fabIcon">+</span>
     </button>
 </div>
-{% else %}
+{% elif user.role.value != 'guest' %}
 <button class="fab" onclick="openModal()">+</button>
 {% endif %}
 
@@ -160,6 +162,13 @@
                 <label>Name für neuen Benutzer</label>
                 <input type="text" name="user_name" id="userNameInput" placeholder="z.B. Max">
             </div>
+            <div class="form-group" id="roleInputGroup">
+                <label>Rolle</label>
+                <select name="role">
+                    <option value="member">Mitglied (kann bearbeiten)</option>
+                    <option value="guest">Gast (nur ansehen)</option>
+                </select>
+            </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Max. Nutzungen</label>
@@ -189,7 +198,8 @@
             <div class="actions">
                 <button onclick="copyToClipboard('{{ base_url }}/join/{{ token.token }}')"
                     class="btn btn-sm btn-secondary">Kopieren</button>
-                <button hx-delete="/admin/login-tokens/{{ token.id }}" class="btn btn-sm btn-danger">×</button>
+                <button hx-delete="/admin/login-tokens/{{ token.id }}" hx-confirm="Link wirklich löschen?"
+                    class="btn btn-sm btn-danger">×</button>
             </div>
         </div>
         {% endfor %}
@@ -205,7 +215,7 @@
             {% for subject in subjects %}
             <div class="subject-tag">
                 {{ subject.name }}
-                <button hx-delete="/subjects/{{ subject.id }}">×</button>
+                <button hx-delete="/subjects/{{ subject.id }}" hx-confirm="Fach wirklich löschen?">×</button>
             </div>
             {% endfor %}
         </div>
@@ -213,323 +223,354 @@
 
     <!-- Advanced Tab -->
     <div id="tab-advanced" class="tab-content">
-        <h3 class="text-sm mb-2">CalDAV & App</h3>
-        {% if user.caldav_enabled %}
+        <!-- Calendar Subscription Tab -->
+        <div id="tab-advanced" class="tab-content">
+            <h3 class="text-sm mb-2">Kalender abonnieren (Read-Only)</h3>
+            <p class="text-muted text-sm mb-4">Du kannst diesen Kalender in deiner Handy-App (Google Kalender, Apple
+                Kalender) abonnieren. Events werden automatisch aktualisiert.</p>
 
-        <div class="card mb-4" style="background: var(--gray-50); padding: 1rem;">
-            <div class="text-xs text-muted uppercase mb-2">Für DAVx⁵ / Apps (Empfohlen)</div>
-            <div class="form-group mb-2">
-                <label class="text-xs">Server URL</label>
-                <div class="invite-link-box">
-                    <input type="text" readonly value="{{ base_url }}:5232/" id="davUrl" onclick="this.select()">
-                    <button class="btn btn-secondary btn-sm" onclick="copyText('davUrl')">Copy</button>
-                </div>
-            </div>
-            <div class="form-group mb-2">
-                <label class="text-xs">Benutzer</label>
-                <input type="text" readonly value="{{ user.email if user.email else user.id + '@classly.local' }}"
-                    class="w-full p-2 rounded border" onclick="this.select()">
-            </div>
-            <div class="form-group mb-0">
-                <label class="text-xs">Passwort (Token)</label>
-                <div class="invite-link-box">
-                    <input type="text" readonly value="{{ user.caldav_token }}" id="davPass" onclick="this.select()">
-                    <button class="btn btn-secondary btn-sm" onclick="copyText('davPass')">Copy</button>
-                </div>
-            </div>
-        </div>
-
-        <details>
-            <summary class="text-sm cursor-pointer mb-2">Alternativ: URL-Abo (.ics)</summary>
             <div class="invite-link-box">
                 <input type="text" readonly value="{{ base_url }}/caldav/{{ user.caldav_token }}/calendar.ics"
                     id="caldavUrl" onclick="this.select()">
                 <button class="btn btn-secondary btn-sm" onclick="copyText('caldavUrl')">Kopieren</button>
             </div>
-        </details>
 
-        <div class="flex gap-2 mt-4">
-            <form hx-post="/caldav/regenerate"
-                hx-confirm="Neues Passwort generieren? Du musst es in allen Apps ändern.">
-                <button type="submit" class="btn btn-secondary btn-sm">Neues Passwort</button>
-            </form>
-            <form hx-post="/caldav/disable" hx-confirm="CalDAV wirklich deaktivieren?">
-                <button type="submit" class="btn btn-danger btn-sm">Deaktivieren</button>
-            </form>
+            <div class="mt-4">
+                <form hx-post="/caldav/regenerate">
+                    <button type="submit" class="btn btn-secondary btn-sm">Neuen Link erstellen</button>
+                </form>
+            </div>
+
+            {% if not user.is_registered %}
+            <hr>
+            <h3 class="text-sm mb-2">Account sichern</h3>
+            <button class="btn btn-secondary btn-block" onclick="openRegisterModal()">Mit Email registrieren</button>
+            {% endif %}
+
+            {% if user.role.value == 'owner' or user.role.value == 'admin' %}
+            <hr>
+            <h3 class="text-sm mb-2">Backup</h3>
+            <a href="/admin/download-db" class="btn btn-primary btn-block text-center"
+                style="display:block; text-decoration:none;">
+                Datenbank herunterladen (.db)
+            </a>
+            {% endif %}
         </div>
-        {% else %}
-        <p class="text-sm text-muted mb-4">Synchronisiere den Kalender mit deinem Handy (via DAVx⁵).</p>
-        <form hx-post="/caldav/enable">
-            <button type="submit" class="btn btn-primary btn-block">Sync aktivieren</button>
-        </form>
-        {% endif %}
-
-        {% if not user.is_registered %}
-        <hr>
-        <h3 class="text-sm mb-2">Account sichern</h3>
-        <button class="btn btn-secondary btn-block" onclick="openRegisterModal()">Mit Email registrieren</button>
-        {% endif %}
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-<!-- Add Event Modal -->
-<div class="modal-backdrop" id="eventModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Neues Event</h2>
-            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
-        </div>
-        <form hx-post="/events" hx-swap="none">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Typ</label>
-                    <div class="type-selector">
-                        <label class="type-option selected" onclick="selectType('HA')">
-                            <input type="radio" name="type" value="HA" checked>
-                            <span style="color: var(--event-ha);">●</span> HA
-                        </label>
-                        <label class="type-option" onclick="selectType('TEST')">
-                            <input type="radio" name="type" value="TEST">
-                            <span style="color: var(--event-test);">●</span> Test
-                        </label>
-                        <label class="type-option" onclick="selectType('KA')">
-                            <input type="radio" name="type" value="KA">
-                            <span style="color: var(--event-ka);">●</span> KA
-                        </label>
+    <!-- Add Event Modal -->
+    <div class="modal-backdrop" id="eventModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Neues Event</h2>
+                <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+            </div>
+            <form hx-post="/events" hx-swap="none">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Typ</label>
+                        <div class="type-selector">
+                            <label class="type-option selected" onclick="selectType('HA')">
+                                <input type="radio" name="type" value="HA" checked>
+                                <span style="color: var(--event-ha);">●</span> HA
+                            </label>
+                            <label class="type-option" onclick="selectType('TEST')">
+                                <input type="radio" name="type" value="TEST">
+                                <span style="color: var(--event-test);">●</span> Test
+                            </label>
+                            <label class="type-option" onclick="selectType('KA')">
+                                <input type="radio" name="type" value="KA">
+                                <span style="color: var(--event-ka);">●</span> KA
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fach</label>
+                        {% if subjects %}
+                        <select name="subject_id">
+                            <option value="">Wählen...</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <input type="text" name="subject_name" placeholder="z.B. Mathe">
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" name="date" id="eventDate" required value="{{ today.strftime('%Y-%m-%d') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Details</label>
+                        <input type="text" name="title" placeholder="Optional">
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Fach</label>
-                    {% if subjects %}
-                    <select name="subject_id">
-                        <option value="">Wählen...</option>
-                        {% for subject in subjects %}
-                        <option value="{{ subject.id }}">{{ subject.name }}</option>
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    <input type="text" name="subject_name" placeholder="z.B. Mathe">
-                    {% endif %}
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
                 </div>
+            </form>
+        </div>
+    </div>
 
-                <div class="form-group">
-                    <label>Datum</label>
-                    <input type="date" name="date" id="eventDate" required value="{{ today.strftime('%Y-%m-%d') }}">
+    <!-- Register Modal -->
+    <div class="modal-backdrop" id="registerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Registrieren</h2>
+                <button class="btn btn-ghost" onclick="closeRegisterModal()">✕</button>
+            </div>
+            <form hx-post="/auth/register" hx-swap="none">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required placeholder="deine@email.de">
+                    </div>
+                    <div class="form-group">
+                        <label>Passwort</label>
+                        <input type="password" name="password" required placeholder="Min. 8 Zeichen" minlength="8">
+                    </div>
                 </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Registrieren</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                <div class="form-group">
-                    <label>Details</label>
-                    <input type="text" name="title" placeholder="Optional">
-                </div>
+    <!-- Event Detail Modal -->
+    <div class="modal-backdrop" id="eventDetailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Termin Details</h2>
+                <button class="btn btn-ghost" onclick="closeEventDetail()">✕</button>
+            </div>
+            <div class="modal-body" id="eventDetailContent">
+                <p class="text-muted text-center">Laden...</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
-                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-danger btn-sm" id="deleteEventBtn"
+                    onclick="deleteCurrentEvent()">Löschen</button>
+                <button type="button" class="btn btn-secondary" onclick="closeEventDetail()">Schließen</button>
             </div>
-        </form>
-    </div>
-</div>
-
-<!-- Register Modal -->
-<div class="modal-backdrop" id="registerModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Registrieren</h2>
-            <button class="btn btn-ghost" onclick="closeRegisterModal()">✕</button>
         </div>
-        <form hx-post="/auth/register" hx-swap="none">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" required placeholder="deine@email.de">
-                </div>
-                <div class="form-group">
-                    <label>Passwort</label>
-                    <input type="password" name="password" required placeholder="Min. 8 Zeichen" minlength="8">
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-backdrop" id="confirmModal">
+        <div class="modal" style="max-width: 320px;">
+            <div class="modal-body confirm-modal-content">
+                <h3 class="mb-2" id="confirmMessage">Bestätigen?</h3>
+                <div class="confirm-modal-buttons">
+                    <button class="btn btn-secondary" onclick="closeConfirmModal()">Abbrechen</button>
+                    <button class="btn btn-primary" id="confirmBtnAction">Ja</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">Abbrechen</button>
-                <button type="submit" class="btn btn-primary">Registrieren</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Event Detail Modal -->
-<div class="modal-backdrop" id="eventDetailModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Termin Details</h2>
-            <button class="btn btn-ghost" onclick="closeEventDetail()">✕</button>
-        </div>
-        <div class="modal-body" id="eventDetailContent">
-            <p class="text-muted text-center">Laden...</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-danger btn-sm" id="deleteEventBtn"
-                onclick="deleteCurrentEvent()">Löschen</button>
-            <button type="button" class="btn btn-secondary" onclick="closeEventDetail()">Schließen</button>
         </div>
     </div>
-</div>
 
-<!-- Toast Container -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- Confirm Modal -->
-<div class="modal-backdrop" id="confirmModal">
-    <div class="modal" style="max-width: 320px;">
-        <div class="modal-body confirm-modal-content">
-            <h3 class="mb-2" id="confirmMessage">Bestätigen?</h3>
-            <div class="confirm-modal-buttons">
-                <button class="btn btn-secondary" onclick="closeConfirmModal()">Abbrechen</button>
-                <button class="btn btn-primary" id="confirmBtnAction">Ja</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Toast Function
-    function showToast(message, type = 'info') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<div class="toast-message">${message}</div>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.3s forwards';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    // Custom Confirm
-    let confirmCallback = null;
-    function showConfirm(message, callback) {
-        document.getElementById('confirmMessage').innerText = message;
-        document.getElementById('confirmModal').classList.add('active');
-        confirmCallback = callback;
-    }
-    function closeConfirmModal() {
-        document.getElementById('confirmModal').classList.remove('active');
-        confirmCallback = null;
-    }
-    document.getElementById('confirmBtnAction').onclick = () => {
-        if (confirmCallback) confirmCallback();
-        closeConfirmModal();
-    };
-
-    // Intercept HTMX Confirm
-    document.body.addEventListener('htmx:confirm', function (evt) {
-        evt.preventDefault();
-        showConfirm(evt.detail.question, () => {
-            evt.detail.issueRequest(true);
-        });
-    });
-
-    // Handle HTMX Errors
-    document.body.addEventListener('htmx:responseError', function (evt) {
-        showToast('Fehler bei der Anfrage', 'error');
-    });
-
-    function openModal(date) {
-        document.getElementById('eventModal').classList.add('active');
-        if (date) document.getElementById('eventDate').value = date;
-        selectType('HA');
-    }
-    function closeModal() { document.getElementById('eventModal').classList.remove('active'); }
-    function openRegisterModal() { document.getElementById('registerModal').classList.add('active'); }
-    function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
-
-    function selectType(type) {
-        document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
-        document.querySelector(`input[value="${type}"]`).checked = true;
-        document.querySelector(`input[value="${type}"]`).closest('.type-option').classList.add('selected');
-    }
-
-    function showTab(name) {
-        // Activate tab button
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        const tabs = document.querySelectorAll('.tab');
-        tabs.forEach(t => { if (t.textContent.toLowerCase().includes(name.substring(0, 3))) t.classList.add('active'); });
-        // Activate tab content
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-' + name).classList.add('active');
-        // Scroll to admin section on mobile
-        document.querySelector('.admin-section')?.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // FAB functions
-    function toggleFab() {
-        const container = document.getElementById('fabContainer');
-        const icon = document.getElementById('fabIcon');
-        container.classList.toggle('open');
-        icon.textContent = container.classList.contains('open') ? '×' : '+';
-    }
-    function closeFab() {
-        const container = document.getElementById('fabContainer');
-        const icon = document.getElementById('fabIcon');
-        container.classList.remove('open');
-        icon.textContent = '+';
-    }
-
-    function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).value); }
-    function copyToClipboard(text) { navigator.clipboard.writeText(text); }
-
-    function toggleNameInput() {
-        const select = document.getElementById('userSelect');
-        const nameGroup = document.getElementById('nameInputGroup');
-        const nameInput = document.getElementById('userNameInput');
-        if (select.value) {
-            nameGroup.style.display = 'none';
-            nameInput.required = false;
-        } else {
-            nameGroup.style.display = 'block';
-            nameInput.required = true;
+    <script>
+        const USER_ROLE = "{{ user.role.value }}";
+        // Toast Function
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<div class="toast-message">${message}</div>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
-    }
-    // Initialize on page load
-    if (document.getElementById('userSelect')) toggleNameInput();
 
-    // Event Detail Functions
-    let currentEventId = null;
+        // Custom Confirm
+        let confirmCallback = null;
+        function showConfirm(message, callback) {
+            document.getElementById('confirmMessage').innerText = message;
+            document.getElementById('confirmModal').classList.add('active');
+            confirmCallback = callback;
+        }
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            confirmCallback = null;
+        }
+        document.getElementById('confirmBtnAction').onclick = () => {
+            if (confirmCallback) confirmCallback();
+            closeConfirmModal();
+        };
 
-    async function openEventDetail(eventId) {
-        currentEventId = eventId;
-        document.getElementById('eventDetailModal').classList.add('active');
-        document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Laden...</p>';
+        // Intercept HTMX Confirm
+        document.body.addEventListener('htmx:confirm', function (evt) {
+            evt.preventDefault();
+            showConfirm(evt.detail.question, () => {
+                evt.detail.issueRequest(true);
+            });
+        });
 
-        try {
-            const res = await fetch(`/events/${eventId}`);
-            if (!res.ok) throw new Error('Not found');
-            const event = await res.json();
+        // Handle HTMX Errors
+        document.body.addEventListener('htmx:responseError', function (evt) {
+            showToast('Fehler bei der Anfrage', 'error');
+        });
 
-            let topicsHtml = '';
-            if (event.type === 'KA' || event.type === 'TEST') {
-                topicsHtml = `
+        function openModal(date) {
+            document.getElementById('eventModal').classList.add('active');
+            if (date) document.getElementById('eventDate').value = date;
+            selectType('HA');
+        }
+        function closeModal() { document.getElementById('eventModal').classList.remove('active'); }
+        function openRegisterModal() { document.getElementById('registerModal').classList.add('active'); }
+        function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
+
+        function selectType(type) {
+            document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`input[value="${type}"]`).checked = true;
+            document.querySelector(`input[value="${type}"]`).closest('.type-option').classList.add('selected');
+        }
+
+        function showTab(name) {
+            // Activate tab button
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => { if (t.textContent.toLowerCase().includes(name.substring(0, 3))) t.classList.add('active'); });
+            // Activate tab content
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            // Scroll to admin section on mobile
+            document.querySelector('.admin-section')?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // FAB functions
+        function toggleFab() {
+            const container = document.getElementById('fabContainer');
+            const icon = document.getElementById('fabIcon');
+            container.classList.toggle('open');
+            icon.textContent = container.classList.contains('open') ? '×' : '+';
+        }
+        function closeFab() {
+            const container = document.getElementById('fabContainer');
+            const icon = document.getElementById('fabIcon');
+            container.classList.remove('open');
+            icon.textContent = '+';
+        }
+
+        function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).value); }
+        function copyToClipboard(text) { navigator.clipboard.writeText(text); }
+
+        function toggleNameInput() {
+            const select = document.getElementById('userSelect');
+            const nameGroup = document.getElementById('nameInputGroup');
+            const roleGroup = document.getElementById('roleInputGroup');
+            const nameInput = document.getElementById('userNameInput');
+            if (select.value) {
+                nameGroup.style.display = 'none';
+                roleGroup.style.display = 'none';
+                nameInput.required = false;
+            } else {
+                nameGroup.style.display = 'block';
+                roleGroup.style.display = 'block';
+                nameInput.required = true;
+            }
+        }
+        // Initialize on page load
+        if (document.getElementById('userSelect')) toggleNameInput();
+
+        // Event Detail Functions
+        let currentEventId = null;
+
+        async function openEventDetail(eventId) {
+            currentEventId = eventId;
+            document.getElementById('eventDetailModal').classList.add('active');
+            document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Laden...</p>';
+
+            // Hide/Show delete button based on role
+            const deleteBtn = document.getElementById('deleteEventBtn');
+            if (deleteBtn) deleteBtn.style.display = USER_ROLE === 'guest' ? 'none' : 'block';
+
+            try {
+                const res = await fetch(`/events/${eventId}`);
+                if (!res.ok) throw new Error('Not found');
+                const event = await res.json();
+
+                const canEdit = USER_ROLE !== 'guest';
+
+                let topicsHtml = '';
+                if (event.type === 'KA' || event.type === 'TEST') {
+                    topicsHtml = `
+                        <hr>
+                        <h3 class="text-sm mb-2">Themen</h3>
+                        <div id="topicsList">
+                            ${event.topics.map(t => `
+                                <div class="topic-item">
+                                    <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
+                                    ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${t.id}')">×</button>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${canEdit ? `
+                        <form onsubmit="addTopic(event, '${eventId}')" class="flex gap-2 mt-2">
+                            <input type="text" name="topic_type" placeholder="Thema (z.B. Vokabeln)" required style="flex:2;">
+                            <input type="text" name="content" placeholder="Details" style="flex:2;">
+                            <input type="number" name="count" placeholder="Anzahl" style="flex:1;">
+                            <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                        </form>` : ''}
+                    `;
+                }
+
+                // Links Section
+                let linksHtml = `
                     <hr>
-                    <h3 class="text-sm mb-2">Themen</h3>
-                    <div id="topicsList">
-                        ${event.topics.map(t => `
-                            <div class="topic-item">
-                                <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
-                                <button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${t.id}')">×</button>
+                    <h3 class="text-sm mb-2">Links</h3>
+                    <div id="linksList">
+                        ${(event.links || []).map(l => `
+                            <div class="topic-item" style="justify-content: space-between;">
+                                <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                                ${canEdit ? `<button class="btn btn-ghost btn-sm text-danger" onclick="deleteLink('${eventId}', '${l.id}')">×</button>` : ''}
                             </div>
                         `).join('')}
                     </div>
-                    <form onsubmit="addTopic(event, '${eventId}')" class="flex gap-2 mt-2">
-                        <input type="text" name="topic_type" placeholder="Thema (z.B. Vokabeln)" required style="flex:2;">
-                        <input type="text" name="content" placeholder="Details" style="flex:2;">
-                        <input type="number" name="count" placeholder="Anzahl" style="flex:1;">
+                    ${canEdit ? `
+                    <form onsubmit="addLink(event, '${eventId}')" class="flex gap-2 mt-2">
+                        <input type="text" name="label" placeholder="Name (z.B. Moodle)" required style="flex:1;">
+                        <input type="url" name="url" placeholder="URL (https://...)" required style="flex:2;">
                         <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                    </form>
+                    </form>` : ''}
                 `;
-            }
 
-            document.getElementById('eventDetailContent').innerHTML = `
+                let editFormHtml = '';
+                if (canEdit) {
+                    editFormHtml = `
+                    <hr>
+                    <h3 class="text-sm mb-2">Bearbeiten</h3>
+                    <form id="editEventForm" onsubmit="submitEditEvent(event, '${eventId}')">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fach</label>
+                                <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Datum</label>
+                                <input type="date" name="date" value="${event.date}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Details</label>
+                            <input type="text" name="title" value="${event.title || ''}">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Speichern</button>
+                    </form>`;
+                }
+
+                document.getElementById('eventDetailContent').innerHTML = `
                 <div class="event-detail-header">
                     <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
                     <span class="text-muted text-sm">${event.date}</span>
@@ -539,71 +580,72 @@
                 <p class="text-xs text-muted mt-2">Erstellt von ${event.author}</p>
                 
                 ${topicsHtml}
+                ${linksHtml}
                 
-                <hr>
-                <h3 class="text-sm mb-2">Bearbeiten</h3>
-                <form id="editEventForm" onsubmit="submitEditEvent(event, '${eventId}')">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Fach</label>
-                            <input type="text" name="subject_name" value="${event.subject_name || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Datum</label>
-                            <input type="date" name="date" value="${event.date}">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Details</label>
-                        <input type="text" name="title" value="${event.title || ''}">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Speichern</button>
-                </form>
+                ${editFormHtml}
             `;
-        } catch (e) {
-            document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
+            } catch (e) {
+                console.error(e); // Debug
+                document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
+            }
         }
-    }
 
-    function closeEventDetail() {
-        document.getElementById('eventDetailModal').classList.remove('active');
-        currentEventId = null;
-    }
+        function closeEventDetail() {
+            document.getElementById('eventDetailModal').classList.remove('active');
+            currentEventId = null;
+        }
 
-    function deleteCurrentEvent() {
-        if (!currentEventId) return;
-        showConfirm('Termin wirklich löschen?', async () => {
-            await fetch(`/events/${currentEventId}`, { method: 'DELETE' });
+        function deleteCurrentEvent() {
+            if (!currentEventId) return;
+            showConfirm('Termin wirklich löschen?', async () => {
+                await fetch(`/events/${currentEventId}`, { method: 'DELETE' });
+                location.reload();
+            });
+        }
+
+        async function submitEditEvent(e, eventId) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            await fetch(`/events/${eventId}`, { method: 'PUT', body: formData });
             location.reload();
+        }
+
+        async function addTopic(e, eventId) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
+            openEventDetail(eventId); // Refresh
+        }
+
+        function deleteTopic(eventId, topicId) {
+            showConfirm('Thema löschen?', async () => {
+                await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
+                openEventDetail(eventId); // Refresh
+            });
+        }
+
+        async function addLink(e, eventId) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
+            openEventDetail(eventId); // Refresh
+        }
+
+        function deleteLink(eventId, linkId) {
+            showConfirm('Link löschen?', async () => {
+                await fetch(`/events/${eventId}/links/${linkId}`, { method: 'DELETE' });
+                openEventDetail(eventId); // Refresh
+            });
+        }
+
+        document.querySelectorAll('.modal-backdrop').forEach(m => {
+            m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
         });
-    }
-
-    async function submitEditEvent(e, eventId) {
-        e.preventDefault();
-        const form = e.target;
-        const formData = new FormData(form);
-        await fetch(`/events/${eventId}`, { method: 'PUT', body: formData });
-        location.reload();
-    }
-
-    async function addTopic(e, eventId) {
-        e.preventDefault();
-        const form = e.target;
-        const formData = new FormData(form);
-        await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
-        openEventDetail(eventId); // Refresh
-    }
-
-    async function deleteTopic(eventId, topicId) {
-        await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
-        openEventDetail(eventId); // Refresh
-    }
-
-    document.querySelectorAll('.modal-backdrop').forEach(m => {
-        m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
-    });
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
-    });
-</script>
-{% endblock %}
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+        });
+    </script>
+    {% endblock %}

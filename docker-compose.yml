@@ -1,43 +1,28 @@
-# Docker Compose mit Radicale Support
-# Classly + Radicale (CalDAV)
+# Docker Compose Deployment für Classly
+# Nutzung:
+# 1. Image bauen und starten: docker compose up -d --build
+# 2. Logs anschauen: docker compose logs -f
+# 3. Stoppen: docker compose down
 
 services:
   classly:
     build: .
-    expose:
-      - "8000"
     ports:
       - "${PORT:-8000}:8000"
     volumes:
       - classly_data:/data
-      - radicale_data:/radicale-data  # Shared Volume
     environment:
+      - PORT=8000
       - DATABASE_URL=sqlite:////data/classly.db
-      - RADICALE_DIR=/radicale-data
+      # - SECRET_KEY=changeme
+      # - TZ=Europe/Berlin
     restart: unless-stopped
-    depends_on:
-      - radicale
-
-  radicale:
-    image: tomsquest/docker-radicale
-    container_name: radicale
-    ports:
-      - "5232:5232"
-    volumes:
-      - radicale_data:/data
-    # Entferne read_only und security_opt, die auf Windows/WSL Probleme machen können
-    # init: true
-    # read_only: false 
-    restart: unless-stopped
-    environment:
-      - RADICALE_AUTH_TYPE=htpasswd
-      - RADICALE_AUTH_HTPASSWD_FILENAME=/data/users
-      - RADICALE_AUTH_HTPASSWD_ENCRYPTION=bcrypt
-      - RADICALE_STORAGE_FILESYSTEM_FOLDER=/data/collections
-      # Erlaube Radicale, Dateien zu schreiben ohne chown Probleme
-      - TA_UID=1000
-      - TA_GID=1000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
 volumes:
   classly_data:
-  radicale_data:

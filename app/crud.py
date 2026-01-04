@@ -122,7 +122,7 @@ def get_subject(db: Session, subject_id: str):
     return db.query(models.Subject).filter(models.Subject.id == subject_id).first()
 
 # --- Login Token CRUD ---
-def create_login_token(db: Session, class_id: str, created_by: str, user_id: str = None, user_name: str = None, max_uses: int = None, expires_at: datetime.datetime = None):
+def create_login_token(db: Session, class_id: str, created_by: str, user_id: str = None, user_name: str = None, max_uses: int = None, expires_at: datetime.datetime = None, role: models.UserRole = models.UserRole.MEMBER):
     """Create a login token for a specific user (existing or new by name)"""
     db_token = models.LoginToken(
         class_id=class_id,
@@ -130,7 +130,8 @@ def create_login_token(db: Session, class_id: str, created_by: str, user_id: str
         user_id=user_id,
         user_name=user_name,
         max_uses=max_uses,
-        expires_at=expires_at
+        expires_at=expires_at,
+        role=role
     )
     db.add(db_token)
     db.commit()
@@ -171,8 +172,6 @@ def delete_login_token(db: Session, token_id: str):
     return False
 
 # --- Event CRUD ---
-from app import caldav_sync
-
 def create_event(db: Session, class_id: str, author_id: str, type: models.EventType, date: datetime.datetime, subject_id: str = None, subject_name: str = None, title: str = None):
     db_event = models.Event(
         class_id=class_id,
@@ -186,11 +185,6 @@ def create_event(db: Session, class_id: str, author_id: str, type: models.EventT
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
-    
-    # Sync to all users in class
-    users = get_class_members(db, class_id)
-    caldav_sync.sync_event_to_radicale(db_event, users)
-    
     return db_event
 
 def get_events_for_class(db: Session, class_id: str):
@@ -199,13 +193,8 @@ def get_events_for_class(db: Session, class_id: str):
 def delete_event(db: Session, event_id: str):
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if event:
-        # Get users before deleting to know who to sync to
-        users = get_class_members(db, event.class_id)
-        
         db.delete(event)
         db.commit()
-        
-        caldav_sync.delete_event_from_radicale(event_id, users)
         return True
     return False
 
@@ -217,14 +206,6 @@ def enable_caldav(db: Session, user_id: str, write: bool = False):
         user.caldav_write = write
         user.caldav_token = secrets.token_urlsafe(32)  # Regenerate for security
         db.commit()
-        
-        # Sync user to Radicale
-        caldav_sync.update_radicale_user(user, user.caldav_token)
-        # Sync all existing events
-        events = get_events_for_class(db, user.class_id)
-        for ev in events:
-            caldav_sync.sync_event_to_radicale(ev, [user])
-            
         return user
     return None
 
@@ -233,11 +214,6 @@ def disable_caldav(db: Session, user_id: str):
     if user:
         user.caldav_enabled = False
         db.commit()
-        
-        # We don't remove the user from htpasswd to keep history? 
-        # Or should we? Let's just generate a random password to block access
-        caldav_sync.update_radicale_user(user, secrets.token_hex(32))
-        
         return user
     return None
 
@@ -246,7 +222,6 @@ def regenerate_caldav_token(db: Session, user_id: str):
     if user:
         user.caldav_token = secrets.token_urlsafe(32)
         db.commit()
-        caldav_sync.update_radicale_user(user, user.caldav_token)
         return user
     return None
 
@@ -264,11 +239,6 @@ def update_event(db: Session, event_id: str, type: models.EventType = None, subj
         if date: event.date = date
         db.commit()
         db.refresh(event)
-        
-        # Sync
-        users = get_class_members(db, event.class_id)
-        caldav_sync.sync_event_to_radicale(event, users)
-        
         return event
     return None
 
@@ -293,6 +263,26 @@ def delete_topic(db: Session, topic_id: str):
     topic = db.query(models.EventTopic).filter(models.EventTopic.id == topic_id).first()
     if topic:
         db.delete(topic)
+        db.commit()
+        return True
+    return False
+
+# --- Event Links ---
+def create_event_link(db: Session, event_id: str, url: str, label: str):
+    db_link = models.EventLink(
+        event_id=event_id,
+        url=url,
+        label=label
+    )
+    db.add(db_link)
+    db.commit()
+    db.refresh(db_link)
+    return db_link
+
+def delete_link(db: Session, link_id: str):
+    link = db.query(models.EventLink).filter(models.EventLink.id == link_id).first()
+    if link:
+        db.delete(link)
         db.commit()
         return True
     return False

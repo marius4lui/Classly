@@ -16,6 +16,7 @@ class UserRole(str, enum.Enum):
     OWNER = "owner"
     ADMIN = "admin"
     MEMBER = "member"
+    GUEST = "guest"
 
 class EventType(str, enum.Enum):
     KA = "KA"
@@ -89,6 +90,9 @@ class LoginToken(Base):
     max_uses = Column(Integer, nullable=True)  # None = unlimited
     uses = Column(Integer, default=0)
     
+    # Role for new users
+    role = Column(Enum(UserRole), default=UserRole.MEMBER)
+    
     # Expiration
     expires_at = Column(DateTime, nullable=True)
     
@@ -117,6 +121,7 @@ class Event(Base):
     clazz = relationship("Class", back_populates="events")
     author = relationship("User", back_populates="events")
     topics = relationship("EventTopic", back_populates="event", cascade="all, delete-orphan")
+    links = relationship("EventLink", back_populates="event", cascade="all, delete-orphan")
 
 class EventTopic(Base):
     """Topics for KA/TEST events"""
@@ -130,6 +135,17 @@ class EventTopic(Base):
     order = Column(Integer, default=0)
     
     event = relationship("Event", back_populates="topics")
+
+class EventLink(Base):
+    """Links for events"""
+    __tablename__ = "event_links"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    event_id = Column(String, ForeignKey("events.id"), nullable=False)
+    url = Column(String, nullable=False)
+    label = Column(String, nullable=False)
+    
+    event = relationship("Event", back_populates="links")
 
 class AuditAction(str, enum.Enum):
     EVENT_CREATE = "event_create"

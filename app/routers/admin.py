@@ -90,6 +90,7 @@ def create_login_token(
     user_name: str = Form(None),  # New user name
     max_uses: int = Form(None),
     expires_hours: int = Form(None),
+    role: str = Form("member"),
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
@@ -115,7 +116,8 @@ def create_login_token(
         user_id=user_id,
         user_name=user_name.strip() if user_name else None,
         max_uses=max_uses if max_uses and max_uses > 0 else None,
-        expires_at=expires_at
+        expires_at=expires_at,
+        role=models.UserRole(role)
     )
     
     response.headers["HX-Redirect"] = "/"
@@ -131,3 +133,22 @@ def delete_login_token(
     crud.delete_login_token(db, token_id)
     response.headers["HX-Redirect"] = "/"
     return {"status": "deleted"}
+
+@router.get("/admin/download-db")
+def download_db(
+    admin: models.User = Depends(require_admin)
+):
+    from fastapi.responses import FileResponse
+    import os
+    
+    # Check default location
+    db_path = "classly.db"
+    
+    # If using absolute path in docker (e.g. /app/data/classly.db)
+    # logic depends on where classly.db is.
+    # Assuming it is in CWD as per database.py default.
+    
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="Database file not found")
+        
+    return FileResponse(db_path, media_type='application/octet-stream', filename=f"classly_backup_{datetime.date.today()}.db")

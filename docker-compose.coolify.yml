@@ -1,5 +1,5 @@
 # Coolify-spezifische docker-compose
-# Classly + Radicale
+# Classly
 
 services:
   classly:
@@ -8,13 +8,10 @@ services:
       - "8000"
     volumes:
       - classly-data:/data
-      - radicale-data:/radicale-data
     environment:
+      - PORT=8000
       - DATABASE_URL=sqlite:////data/classly.db
-      - RADICALE_DIR=/radicale-data
     restart: unless-stopped
-    depends_on:
-      - radicale
     networks:
       - coolify
     healthcheck:
@@ -24,24 +21,8 @@ services:
       retries: 3
       start_period: 15s
 
-  radicale:
-    image: tomsquest/docker-radicale
-    expose:
-      - "5232"
-    volumes:
-      - radicale-data:/data
-    restart: unless-stopped
-    networks:
-      - coolify
-    environment:
-      - RADICALE_AUTH_TYPE=htpasswd
-      - RADICALE_AUTH_HTPASSWD_FILENAME=/data/users
-      - RADICALE_AUTH_HTPASSWD_ENCRYPTION=bcrypt
-      - RADICALE_STORAGE_FILESYSTEM_FOLDER=/data/collections
-
 volumes:
   classly-data:
-  radicale-data:
 
 networks:
   coolify:

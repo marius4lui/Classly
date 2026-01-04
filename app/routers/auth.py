@@ -105,6 +105,13 @@ def show_join_page(
 ):
     from fastapi.responses import RedirectResponse
     
+    # Check if already logged in
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        user = crud.get_user_by_session(db, session_token)
+        if user:
+            return RedirectResponse(url="/")
+
     # First check if it's a class join token
     clazz = crud.get_class_by_token(db, token)
     if clazz:
@@ -123,7 +130,10 @@ def show_join_page(
                 raise HTTPException(status_code=404, detail="User not found")
         else:
             # New user - create with predefined name
-            user = crud.create_user(db, name=login_token.user_name, class_id=login_token.class_id)
+            user = crud.create_user(db, name=login_token.user_name, class_id=login_token.class_id, role=login_token.role)
+            # Bind token to this user so reuse doesn't create dupes
+            login_token.user_id = user.id
+            db.commit()
         
         # Create redirect response and set cookie on IT
         redirect = RedirectResponse(url="/", status_code=303)
