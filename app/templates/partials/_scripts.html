@@ -1,0 +1,502 @@
+<script>
+    const USER_ROLE = "{{ user.role.value }}";
+    // Toast Function
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<div class="toast-message">${message}</div>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Custom Confirm
+    let confirmCallback = null;
+    function showConfirm(message, callback) {
+        document.getElementById('confirmMessage').innerText = message;
+        document.getElementById('confirmModal').classList.add('active');
+        confirmCallback = callback;
+    }
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+        confirmCallback = null;
+    }
+    document.getElementById('confirmBtnAction').onclick = () => {
+        if (confirmCallback) confirmCallback();
+        closeConfirmModal();
+    };
+
+    // Intercept HTMX Confirm
+    document.body.addEventListener('htmx:confirm', function (evt) {
+        evt.preventDefault();
+        showConfirm(evt.detail.question, () => {
+            evt.detail.issueRequest(true);
+        });
+    });
+
+    // Handle HTMX Errors
+    document.body.addEventListener('htmx:responseError', function (evt) {
+        showToast('Fehler bei der Anfrage', 'error');
+    });
+
+    function openModal(date) {
+        document.getElementById('eventModal').classList.add('active');
+        if (date) document.getElementById('eventDate').value = date;
+        selectType('HA');
+    }
+    function closeModal() { document.getElementById('eventModal').classList.remove('active'); }
+    function openRegisterModal() { document.getElementById('registerModal').classList.add('active'); }
+    function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
+
+    function selectType(type) {
+        document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+        document.querySelector(`input[value="${type}"]`).checked = true;
+        document.querySelector(`input[value="${type}"]`).closest('.type-option').classList.add('selected');
+
+        // Handle Info type date requirement
+        const dateInput = document.getElementById('eventDate');
+        const dateGroup = dateInput.closest('.form-group');
+        const label = dateGroup.querySelector('label');
+
+        if (type === 'INFO') {
+            dateInput.required = false;
+            // Visual cue
+            label.innerHTML = "Datum <span class='text-muted font-normal' style='font-weight:normal'>(Optional)</span>";
+        } else {
+            dateInput.required = true;
+            label.innerText = "Datum";
+        }
+    }
+
+    function showTab(name) {
+        // Activate tab button
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(t => { if (t.textContent.toLowerCase().includes(name.substring(0, 3))) t.classList.add('active'); });
+        // Activate tab content
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + name).classList.add('active');
+        // Scroll to admin section on mobile
+        document.querySelector('.admin-section')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // FAB functions
+    function toggleFab() {
+        const container = document.getElementById('fabContainer');
+        const icon = document.getElementById('fabIcon');
+        container.classList.toggle('open');
+        icon.textContent = container.classList.contains('open') ? '×' : '+';
+    }
+    function closeFab() {
+        const container = document.getElementById('fabContainer');
+        const icon = document.getElementById('fabIcon');
+        container.classList.remove('open');
+        icon.textContent = '+';
+    }
+
+    function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).value); }
+    function copyToClipboard(text) { navigator.clipboard.writeText(text); }
+
+    function toggleNameInput() {
+        const select = document.getElementById('userSelect');
+        const nameGroup = document.getElementById('nameInputGroup');
+        const roleGroup = document.getElementById('roleInputGroup');
+        const nameInput = document.getElementById('userNameInput');
+        if (select.value) {
+            nameGroup.style.display = 'none';
+            roleGroup.style.display = 'none';
+            nameInput.required = false;
+        } else {
+            nameGroup.style.display = 'block';
+            roleGroup.style.display = 'block';
+            nameInput.required = true;
+        }
+    }
+    // Initialize on page load
+    if (document.getElementById('userSelect')) toggleNameInput();
+
+    // Event Detail Functions
+    let currentEventId = null;
+    let currentEventData = null; // Store data for switching views
+
+    async function refreshEventDetailContent(eventId) {
+        // Loading state
+        document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Laden...</p>';
+
+        try {
+            const res = await fetch(`/events/${eventId}`);
+            if (!res.ok) throw new Error('Not found');
+            currentEventData = await res.json();
+            renderViewMode(); // Default to view mode
+        } catch (e) {
+            console.error(e);
+            document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
+        }
+    }
+
+    // Helper to render tree
+    function renderTopicsTree(topics, eventId, canEdit) {
+        if (!topics || topics.length === 0) return canEdit ? '' : '<p class="text-muted text-xs">Keine Themen eingetragen</p>';
+
+        // 1. Map to dictionary
+        const map = {};
+        topics.forEach(t => map[t.id] = { ...t, children: [] });
+
+        // 2. Build tree
+        const roots = [];
+        topics.forEach(t => {
+            if (t.parent_id && map[t.parent_id]) {
+                map[t.parent_id].children.push(map[t.id]);
+            } else {
+                roots.push(map[t.id]);
+            }
+        });
+
+        // 3. Recursive render function
+        function renderNode(node, level = 0) {
+            const padding = level * 20;
+            let html = `
+                <div class="topic-item" style="margin-left: ${padding}px">
+                    <span>
+                        ${level > 0 ? '↳ ' : ''}<strong>${node.type}</strong> ${node.content || ''} ${node.pages ? `(${node.pages})` : (node.count ? `(${node.count})` : '')}
+                    </span>
+                    ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${node.id}')">×</button>` : ''}
+                </div>
+            `;
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(c => html += renderNode(c, level + 1));
+            }
+            return html;
+        }
+
+        return roots.map(r => renderNode(r)).join('');
+    }
+
+    function updateTopicPreview() {
+        const type = document.getElementById('inputTopicType').value || 'Thema';
+        const content = document.getElementById('inputTopicContent').value || 'Details';
+        const pages = document.getElementById('inputTopicPages').value;
+
+        const pagesText = pages ? `(${pages})` : '';
+
+        document.getElementById('topicPreview').innerHTML = `
+            <span><strong>${type}</strong> ${content} ${pagesText}</span>
+        `;
+        document.getElementById('topicPreview').classList.remove('opacity-50');
+    }
+
+    function updateLinkPreview() {
+        const label = document.getElementById('inputLinkLabel').value || 'Link Name';
+        document.getElementById('linkPreview').innerHTML = `
+            <a href="#" style="text-decoration: underline; color: var(--primary);">${label} ↗</a>
+            `;
+        document.getElementById('linkPreview').classList.remove('opacity-50');
+    }
+
+    function renderViewMode() {
+        if (!currentEventData) return;
+        const event = currentEventData;
+        const canEdit = USER_ROLE !== 'guest';
+
+        // Topics List (Read-only)
+        let topicsHtml = '';
+        if ((event.topics && event.topics.length > 0) || event.type === 'KA' || event.type === 'TEST') {
+            topicsHtml = `
+                <hr>
+                <h3 class="text-sm mb-2">Themen</h3>
+                <div id="topicsList">
+                    ${renderTopicsTree(event.topics || [], event.id, false)}
+                </div>
+            `;
+        }
+
+        // Links List (Read-only)
+        let linksHtml = '';
+        if (event.links && event.links.length > 0) {
+            linksHtml = `
+                <hr>
+                <h3 class="text-sm mb-2">Links</h3>
+                <div id="linksList">
+                    ${event.links.map(l => `
+                        <div class="topic-item">
+                            <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Footer / Actions
+        // Clear previous footer buttons first
+        const modalFooter = document.querySelector('#eventDetailModal .modal-footer');
+        modalFooter.innerHTML = '';
+
+        if (canEdit) {
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary';
+            editBtn.textContent = 'Bearbeiten';
+            editBtn.onclick = () => renderEditMode();
+            modalFooter.appendChild(editBtn);
+        }
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn btn-secondary';
+        closeBtn.textContent = 'Schließen';
+        closeBtn.onclick = closeEventDetail;
+        modalFooter.appendChild(closeBtn);
+
+
+        // Main Content
+        document.getElementById('eventDetailContent').innerHTML = `
+            <div class="event-detail-header">
+                <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
+                <span class="text-muted text-sm">${event.date || 'Info'}</span>
+            </div>
+            <h2 class="mt-2">${event.subject_name || 'Allgemein'}</h2>
+            ${event.title ? `<p class="text-muted">${event.title}</p>` : ''}
+            <p class="text-xs text-muted mt-2">Erstellt von ${event.author}</p>
+
+            ${topicsHtml}
+            ${linksHtml}
+        `;
+    }
+
+    function renderEditMode() {
+        if (!currentEventData) return;
+        const event = currentEventData;
+
+        // Topics Edit
+        let topicsHtml = '';
+        if (event.type === 'KA' || event.type === 'TEST') {
+            // Prepare options for parent selector
+            const topicOptions = (event.topics || []).map(t =>
+                `<option value="${t.id}">${t.type} ${t.content || ''}</option>`
+            ).join('');
+
+            topicsHtml = `
+                <hr>
+                <h3 class="text-sm mb-2">Themen</h3>
+                <div id="topicsList">
+                    ${renderTopicsTree(event.topics || [], event.id, true)}
+                </div>
+                
+                <div class="card bg-base-200 p-2 mt-4">
+                    <h4 class="text-xs font-bold mb-2">Neues Thema hinzufügen</h4>
+                    <form onsubmit="addTopic(event, '${event.id}')" id="addTopicForm">
+                        <div class="form-row mb-2">
+                            <div class="form-group" style="flex: 2;">
+                                <input type="text" name="topic_type" id="inputTopicType" placeholder="Thema (z.B. Vokabeln)" required 
+                                    oninput="updateTopicPreview()">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <select name="parent_id">
+                                    <option value="">-- Hauptthema --</option>
+                                    ${topicOptions}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row mb-2">
+                            <div class="form-group" style="flex: 2;">
+                                <input type="text" name="content" id="inputTopicContent" placeholder="Details" 
+                                    oninput="updateTopicPreview()">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <input type="text" name="pages" id="inputTopicPages" placeholder="Seiten (z.B. 10-12)" 
+                                    oninput="updateTopicPreview()">
+                            </div>
+                        </div>
+                        
+                        <div class="text-xs text-muted mb-1">Vorschau:</div>
+                        <div id="topicPreview" class="topic-item mb-2 opacity-50">
+                            <span><strong>Thema</strong> Details (S. 0-0)</span>
+                        </div>
+
+                        <button type="submit" class="btn btn-secondary btn-sm btn-block">+ Hinzufügen</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        // Links Edit
+        let linksHtml = `
+            <hr>
+            <h3 class="text-sm mb-2">Links</h3>
+            <div id="linksList">
+                ${(event.links || []).map(l => `
+                    <div class="topic-item" style="justify-content: space-between;">
+                        <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                        <button class="btn btn-ghost btn-sm text-danger" onclick="deleteLink('${event.id}', '${l.id}')">×</button>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="card bg-base-200 p-2 mt-4">
+                <h4 class="text-xs font-bold mb-2">Neuen Link hinzufügen</h4>
+                <form onsubmit="addLink(event, '${event.id}')" id="addLinkForm" class="flex gap-2">
+                    <input type="text" name="label" id="inputLinkLabel" placeholder="Name" required style="flex:1;" oninput="updateLinkPreview()">
+                    <input type="url" name="url" placeholder="URL" required style="flex:2;">
+                    <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                </form>
+                    <div class="text-xs text-muted mt-2 mb-1">Vorschau:</div>
+                <div id="linkPreview" class="topic-item opacity-50">
+                    <a href="#" style="text-decoration: underline; color: var(--primary);">Link Name ↗</a>
+                </div>
+            </div>
+        `;
+
+        // Footer / Actions
+        const modalFooter = document.querySelector('#eventDetailModal .modal-footer');
+        modalFooter.innerHTML = '';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-primary';
+        saveBtn.textContent = 'Speichern';
+        // Note: The form submit handles the actual saving, but we might want a main save button if we had a single form.
+        // Here we follow the previous pattern of separate forms / requests, but the main details form needs a submit.
+        // We'll attach the save button to the form submit programmatically or just let the user use the form button?
+        // The prompt asked for "Speichern" in the footer.
+        saveBtn.setAttribute('form', 'editEventForm'); // Link to the form
+        modalFooter.appendChild(saveBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger'; // Red color
+        deleteBtn.textContent = 'Löschen';
+        deleteBtn.onclick = deleteCurrentEvent;
+        modalFooter.appendChild(deleteBtn);
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.textContent = 'Schließen'; // Or "Abbrechen" to switch back to view? User said "Schließen" in the request prompt example.
+        // Wait, the user said: "Speichern Löschen Schließen" in the request.
+        // Usually "Schließen" closes the modal.
+        // Maybe we should have a "Zurück" to go back to view mode?
+        // The prompt "Termin öffnet direkt Bearbeitungsmenü statt Preview" implies we want preview first.
+        // If I am in Edit mode, "Schließen" could just close the modal, or go back. 
+        // I'll make it close the modal for now, consistent with "Schließen".
+        cancelBtn.onclick = closeEventDetail;
+        modalFooter.appendChild(cancelBtn);
+
+
+        document.getElementById('eventDetailContent').innerHTML = `
+            <h3 class="text-sm mb-2">Bearbeiten</h3>
+            <form id="editEventForm" onsubmit="submitEditEvent(event, '${event.id}')">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fach</label>
+                        <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Datum</label>
+                        <input type="date" name="date" value="${event.date || ''}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Details</label>
+                    <input type="text" name="title" value="${event.title || ''}">
+                </div>
+                <!-- Hidden submit button to allow Enter key to work -->
+                <button type="submit" style="display:none;"></button>
+            </form>
+
+            ${topicsHtml}
+            ${linksHtml}
+        `;
+    }
+
+    async function openEventDetail(eventId) {
+        currentEventId = eventId;
+        document.getElementById('eventDetailModal').classList.add('active');
+
+        // Initial call
+        await refreshEventDetailContent(eventId);
+    }
+
+    function closeEventDetail() {
+        document.getElementById('eventDetailModal').classList.remove('active');
+        currentEventId = null;
+        currentEventData = null;
+    }
+
+    function deleteCurrentEvent() {
+        if (!currentEventId) return;
+        showConfirm('Termin wirklich löschen?', async () => {
+            await fetch(`/events/${currentEventId}`, { method: 'DELETE' });
+            location.reload();
+        });
+    }
+
+    async function submitEditEvent(e, eventId) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        await fetch(`/events/${eventId}`, { method: 'PUT', body: formData });
+        // Refresh data and stay in edit mode or go back to view? 
+        // Usually save -> view updated data.
+        const res = await fetch(`/events/${eventId}`);
+        if (res.ok) {
+            currentEventData = await res.json();
+            renderViewMode();
+            showToast('Änderungen gespeichert', 'success');
+        }
+    }
+
+    async function addTopic(e, eventId) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+
+        const res = await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
+        if (res.ok) {
+            showToast('Thema hinzugefügt', 'success');
+            // Update local data and re-render edit mode
+            await reloadAndRender(eventId, 'edit');
+            // Note: Form is re-rendered, so inputs are effectively cleared
+        }
+    }
+
+    function deleteTopic(eventId, topicId) {
+        showConfirm('Thema löschen?', async () => {
+            await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
+            await reloadAndRender(eventId, 'edit');
+            showToast('Thema gelöscht', 'info');
+        });
+    }
+
+    async function addLink(e, eventId) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const res = await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
+        if (res.ok) {
+            showToast('Link hinzugefügt', 'success');
+            await reloadAndRender(eventId, 'edit');
+        }
+    }
+
+    function deleteLink(eventId, linkId) {
+        showConfirm('Link löschen?', async () => {
+            await fetch(`/events/${eventId}/links/${linkId}`, { method: 'DELETE' });
+            await reloadAndRender(eventId, 'edit');
+            showToast('Link gelöscht', 'info');
+        });
+    }
+
+    async function reloadAndRender(eventId, mode) {
+        const res = await fetch(`/events/${eventId}`);
+        if (res.ok) {
+            currentEventData = await res.json();
+            if (mode === 'edit') renderEditMode();
+            else renderViewMode();
+        }
+    }
+
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+    });
+</script>

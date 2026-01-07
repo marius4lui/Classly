@@ -1,0 +1,122 @@
+<!-- Add Event Modal -->
+<div class="modal-backdrop" id="eventModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Neues Event</h2>
+            <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+        </div>
+        <form hx-post="/events" hx-swap="none">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Typ</label>
+                    <div class="type-selector">
+                        <label class="type-option selected" onclick="selectType('HA')">
+                            <input type="radio" name="type" value="HA" checked>
+                            <span style="color: var(--event-ha);">●</span> HA
+                        </label>
+                        <label class="type-option" onclick="selectType('TEST')">
+                            <input type="radio" name="type" value="TEST">
+                            <span style="color: var(--event-test);">●</span> Test
+                        </label>
+                        <label class="type-option" onclick="selectType('KA')">
+                            <input type="radio" name="type" value="KA">
+                            <span style="color: var(--event-ka);">●</span> KA
+                        </label>
+                        <label class="type-option" onclick="selectType('INFO')">
+                            <input type="radio" name="type" value="INFO">
+                            <span style="color: var(--event-info);">●</span> Info
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Fach</label>
+                    {% if subjects %}
+                    <select name="subject_id">
+                        <option value="">Wählen...</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" name="subject_name" placeholder="z.B. Mathe">
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>Datum</label>
+                    <input type="date" name="date" id="eventDate" required value="{{ today.strftime('%Y-%m-%d') }}">
+                </div>
+
+                <div class="form-group">
+                    <label>Details</label>
+                    <input type="text" name="title" placeholder="Optional">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal-backdrop" id="registerModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Registrieren</h2>
+            <button class="btn btn-ghost" onclick="closeRegisterModal()">✕</button>
+        </div>
+        <form hx-post="/auth/register" hx-swap="none">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" required placeholder="deine@email.de">
+                </div>
+                <div class="form-group">
+                    <label>Passwort</label>
+                    <input type="password" name="password" required placeholder="Min. 8 Zeichen" minlength="8">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Registrieren</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Event Detail Modal -->
+<div class="modal-backdrop" id="eventDetailModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Termin Details</h2>
+            <button class="btn btn-ghost" onclick="closeEventDetail()">✕</button>
+        </div>
+        <div class="modal-body" id="eventDetailContent">
+            <p class="text-muted text-center">Laden...</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger btn-sm" id="deleteEventBtn"
+                onclick="deleteCurrentEvent()">Löschen</button>
+            <button type="button" class="btn btn-secondary" onclick="closeEventDetail()">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Confirm Modal -->
+<div class="modal-backdrop" id="confirmModal">
+    <div class="modal" style="max-width: 320px;">
+        <div class="modal-body confirm-modal-content">
+            <h3 class="mb-2" id="confirmMessage">Bestätigen?</h3>
+            <div class="confirm-modal-buttons">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Abbrechen</button>
+                <button class="btn btn-primary" id="confirmBtnAction">Ja</button>
+            </div>
+        </div>
+    </div>
+</div>

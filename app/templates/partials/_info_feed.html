@@ -1,0 +1,34 @@
+<!-- Info Feed Section -->
+<section style="margin-top: 2rem; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Neuigkeiten</h2>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="/feed/rss?class_id={{ user.class_id }}" target="_blank" class="btn btn-ghost btn-sm">RSS</a>
+            <a href="/feed/xml?class_id={{ user.class_id }}" target="_blank" class="btn btn-ghost btn-sm">XML</a>
+        </div>
+    </div>
+
+    <div id="infoFeedContainer">
+        {% if infos %}
+        <div class="upcoming-list">
+            {% for info in infos %}
+            <div class="upcoming-item" onclick="openEventDetail('{{ info.id }}')" style="cursor: pointer;">
+                <div class="upcoming-date" style="background: var(--event-info); color: white;">
+                    <span class="day">📰</span>
+                </div>
+                <div class="upcoming-content">
+                    <div class="upcoming-type info">Info</div>
+                    <div class="upcoming-subject">{{ info.subject_name or 'Allgemein' }}</div>
+                    {% if info.title %}
+                    <div class="upcoming-title">{{ info.title }}</div>
+                    {% endif %}
+                </div>
+                <div class="upcoming-arrow">›</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center">Keine Neuigkeiten 📭</p>
+        {% endif %}
+    </div>
+</section>

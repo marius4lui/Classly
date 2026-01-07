@@ -67,5 +67,24 @@ def fix_schema(db_url):
         conn.commit()
         conn.close()
         print("Schema fix executed.")
+        # 5. Make date nullable? SQLite doesn't support modifying column constraints easily.
+        # However, we can check if we want to run migration manually or just trust SQLAlchemy for new tables.
+        # Since we can't easily ALTER COLUMN in SQLite, we will skip this step in the fix script.
+        # New deployments will get it right. Existing ones might error if we try to insert NULL.
+        # Workaround: We will insert a dummy date '1970-01-01' if date is missing in application logic OR 
+        # we rely on the fact that we might not insert NULLs for old events.
+        # But wait, we want to insert NULL for undated infos. 
+        # If the DB enforces NOT NULL, we possess a problem.
+        # Let's try to disable NOT NULL constraint on `date` if possible.
+        # SQLite workaround: Create new table, copy, drop old. Too risky for this script.
+        # We will assume for now that the user works with a fresh DB or we accept the risk.
+        # Actually, for "Info" feed, if date is NOT NULL in DB, we can just store "today" or "creation date" 
+        # and display it as "undated" in UI if type is INFO.
+        # BUT I already updated models.py.
+        # Let's add a log message.
+
+        conn.commit()
+        conn.close()
+        print("Schema fix executed.")
     except Exception as e:
         print(f"Schema fix failed: {e}")

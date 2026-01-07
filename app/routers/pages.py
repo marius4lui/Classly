@@ -25,17 +25,33 @@ def index(
         
         events = crud.get_events_for_class(db, clazz.id)
         subjects = crud.get_subjects_for_class(db, clazz.id)
-        calendar_data = calendar_utils.get_month_calendar(year, month, events)
+        # calendar_data initialized later with dated events only
         
         # Filter upcoming events (today or future, sorted by date)
-        upcoming_events = [e for e in events if e.date.date() >= today.date()]
+        # Handle nullable date: if date is None, it's undated (Info).
+        # We only want dated events for 'upcoming_events' and 'calendar'.
+        
+        dated_events = [e for e in events if e.date is not None]
+        upcoming_events = [e for e in dated_events if e.date.date() >= today.date()]
         upcoming_events = sorted(upcoming_events, key=lambda x: x.date)[:10]  # Top 10
+        
+        # Infos (Type INFO), specific logic:
+        # Show all INFO events regardless of date? Or sorted by creation?
+        # User said "must not be bound to a date".
+        # We'll fetch all INFO events separately or filter from 'events'.
+        infos = [e for e in events if e.type == models.EventType.INFO]
+        # Sort by creation date desc (newest first) or date if present?
+        # Let's sort by created_at desc.
+        infos = sorted(infos, key=lambda x: x.created_at if x.created_at else datetime.datetime.min, reverse=True)
         
         members = []
         login_tokens = []
         if user.role in [models.UserRole.OWNER, models.UserRole.ADMIN]:
             members = crud.get_class_members(db, clazz.id)
             login_tokens = crud.get_login_tokens_for_class(db, clazz.id)
+        
+        # Calendar needs dated events only
+        calendar_data = calendar_utils.get_month_calendar(year, month, dated_events)
         
         return templates.TemplateResponse("dashboard.html", {
             "request": request, 
@@ -50,6 +66,7 @@ def index(
             "subjects": subjects,
             "login_tokens": login_tokens,
             "upcoming_events": upcoming_events,
+            "infos": infos,
             "base_url": str(request.base_url).rstrip("/")
         })
     else:

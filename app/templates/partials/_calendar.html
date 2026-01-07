@@ -1,0 +1,61 @@
+<!-- Calendar Title -->
+<div class="flex justify-between items-center mb-4 desktop-only">
+    <h2>Kalender</h2>
+    {% if user.role.value != 'guest' %}
+    <button class="btn btn-primary" onclick="openModal()">+ Event</button>
+    {% endif %}
+</div>
+
+<!-- Calendar -->
+<!-- Legend -->
+<div class="flex items-center gap-3 mb-4 text-xs text-muted" style="flex-wrap: wrap;">
+    <div class="flex items-center gap-2">
+        <span
+            style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: var(--event-ka);"></span>
+        <span>Klassenarbeit</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <span
+            style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: var(--event-test);"></span>
+        <span>Test</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <span
+            style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: var(--event-ha);"></span>
+        <span>Hausaufgabe</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <span
+            style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: var(--event-info);"></span>
+        <span>Info</span>
+    </div>
+</div>
+<div class="calendar-wrapper">
+    <div class="calendar-header">{{ current_month }}</div>
+    <div class="calendar-grid">
+        <div class="calendar-day-header">Mo</div>
+        <div class="calendar-day-header">Di</div>
+        <div class="calendar-day-header">Mi</div>
+        <div class="calendar-day-header">Do</div>
+        <div class="calendar-day-header">Fr</div>
+        <div class="calendar-day-header">Sa</div>
+        <div class="calendar-day-header">So</div>
+
+        {% for week in calendar %}
+        {% for day in week %}
+        <div class="calendar-cell {% if not day.is_current_month %}other-month{% endif %}"
+            onclick="openModal('{{ day.date.strftime('%Y-%m-%d') }}')">
+            <div class="calendar-day-number {% if day.date == today.date() %}today{% endif %}">
+                {{ day.day }}
+            </div>
+            {% for event in day.events %}
+            <div class="event-pill {{ event.type.value|lower }}"
+                onclick="openEventDetail('{{ event.id }}'); event.stopPropagation();">
+                {{ event.subject_name or event.type.value }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+</div>

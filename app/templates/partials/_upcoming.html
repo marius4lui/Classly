@@ -1,0 +1,29 @@
+<!-- Upcoming Events List -->
+<div class="upcoming-section">
+    <h2 class="mb-4">Nächste Termine</h2>
+    {% if upcoming_events %}
+    <div class="upcoming-list">
+        {% for event in upcoming_events %}
+        <div class="upcoming-item" onclick="openEventDetail('{{ event.id }}')" style="cursor: pointer;">
+            <div class="upcoming-date">
+                <span class="day">{{ event.date.strftime('%d') }}</span>
+                <span class="month">{{ event.date.strftime('%b') }}</span>
+            </div>
+            <div class="upcoming-content">
+                <div class="upcoming-type {{ event.type.value|lower }}">{{ event.type.value }}</div>
+                <div class="upcoming-subject">{{ event.subject_name or 'Allgemein' }}</div>
+                {% if event.title %}
+                <div class="upcoming-title">{{ event.title }}</div>
+                {% endif %}
+                {% if event.topics|length > 0 %}
+                <div class="text-xs text-muted mt-2">{{ event.topics|length }} Themen</div>
+                {% endif %}
+            </div>
+            <div class="upcoming-arrow">›</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center">Keine kommenden Termine 🎉</p>
+    {% endif %}
+</div>

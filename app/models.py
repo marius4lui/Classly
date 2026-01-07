@@ -113,7 +113,7 @@ class Event(Base):
     subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
     subject_name = Column(String, nullable=True)
     title = Column(String, nullable=True)
-    date = Column(DateTime, nullable=False)
+    date = Column(DateTime, nullable=True)
     author_id = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
