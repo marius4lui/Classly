@@ -487,14 +487,9 @@
         // Event Detail Functions
         let currentEventId = null;
 
-        async function openEventDetail(eventId) {
-            currentEventId = eventId;
-            document.getElementById('eventDetailModal').classList.add('active');
+        async function refreshEventDetailContent(eventId) {
+            // Only refresh content, don't touch modal state
             document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Laden...</p>';
-
-            // Hide/Show delete button based on role
-            const deleteBtn = document.getElementById('deleteEventBtn');
-            if (deleteBtn) deleteBtn.style.display = USER_ROLE === 'guest' ? 'none' : 'block';
 
             try {
                 const res = await fetch(`/events/${eventId}`);
@@ -578,16 +573,28 @@
                 <h2 class="mt-2">${event.subject_name || 'Allgemein'}</h2>
                 ${event.title ? `<p class="text-muted">${event.title}</p>` : ''}
                 <p class="text-xs text-muted mt-2">Erstellt von ${event.author}</p>
-                
+
                 ${topicsHtml}
                 ${linksHtml}
-                
+
                 ${editFormHtml}
             `;
             } catch (e) {
                 console.error(e); // Debug
                 document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
             }
+        }
+
+        async function openEventDetail(eventId) {
+            currentEventId = eventId;
+            document.getElementById('eventDetailModal').classList.add('active');
+
+            // Hide/Show delete button based on role
+            const deleteBtn = document.getElementById('deleteEventBtn');
+            if (deleteBtn) deleteBtn.style.display = USER_ROLE === 'guest' ? 'none' : 'block';
+
+            // Refresh content
+            await refreshEventDetailContent(eventId);
         }
 
         function closeEventDetail() {
@@ -616,13 +623,13 @@
             const form = e.target;
             const formData = new FormData(form);
             await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
-            openEventDetail(eventId); // Refresh
+            refreshEventDetailContent(eventId); // Refresh content only, keep modal open
         }
 
         function deleteTopic(eventId, topicId) {
             showConfirm('Thema löschen?', async () => {
                 await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
-                openEventDetail(eventId); // Refresh
+                refreshEventDetailContent(eventId); // Refresh content only, keep modal open
             });
         }
 
@@ -631,13 +638,13 @@
             const form = e.target;
             const formData = new FormData(form);
             await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
-            openEventDetail(eventId); // Refresh
+            refreshEventDetailContent(eventId); // Refresh content only, keep modal open
         }
 
         function deleteLink(eventId, linkId) {
             showConfirm('Link löschen?', async () => {
                 await fetch(`/events/${eventId}/links/${linkId}`, { method: 'DELETE' });
-                openEventDetail(eventId); // Refresh
+                refreshEventDetailContent(eventId); // Refresh content only, keep modal open
             });
         }
 
