@@ -71,7 +71,7 @@ def get_event_details(
         "date": event.date.strftime("%Y-%m-%d"),
         "author": event.author.name if event.author else "Unbekannt",
         "created_at": event.created_at.isoformat() if event.created_at else None,
-        "topics": [{"id": t.id, "type": t.topic_type, "content": t.content, "count": t.count} for t in topics],
+        "topics": [{"id": t.id, "type": t.topic_type, "content": t.content, "count": t.count, "parent_id": t.parent_id} for t in topics],
         "links": [{"id": l.id, "url": l.url, "label": l.label} for l in event.links]
     }
 
@@ -142,6 +142,7 @@ def add_topic(
     topic_type: str = Form(...),
     content: str = Form(None),
     count: int = Form(None),
+    parent_id: str = Form(None),
     user: models.User = Depends(require_user),
     db: Session = Depends(get_db)
 ):
@@ -156,8 +157,17 @@ def add_topic(
     existing_topics = crud.get_topics_for_event(db, event_id)
     if len(existing_topics) >= 20:
         raise HTTPException(status_code=400, detail="Max 20 topics")
-    
-    topic = crud.create_event_topic(db, event_id, topic_type, content, count, order=len(existing_topics))
+
+    # Validate parent_id if provided
+    if parent_id:
+        parent_topic = db.query(models.EventTopic).filter(
+            models.EventTopic.id == parent_id,
+            models.EventTopic.event_id == event_id
+        ).first()
+        if not parent_topic:
+            raise HTTPException(status_code=400, detail="Parent topic not found")
+
+    topic = crud.create_event_topic(db, event_id, topic_type, content, count, order=len(existing_topics), parent_id=parent_id)
     
     # Audit log (permanent)
     crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.TOPIC_ADD,

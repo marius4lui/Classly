@@ -124,17 +124,19 @@ class Event(Base):
     links = relationship("EventLink", back_populates="event", cascade="all, delete-orphan")
 
 class EventTopic(Base):
-    """Topics for KA/TEST events"""
+    """Topics for KA/TEST events - supports hierarchical structure"""
     __tablename__ = "event_topics"
-    
+
     id = Column(String, primary_key=True, default=generate_uuid)
     event_id = Column(String, ForeignKey("events.id"), nullable=False)
     topic_type = Column(String, nullable=False)  # e.g. "Vokabeln", "Grammatik"
     content = Column(String, nullable=True)  # e.g. "Page 20"
     count = Column(Integer, nullable=True)  # e.g. 50 words
     order = Column(Integer, default=0)
-    
+    parent_id = Column(String, ForeignKey("event_topics.id"), nullable=True)  # For hierarchical structure
+
     event = relationship("Event", back_populates="topics")
+    parent = relationship("EventTopic", remote_side=[id], backref="children")
 
 class EventLink(Base):
     """Links for events"""
