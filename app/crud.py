@@ -243,13 +243,14 @@ def update_event(db: Session, event_id: str, type: models.EventType = None, subj
     return None
 
 # --- Event Topics ---
-def create_event_topic(db: Session, event_id: str, topic_type: str, content: str = None, count: int = None, order: int = 0):
+def create_event_topic(db: Session, event_id: str, topic_type: str, content: str = None, count: int = None, order: int = 0, parent_id: str = None):
     db_topic = models.EventTopic(
         event_id=event_id,
         topic_type=topic_type,
         content=content,
         count=count,
-        order=order
+        order=order,
+        parent_id=parent_id
     )
     db.add(db_topic)
     db.commit()
@@ -258,6 +259,15 @@ def create_event_topic(db: Session, event_id: str, topic_type: str, content: str
 
 def get_topics_for_event(db: Session, event_id: str):
     return db.query(models.EventTopic).filter(models.EventTopic.event_id == event_id).order_by(models.EventTopic.order).all()
+
+def get_topics_hierarchical(db: Session, event_id: str):
+    """Get topics in hierarchical structure (parent topics with their children)"""
+    all_topics = db.query(models.EventTopic).filter(models.EventTopic.event_id == event_id).order_by(models.EventTopic.order).all()
+
+    # Build hierarchy: only return root topics (parent_id is None)
+    # Children are accessible via the 'children' relationship
+    root_topics = [t for t in all_topics if t.parent_id is None]
+    return root_topics
 
 def delete_topic(db: Session, topic_id: str):
     topic = db.query(models.EventTopic).filter(models.EventTopic.id == topic_id).first()
