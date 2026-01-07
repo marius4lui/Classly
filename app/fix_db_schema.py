@@ -40,14 +40,22 @@ def fix_schema(db_url):
             print("Creating 'event_links' table...")
             cursor.execute("""
                 CREATE TABLE event_links (
-                    id VARCHAR NOT NULL, 
-                    event_id VARCHAR, 
-                    url VARCHAR, 
-                    label VARCHAR, 
-                    PRIMARY KEY (id), 
+                    id VARCHAR NOT NULL,
+                    event_id VARCHAR,
+                    url VARCHAR,
+                    label VARCHAR,
+                    PRIMARY KEY (id),
                     FOREIGN KEY(event_id) REFERENCES events (id) ON DELETE CASCADE
                 )
             """)
+
+        # 3. Add 'parent_id' column to event_topics if missing
+        try:
+            cursor.execute("SELECT parent_id FROM event_topics LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Adding 'parent_id' column to event_topics for hierarchical structure...")
+            cursor.execute("ALTER TABLE event_topics ADD COLUMN parent_id VARCHAR")
+            cursor.execute("CREATE INDEX IF NOT EXISTS ix_event_topics_parent_id ON event_topics (parent_id)")
 
         conn.commit()
         conn.close()
