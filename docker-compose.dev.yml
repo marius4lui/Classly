@@ -1,0 +1,25 @@
+# Utilization
+# docker compose -f docker-compose.dev.yml up --build
+
+services:
+  classly:
+    build: 
+      context: .
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      # Hot Reload
+      - .:/app 
+      - classly_data:/data
+    environment:
+      - PORT=8000
+      - DATABASE_URL=sqlite:////data/classly.db
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - DEV_MODE=true
+    # Correct command for /app/app/main.py structure
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: always
+
+volumes:
+  classly_data:

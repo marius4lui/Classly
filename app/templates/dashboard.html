@@ -38,7 +38,8 @@
                 {{ day.day }}
             </div>
             {% for event in day.events %}
-            <div class="event-pill {{ event.type.value|lower }}">
+            <div class="event-pill {{ event.type.value|lower }}"
+                onclick="openEventDetail('{{ event.id }}'); event.stopPropagation();">
                 {{ event.subject_name or event.type.value }}
             </div>
             {% endfor %}
@@ -486,86 +487,83 @@
 
         // Event Detail Functions
         let currentEventId = null;
+        let currentEventData = null; // Store data for switching views
 
         async function refreshEventDetailContent(eventId) {
-            // Only refresh content, don't touch modal state
+            // Loading state
             document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Laden...</p>';
 
             try {
                 const res = await fetch(`/events/${eventId}`);
                 if (!res.ok) throw new Error('Not found');
-                const event = await res.json();
+                currentEventData = await res.json();
+                renderViewMode(); // Default to view mode
+            } catch (e) {
+                console.error(e);
+                document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
+            }
+        }
 
-                const canEdit = USER_ROLE !== 'guest';
+        function renderViewMode() {
+            if (!currentEventData) return;
+            const event = currentEventData;
+            const canEdit = USER_ROLE !== 'guest';
 
-                let topicsHtml = '';
-                if (event.type === 'KA' || event.type === 'TEST') {
-                    topicsHtml = `
-                        <hr>
-                        <h3 class="text-sm mb-2">Themen</h3>
-                        <div id="topicsList">
-                            ${event.topics.map(t => `
-                                <div class="topic-item">
-                                    <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
-                                    ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${t.id}')">×</button>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                        ${canEdit ? `
-                        <form onsubmit="addTopic(event, '${eventId}')" class="flex gap-2 mt-2">
-                            <input type="text" name="topic_type" placeholder="Thema (z.B. Vokabeln)" required style="flex:2;">
-                            <input type="text" name="content" placeholder="Details" style="flex:2;">
-                            <input type="number" name="count" placeholder="Anzahl" style="flex:1;">
-                            <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                        </form>` : ''}
-                    `;
-                }
+            // Topics List (Read-only)
+            let topicsHtml = '';
+            if ((event.topics && event.topics.length > 0) || event.type === 'KA' || event.type === 'TEST') {
+                topicsHtml = `
+                    <hr>
+                    <h3 class="text-sm mb-2">Themen</h3>
+                    <div id="topicsList">
+                        ${(event.topics || []).map(t => `
+                            <div class="topic-item">
+                                <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
+                            </div>
+                        `).join('')}
+                        ${(!event.topics || event.topics.length === 0) ? '<p class="text-muted text-xs">Keine Themen eingetragen</p>' : ''}
+                    </div>
+                `;
+            }
 
-                // Links Section
-                let linksHtml = `
+            // Links List (Read-only)
+            let linksHtml = '';
+            if (event.links && event.links.length > 0) {
+                linksHtml = `
                     <hr>
                     <h3 class="text-sm mb-2">Links</h3>
                     <div id="linksList">
-                        ${(event.links || []).map(l => `
-                            <div class="topic-item" style="justify-content: space-between;">
+                        ${event.links.map(l => `
+                            <div class="topic-item">
                                 <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
-                                ${canEdit ? `<button class="btn btn-ghost btn-sm text-danger" onclick="deleteLink('${eventId}', '${l.id}')">×</button>` : ''}
                             </div>
                         `).join('')}
                     </div>
-                    ${canEdit ? `
-                    <form onsubmit="addLink(event, '${eventId}')" class="flex gap-2 mt-2">
-                        <input type="text" name="label" placeholder="Name (z.B. Moodle)" required style="flex:1;">
-                        <input type="url" name="url" placeholder="URL (https://...)" required style="flex:2;">
-                        <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                    </form>` : ''}
                 `;
+            }
 
-                let editFormHtml = '';
-                if (canEdit) {
-                    editFormHtml = `
-                    <hr>
-                    <h3 class="text-sm mb-2">Bearbeiten</h3>
-                    <form id="editEventForm" onsubmit="submitEditEvent(event, '${eventId}')">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Fach</label>
-                                <input type="text" name="subject_name" value="${event.subject_name || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>Datum</label>
-                                <input type="date" name="date" value="${event.date}">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Details</label>
-                            <input type="text" name="title" value="${event.title || ''}">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">Speichern</button>
-                    </form>`;
-                }
+            // Footer / Actions
+            // Clear previous footer buttons first
+            const modalFooter = document.querySelector('#eventDetailModal .modal-footer');
+            modalFooter.innerHTML = '';
 
-                document.getElementById('eventDetailContent').innerHTML = `
+            if (canEdit) {
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-primary';
+                editBtn.textContent = 'Bearbeiten';
+                editBtn.onclick = () => renderEditMode();
+                modalFooter.appendChild(editBtn);
+            }
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn btn-secondary';
+            closeBtn.textContent = 'Schließen';
+            closeBtn.onclick = closeEventDetail;
+            modalFooter.appendChild(closeBtn);
+
+
+            // Main Content
+            document.getElementById('eventDetailContent').innerHTML = `
                 <div class="event-detail-header">
                     <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
                     <span class="text-muted text-sm">${event.date}</span>
@@ -576,30 +574,126 @@
 
                 ${topicsHtml}
                 ${linksHtml}
-
-                ${editFormHtml}
             `;
-            } catch (e) {
-                console.error(e); // Debug
-                document.getElementById('eventDetailContent').innerHTML = '<p class="text-muted text-center">Fehler beim Laden</p>';
+        }
+
+        function renderEditMode() {
+            if (!currentEventData) return;
+            const event = currentEventData;
+
+            // Topics Edit
+            let topicsHtml = '';
+            if (event.type === 'KA' || event.type === 'TEST') {
+                topicsHtml = `
+                    <hr>
+                    <h3 class="text-sm mb-2">Themen</h3>
+                    <div id="topicsList">
+                        ${(event.topics || []).map(t => `
+                            <div class="topic-item">
+                                <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
+                                <button class="btn btn-ghost btn-sm" onclick="deleteTopic('${event.id}', '${t.id}')">×</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <form onsubmit="addTopic(event, '${event.id}')" class="flex gap-2 mt-2">
+                        <input type="text" name="topic_type" placeholder="Thema" required style="flex:2;">
+                        <input type="text" name="content" placeholder="Details" style="flex:2;">
+                        <input type="number" name="count" placeholder="#" style="flex:1;">
+                        <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                    </form>
+                `;
             }
+
+            // Links Edit
+            let linksHtml = `
+                <hr>
+                <h3 class="text-sm mb-2">Links</h3>
+                <div id="linksList">
+                    ${(event.links || []).map(l => `
+                        <div class="topic-item" style="justify-content: space-between;">
+                            <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                            <button class="btn btn-ghost btn-sm text-danger" onclick="deleteLink('${event.id}', '${l.id}')">×</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <form onsubmit="addLink(event, '${event.id}')" class="flex gap-2 mt-2">
+                    <input type="text" name="label" placeholder="Name" required style="flex:1;">
+                    <input type="url" name="url" placeholder="URL" required style="flex:2;">
+                    <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                </form>
+            `;
+
+            // Footer / Actions
+            const modalFooter = document.querySelector('#eventDetailModal .modal-footer');
+            modalFooter.innerHTML = '';
+
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn btn-primary';
+            saveBtn.textContent = 'Speichern';
+            // Note: The form submit handles the actual saving, but we might want a main save button if we had a single form.
+            // Here we follow the previous pattern of separate forms / requests, but the main details form needs a submit.
+            // We'll attach the save button to the form submit programmatically or just let the user use the form button?
+            // The prompt asked for "Speichern" in the footer.
+            saveBtn.setAttribute('form', 'editEventForm'); // Link to the form
+            modalFooter.appendChild(saveBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger'; // Red color
+            deleteBtn.textContent = 'Löschen';
+            deleteBtn.onclick = deleteCurrentEvent;
+            modalFooter.appendChild(deleteBtn);
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn btn-secondary';
+            cancelBtn.textContent = 'Schließen'; // Or "Abbrechen" to switch back to view? User said "Schließen" in the request prompt example.
+            // Wait, the user said: "Speichern Löschen Schließen" in the request.
+            // Usually "Schließen" closes the modal.
+            // Maybe we should have a "Zurück" to go back to view mode?
+            // The prompt "Termin öffnet direkt Bearbeitungsmenü statt Preview" implies we want preview first.
+            // If I am in Edit mode, "Schließen" could just close the modal, or go back. 
+            // I'll make it close the modal for now, consistent with "Schließen".
+            cancelBtn.onclick = closeEventDetail;
+            modalFooter.appendChild(cancelBtn);
+
+
+            document.getElementById('eventDetailContent').innerHTML = `
+                <h3 class="text-sm mb-2">Bearbeiten</h3>
+                <form id="editEventForm" onsubmit="submitEditEvent(event, '${event.id}')">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fach</label>
+                            <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Datum</label>
+                            <input type="date" name="date" value="${event.date}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Details</label>
+                        <input type="text" name="title" value="${event.title || ''}">
+                    </div>
+                    <!-- Hidden submit button to allow Enter key to work -->
+                    <button type="submit" style="display:none;"></button>
+                </form>
+
+                ${topicsHtml}
+                ${linksHtml}
+            `;
         }
 
         async function openEventDetail(eventId) {
             currentEventId = eventId;
             document.getElementById('eventDetailModal').classList.add('active');
 
-            // Hide/Show delete button based on role
-            const deleteBtn = document.getElementById('deleteEventBtn');
-            if (deleteBtn) deleteBtn.style.display = USER_ROLE === 'guest' ? 'none' : 'block';
-
-            // Refresh content
+            // Initial call
             await refreshEventDetailContent(eventId);
         }
 
         function closeEventDetail() {
             document.getElementById('eventDetailModal').classList.remove('active');
             currentEventId = null;
+            currentEventData = null;
         }
 
         function deleteCurrentEvent() {
@@ -615,7 +709,13 @@
             const form = e.target;
             const formData = new FormData(form);
             await fetch(`/events/${eventId}`, { method: 'PUT', body: formData });
-            location.reload();
+            // Refresh data and stay in edit mode or go back to view? 
+            // Usually save -> view updated data.
+            const res = await fetch(`/events/${eventId}`);
+            if (res.ok) {
+                currentEventData = await res.json();
+                renderViewMode();
+            }
         }
 
         async function addTopic(e, eventId) {
@@ -623,13 +723,14 @@
             const form = e.target;
             const formData = new FormData(form);
             await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
-            refreshEventDetailContent(eventId); // Refresh content only, keep modal open
+            // Update local data and re-render edit mode
+            reloadAndRender(eventId, 'edit');
         }
 
         function deleteTopic(eventId, topicId) {
             showConfirm('Thema löschen?', async () => {
                 await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
-                refreshEventDetailContent(eventId); // Refresh content only, keep modal open
+                reloadAndRender(eventId, 'edit');
             });
         }
 
@@ -638,14 +739,23 @@
             const form = e.target;
             const formData = new FormData(form);
             await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
-            refreshEventDetailContent(eventId); // Refresh content only, keep modal open
+            reloadAndRender(eventId, 'edit');
         }
 
         function deleteLink(eventId, linkId) {
             showConfirm('Link löschen?', async () => {
                 await fetch(`/events/${eventId}/links/${linkId}`, { method: 'DELETE' });
-                refreshEventDetailContent(eventId); // Refresh content only, keep modal open
+                reloadAndRender(eventId, 'edit');
             });
+        }
+
+        async function reloadAndRender(eventId, mode) {
+            const res = await fetch(`/events/${eventId}`);
+            if (res.ok) {
+                currentEventData = await res.json();
+                if (mode === 'edit') renderEditMode();
+                else renderViewMode();
+            }
         }
 
         document.querySelectorAll('.modal-backdrop').forEach(m => {
