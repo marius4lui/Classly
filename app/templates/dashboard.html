@@ -545,24 +545,32 @@
                 if (canEdit) {
                     editFormHtml = `
                     <hr>
-                    <h3 class="text-sm mb-2">Bearbeiten</h3>
-                    <form id="editEventForm" onsubmit="submitEditEvent(event, '${eventId}')">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Fach</label>
-                                <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                    <div id="editSection">
+                        <button type="button" class="btn btn-secondary btn-block" onclick="toggleEditMode()">Bearbeiten</button>
+                    </div>
+                    <div id="editFormSection" style="display: none;">
+                        <h3 class="text-sm mb-2">Bearbeiten</h3>
+                        <form id="editEventForm" onsubmit="submitEditEvent(event, '${eventId}')">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Fach</label>
+                                    <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label>Datum</label>
+                                    <input type="date" name="date" value="${event.date}">
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label>Datum</label>
-                                <input type="date" name="date" value="${event.date}">
+                                <label>Details</label>
+                                <input type="text" name="title" value="${event.title || ''}">
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Details</label>
-                            <input type="text" name="title" value="${event.title || ''}">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">Speichern</button>
-                    </form>`;
+                            <div class="flex gap-2">
+                                <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Abbrechen</button>
+                                <button type="submit" class="btn btn-primary" style="flex: 1;">Speichern</button>
+                            </div>
+                        </form>
+                    </div>`;
                 }
 
                 document.getElementById('eventDetailContent').innerHTML = `
@@ -600,6 +608,21 @@
         function closeEventDetail() {
             document.getElementById('eventDetailModal').classList.remove('active');
             currentEventId = null;
+        }
+
+        function toggleEditMode() {
+            const editSection = document.getElementById('editSection');
+            const editFormSection = document.getElementById('editFormSection');
+
+            if (editFormSection.style.display === 'none') {
+                // Switch to edit mode
+                editSection.style.display = 'none';
+                editFormSection.style.display = 'block';
+            } else {
+                // Switch back to view mode
+                editSection.style.display = 'block';
+                editFormSection.style.display = 'none';
+            }
         }
 
         function deleteCurrentEvent() {
