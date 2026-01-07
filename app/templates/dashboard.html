@@ -19,6 +19,16 @@
 </div>
 
 <!-- Calendar -->
+<div class="legend-container mb-2 text-xs flex gap-3">
+    <div class="flex items-center gap-1"><span class="event-pill ka"
+            style="width: 12px; height: 12px; display: inline-block; padding: 0;"></span> Klassenarbeit</div>
+    <div class="flex items-center gap-1"><span class="event-pill test"
+            style="width: 12px; height: 12px; display: inline-block; padding: 0;"></span> Test</div>
+    <div class="flex items-center gap-1"><span class="event-pill ha"
+            style="width: 12px; height: 12px; display: inline-block; padding: 0;"></span> Hausaufgabe</div>
+    <div class="flex items-center gap-1"><span class="event-pill info"
+            style="width: 12px; height: 12px; display: inline-block; padding: 0;"></span> Info</div>
+</div>
 <div class="calendar-wrapper">
     <div class="calendar-header">{{ current_month }}</div>
     <div class="calendar-grid">
@@ -504,6 +514,65 @@
             }
         }
 
+        // Helper to render tree
+        function renderTopicsTree(topics, eventId, canEdit) {
+            if (!topics || topics.length === 0) return canEdit ? '' : '<p class="text-muted text-xs">Keine Themen eingetragen</p>';
+
+            // 1. Map to dictionary
+            const map = {};
+            topics.forEach(t => map[t.id] = { ...t, children: [] });
+
+            // 2. Build tree
+            const roots = [];
+            topics.forEach(t => {
+                if (t.parent_id && map[t.parent_id]) {
+                    map[t.parent_id].children.push(map[t.id]);
+                } else {
+                    roots.push(map[t.id]);
+                }
+            });
+
+            // 3. Recursive render function
+            function renderNode(node, level = 0) {
+                const padding = level * 20;
+                let html = `
+                    <div class="topic-item" style="margin-left: ${padding}px">
+                        <span>
+                            ${level > 0 ? '↳ ' : ''}<strong>${node.type}</strong> ${node.content || ''} ${node.pages ? `(${node.pages})` : (node.count ? `(${node.count})` : '')}
+                        </span>
+                        ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${node.id}')">×</button>` : ''}
+                    </div>
+                `;
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach(c => html += renderNode(c, level + 1));
+                }
+                return html;
+            }
+
+            return roots.map(r => renderNode(r)).join('');
+        }
+
+        function updateTopicPreview() {
+            const type = document.getElementById('inputTopicType').value || 'Thema';
+            const content = document.getElementById('inputTopicContent').value || 'Details';
+            const pages = document.getElementById('inputTopicPages').value;
+
+            const pagesText = pages ? `(${pages})` : '';
+
+            document.getElementById('topicPreview').innerHTML = `
+                <span><strong>${type}</strong> ${content} ${pagesText}</span>
+            `;
+            document.getElementById('topicPreview').classList.remove('opacity-50');
+        }
+
+        function updateLinkPreview() {
+            const label = document.getElementById('inputLinkLabel').value || 'Link Name';
+            document.getElementById('linkPreview').innerHTML = `
+                <a href="#" style="text-decoration: underline; color: var(--primary);">${label} ↗</a>
+             `;
+            document.getElementById('linkPreview').classList.remove('opacity-50');
+        }
+
         function renderViewMode() {
             if (!currentEventData) return;
             const event = currentEventData;
@@ -516,12 +585,7 @@
                     <hr>
                     <h3 class="text-sm mb-2">Themen</h3>
                     <div id="topicsList">
-                        ${(event.topics || []).map(t => `
-                            <div class="topic-item">
-                                <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
-                            </div>
-                        `).join('')}
-                        ${(!event.topics || event.topics.length === 0) ? '<p class="text-muted text-xs">Keine Themen eingetragen</p>' : ''}
+                        ${renderTopicsTree(event.topics || [], event.id, false)}
                     </div>
                 `;
             }
@@ -584,23 +648,52 @@
             // Topics Edit
             let topicsHtml = '';
             if (event.type === 'KA' || event.type === 'TEST') {
+                // Prepare options for parent selector
+                const topicOptions = (event.topics || []).map(t =>
+                    `<option value="${t.id}">${t.type} ${t.content || ''}</option>`
+                ).join('');
+
                 topicsHtml = `
                     <hr>
                     <h3 class="text-sm mb-2">Themen</h3>
                     <div id="topicsList">
-                        ${(event.topics || []).map(t => `
-                            <div class="topic-item">
-                                <span><strong>${t.type}</strong> ${t.content || ''} ${t.count ? `(${t.count})` : ''}</span>
-                                <button class="btn btn-ghost btn-sm" onclick="deleteTopic('${event.id}', '${t.id}')">×</button>
-                            </div>
-                        `).join('')}
+                        ${renderTopicsTree(event.topics || [], event.id, true)}
                     </div>
-                    <form onsubmit="addTopic(event, '${event.id}')" class="flex gap-2 mt-2">
-                        <input type="text" name="topic_type" placeholder="Thema" required style="flex:2;">
-                        <input type="text" name="content" placeholder="Details" style="flex:2;">
-                        <input type="number" name="count" placeholder="#" style="flex:1;">
-                        <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                    </form>
+                    
+                    <div class="card bg-base-200 p-2 mt-4">
+                        <h4 class="text-xs font-bold mb-2">Neues Thema hinzufügen</h4>
+                        <form onsubmit="addTopic(event, '${event.id}')" id="addTopicForm">
+                            <div class="form-row mb-2">
+                                <div class="form-group" style="flex: 2;">
+                                    <input type="text" name="topic_type" id="inputTopicType" placeholder="Thema (z.B. Vokabeln)" required 
+                                        oninput="updateTopicPreview()">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <select name="parent_id">
+                                        <option value="">-- Hauptthema --</option>
+                                        ${topicOptions}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row mb-2">
+                                <div class="form-group" style="flex: 2;">
+                                    <input type="text" name="content" id="inputTopicContent" placeholder="Details" 
+                                        oninput="updateTopicPreview()">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <input type="text" name="pages" id="inputTopicPages" placeholder="Seiten (z.B. 10-12)" 
+                                        oninput="updateTopicPreview()">
+                                </div>
+                            </div>
+                            
+                            <div class="text-xs text-muted mb-1">Vorschau:</div>
+                            <div id="topicPreview" class="topic-item mb-2 opacity-50">
+                                <span><strong>Thema</strong> Details (S. 0-0)</span>
+                            </div>
+
+                            <button type="submit" class="btn btn-secondary btn-sm btn-block">+ Hinzufügen</button>
+                        </form>
+                    </div>
                 `;
             }
 
@@ -616,11 +709,19 @@
                         </div>
                     `).join('')}
                 </div>
-                <form onsubmit="addLink(event, '${event.id}')" class="flex gap-2 mt-2">
-                    <input type="text" name="label" placeholder="Name" required style="flex:1;">
-                    <input type="url" name="url" placeholder="URL" required style="flex:2;">
-                    <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                </form>
+                
+                <div class="card bg-base-200 p-2 mt-4">
+                    <h4 class="text-xs font-bold mb-2">Neuen Link hinzufügen</h4>
+                    <form onsubmit="addLink(event, '${event.id}')" id="addLinkForm" class="flex gap-2">
+                        <input type="text" name="label" id="inputLinkLabel" placeholder="Name" required style="flex:1;" oninput="updateLinkPreview()">
+                        <input type="url" name="url" placeholder="URL" required style="flex:2;">
+                        <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                    </form>
+                     <div class="text-xs text-muted mt-2 mb-1">Vorschau:</div>
+                    <div id="linkPreview" class="topic-item opacity-50">
+                        <a href="#" style="text-decoration: underline; color: var(--primary);">Link Name ↗</a>
+                    </div>
+                </div>
             `;
 
             // Footer / Actions
@@ -715,6 +816,7 @@
             if (res.ok) {
                 currentEventData = await res.json();
                 renderViewMode();
+                showToast('Änderungen gespeichert', 'success');
             }
         }
 
@@ -722,15 +824,21 @@
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
-            await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
-            // Update local data and re-render edit mode
-            reloadAndRender(eventId, 'edit');
+
+            const res = await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
+            if (res.ok) {
+                showToast('Thema hinzugefügt', 'success');
+                // Update local data and re-render edit mode
+                await reloadAndRender(eventId, 'edit');
+                // Note: Form is re-rendered, so inputs are effectively cleared
+            }
         }
 
         function deleteTopic(eventId, topicId) {
             showConfirm('Thema löschen?', async () => {
                 await fetch(`/events/${eventId}/topics/${topicId}`, { method: 'DELETE' });
-                reloadAndRender(eventId, 'edit');
+                await reloadAndRender(eventId, 'edit');
+                showToast('Thema gelöscht', 'info');
             });
         }
 
@@ -738,14 +846,18 @@
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
-            await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
-            reloadAndRender(eventId, 'edit');
+            const res = await fetch(`/events/${eventId}/links`, { method: 'POST', body: formData });
+            if (res.ok) {
+                showToast('Link hinzugefügt', 'success');
+                await reloadAndRender(eventId, 'edit');
+            }
         }
 
         function deleteLink(eventId, linkId) {
             showConfirm('Link löschen?', async () => {
                 await fetch(`/events/${eventId}/links/${linkId}`, { method: 'DELETE' });
-                reloadAndRender(eventId, 'edit');
+                await reloadAndRender(eventId, 'edit');
+                showToast('Link gelöscht', 'info');
             });
         }
 

@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 *.db
 *.bak
+app/fix_db_schema.py

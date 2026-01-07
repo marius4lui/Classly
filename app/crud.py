@@ -243,12 +243,13 @@ def update_event(db: Session, event_id: str, type: models.EventType = None, subj
     return None
 
 # --- Event Topics ---
-def create_event_topic(db: Session, event_id: str, topic_type: str, content: str = None, count: int = None, order: int = 0, parent_id: str = None):
+def create_event_topic(db: Session, event_id: str, topic_type: str, content: str = None, count: int = None, pages: str = None, order: int = 0, parent_id: str = None):
     db_topic = models.EventTopic(
         event_id=event_id,
         topic_type=topic_type,
         content=content,
         count=count,
+        pages=pages,
         order=order,
         parent_id=parent_id
     )

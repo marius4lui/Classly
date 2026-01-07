@@ -57,6 +57,13 @@ def fix_schema(db_url):
             cursor.execute("ALTER TABLE event_topics ADD COLUMN parent_id VARCHAR")
             cursor.execute("CREATE INDEX IF NOT EXISTS ix_event_topics_parent_id ON event_topics (parent_id)")
 
+        # 4. Add 'pages' column to event_topics if missing
+        try:
+            cursor.execute("SELECT pages FROM event_topics LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Adding 'pages' column to event_topics...")
+            cursor.execute("ALTER TABLE event_topics ADD COLUMN pages VARCHAR")
+
         conn.commit()
         conn.close()
         print("Schema fix executed.")

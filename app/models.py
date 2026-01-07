@@ -130,8 +130,9 @@ class EventTopic(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     event_id = Column(String, ForeignKey("events.id"), nullable=False)
     topic_type = Column(String, nullable=False)  # e.g. "Vokabeln", "Grammatik"
-    content = Column(String, nullable=True)  # e.g. "Page 20"
-    count = Column(Integer, nullable=True)  # e.g. 50 words
+    content = Column(String, nullable=True)  # e.g. "Page 20" (legacy?)
+    count = Column(Integer, nullable=True)  # Legacy: e.g. 50 words
+    pages = Column(String, nullable=True)  # e.g. "S. 10-15"
     order = Column(Integer, default=0)
     parent_id = Column(String, ForeignKey("event_topics.id"), nullable=True)  # For hierarchical structure
 
