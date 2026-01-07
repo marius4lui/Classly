@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -258,20 +258,9 @@ def delete_subject(
 # --- Feed Endpoints ---
 @router.get("/feed/rss")
 def get_rss_feed(
-    db: Session = Depends(get_db),
-    # Optional: secure feeds with a token? User didn't request it, but good practice. 
-    # For now public or we assume some auth? 
-    # Request said "info feed... in html and xml and rss". Usually feeds are public or tokenized.
-    # Existing auth uses cookies. Standard RSS readers won't have cookies.
-    # I'll make it public for now or require a 'token' query param if I had one. 
-    # Let's check crud.py, we have classes. The feed should be per class?
-    # Yes, events are per class.
-    # I'll assume we need a class_id or token.
-    # PROPOSAL: Use the class Join Token? Or just make it open if you know the URL ID?
-    # Let's stick to simple: public endpoint but maybe requires a class_id in query? 
-    # Or just return *all* infos? Unlikely since multi-tenant.
-    # I'll require `class_id` as query param for now.
-    class_id: str = None 
+    request: Request,
+    class_id: str = None,
+    db: Session = Depends(get_db)
 ):
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
@@ -282,27 +271,41 @@ def get_rss_feed(
         models.Event.type == models.EventType.INFO
     ).order_by(models.Event.created_at.desc()).limit(20).all()
 
-    # Build RSS
+    base_url = str(request.base_url).rstrip("/")
+    
+    # Build RSS 2.0 compliant items
     rss_items = ""
     for e in events:
-        pub_date = e.created_at.strftime("%a, %d %b %Y %H:%M:%S GMT") if e.created_at else ""
+        # RFC 822 date format
+        pub_date = e.created_at.strftime("%a, %d %b %Y %H:%M:%S +0100") if e.created_at else ""
+        title = (e.subject_name or 'Info') + (f": {e.title}" if e.title else "")
+        # Escape XML special characters
+        title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        description = (e.title or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        item_link = f"{base_url}/#event-{e.id}"
+        
         rss_items += f"""
-        <item>
-            <title>{e.subject_name or 'Info'}: {e.title or ''}</title>
-            <description>{e.title or ''}</description>
-            <pubDate>{pub_date}</pubDate>
-            <guid>{e.id}</guid>
-        </item>"""
+  <item>
+    <title>{title}</title>
+    <link>{item_link}</link>
+    <description>{description}</description>
+    <pubDate>{pub_date}</pubDate>
+    <guid>{item_link}</guid>
+  </item>"""
 
     rss_content = f"""<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
+
 <channel>
-    <title>Classly Info Feed</title>
-    <description>Latest Infos</description>
-    {rss_items}
+  <title>Classly Info Feed</title>
+  <link>{base_url}</link>
+  <description>Neuigkeiten aus Classly</description>
+  <language>de-de</language>
+{rss_items}
+
 </channel>
 </rss>"""
-    return Response(content=rss_content, media_type="application/xml")
+    return Response(content=rss_content, media_type="text/xml")
 
 @router.get("/feed/xml")
 def get_xml_feed(
