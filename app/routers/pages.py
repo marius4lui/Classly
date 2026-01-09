@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.templating import Jinja2Templates
 from app.core.auth import get_current_user
 from app import crud, models
@@ -14,34 +14,46 @@ templates = Jinja2Templates(directory="app/templates")
 def index(
     request: Request, 
     user: models.User | None = Depends(get_current_user), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    year: int = Query(default=None),
+    month: int = Query(default=None, ge=1, le=12)
 ):
     if user:
         clazz = crud.get_class(db, user.class_id)
         
         today = datetime.datetime.now()
-        year = today.year
-        month = today.month
+        
+        # Use query params or default to current month
+        cal_year = year if year else today.year
+        cal_month = month if month else today.month
+        
+        # Validate year range (reasonable bounds)
+        if cal_year < 2020 or cal_year > 2100:
+            cal_year = today.year
+        
+        # Calculate previous and next month
+        prev_month = cal_month - 1
+        prev_year = cal_year
+        if prev_month < 1:
+            prev_month = 12
+            prev_year -= 1
+        
+        next_month = cal_month + 1
+        next_year = cal_year
+        if next_month > 12:
+            next_month = 1
+            next_year += 1
         
         events = crud.get_events_for_class(db, clazz.id)
         subjects = crud.get_subjects_for_class(db, clazz.id)
-        # calendar_data initialized later with dated events only
         
         # Filter upcoming events (today or future, sorted by date)
-        # Handle nullable date: if date is None, it's undated (Info).
-        # We only want dated events for 'upcoming_events' and 'calendar'.
-        
         dated_events = [e for e in events if e.date is not None]
         upcoming_events = [e for e in dated_events if e.date.date() >= today.date()]
-        upcoming_events = sorted(upcoming_events, key=lambda x: x.date)[:10]  # Top 10
+        upcoming_events = sorted(upcoming_events, key=lambda x: x.date)[:10]
         
-        # Infos (Type INFO), specific logic:
-        # Show all INFO events regardless of date? Or sorted by creation?
-        # User said "must not be bound to a date".
-        # We'll fetch all INFO events separately or filter from 'events'.
+        # Infos (Type INFO)
         infos = [e for e in events if e.type == models.EventType.INFO]
-        # Sort by creation date desc (newest first) or date if present?
-        # Let's sort by created_at desc.
         infos = sorted(infos, key=lambda x: x.created_at if x.created_at else datetime.datetime.min, reverse=True)
         
         members = []
@@ -50,17 +62,22 @@ def index(
             members = crud.get_class_members(db, clazz.id)
             login_tokens = crud.get_login_tokens_for_class(db, clazz.id)
         
-        # Calendar needs dated events only
-        calendar_data = calendar_utils.get_month_calendar(year, month, dated_events)
+        # Single month calendar
+        calendar_data = calendar_utils.get_month_calendar(cal_year, cal_month, dated_events)
+        current_month_name = datetime.date(cal_year, cal_month, 1).strftime("%B %Y")
         
         return templates.TemplateResponse("dashboard.html", {
             "request": request, 
             "user": user, 
             "clazz": clazz,
             "calendar": calendar_data,
-            "current_month": today.strftime("%B %Y"),
-            "current_year": year,
-            "current_month_num": month,
+            "current_month": current_month_name,
+            "current_year": cal_year,
+            "current_month_num": cal_month,
+            "prev_year": prev_year,
+            "prev_month": prev_month,
+            "next_year": next_year,
+            "next_month": next_month,
             "today": today,
             "members": members,
             "subjects": subjects,

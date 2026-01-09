@@ -990,7 +990,6 @@ hr {
     }
 }
 
-/* === Confirm Modal === */
 .confirm-modal-content {
     text-align: center;
     padding: 1rem;
@@ -1001,4 +1000,52 @@ hr {
     gap: 1rem;
     margin-top: 1.5rem;
     justify-content: center;
+}
+
+/* === Calendar Month Navigation === */
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+}
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--gray-600);
+    background: var(--bg);
+    border: 2px solid var(--gray-200);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-btn:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
+    color: var(--fg);
+}
+
+.nav-btn:active {
+    transform: scale(0.95);
+}
+
+.calendar-month-title {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.calendar-footer {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem;
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
 }

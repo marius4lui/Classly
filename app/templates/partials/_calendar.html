@@ -30,8 +30,19 @@
         <span>Info</span>
     </div>
 </div>
+
 <div class="calendar-wrapper">
-    <div class="calendar-header">{{ current_month }}</div>
+    <!-- Month Navigation Header -->
+    <div class="calendar-header calendar-nav">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn" title="Vorheriger Monat">
+            ‹
+        </a>
+        <span class="calendar-month-title">{{ current_month }}</span>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn" title="Nächster Monat">
+            ›
+        </a>
+    </div>
+
     <div class="calendar-grid">
         <div class="calendar-day-header">Mo</div>
         <div class="calendar-day-header">Di</div>
@@ -57,5 +68,10 @@
         </div>
         {% endfor %}
         {% endfor %}
+    </div>
+
+    <!-- Today Button -->
+    <div class="calendar-footer">
+        <a href="/" class="btn btn-secondary btn-sm">Heute</a>
     </div>
 </div>
