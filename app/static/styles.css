@@ -1049,3 +1049,71 @@ hr {
     background: var(--gray-50);
     border-top: 1px solid var(--gray-200);
 }
+
+/* === Upgrade Account Prompt === */
+.upgrade-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.upgrade-modal {
+    background: var(--bg);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+.upgrade-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.upgrade-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.upgrade-text {
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.btn-upgrade {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    font-weight: 700;
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+}
+
+.btn-later {
+    color: var(--gray-500);
+    background: transparent;
+    font-size: 0.875rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Header Upgrade Button */
+.btn-header-upgrade {
+    background: var(--gray-100);
+    color: var(--fg);
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    height: auto;
+    border: 1px solid var(--gray-200);
+    min-height: 32px;
+}

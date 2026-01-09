@@ -31,6 +31,7 @@
 
     // Intercept HTMX Confirm
     document.body.addEventListener('htmx:confirm', function (evt) {
+        if (!evt.detail.question) return;
         evt.preventDefault();
         showConfirm(evt.detail.question, () => {
             evt.detail.issueRequest(true);
@@ -492,6 +493,30 @@
             else renderViewMode();
         }
     }
+
+    // === Upgrade Account Nag ===
+    // Use simple string check for template boolean
+    const IS_REGISTERED = {{ 'true' if user.is_registered else 'false' }};
+
+    function showUpgradeModal() {
+        if (IS_REGISTERED) return;
+        if (localStorage.getItem('upgrade_nagged')) return;
+
+        // Slight delay for better UX
+        setTimeout(() => {
+            document.getElementById('upgradeModal').style.display = 'flex';
+        }, 1500);
+    }
+
+    function closeUpgradeModal(neverShowAgain = false) {
+        document.getElementById('upgradeModal').style.display = 'none';
+        if (neverShowAgain) {
+            localStorage.setItem('upgrade_nagged', 'true');
+        }
+    }
+
+    // Initialize Nag
+    if (!IS_REGISTERED) showUpgradeModal();
 
     document.querySelectorAll('.modal-backdrop').forEach(m => {
         m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });

@@ -7,8 +7,16 @@
         <h1>{{ clazz.name }}</h1>
         <p class="text-sm text-muted">{{ user.name }}</p>
     </div>
-    <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        {% if not user.is_registered %}
+        <button onclick="openRegisterModal()" class="btn btn-header-upgrade">
+            🔒 Account verbinden
+        </button>
+        {% endif %}
+        <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
+    </div>
 </header>
+
 
 {% include 'partials/_calendar.html' %}
 {% include 'partials/_upcoming.html' %}

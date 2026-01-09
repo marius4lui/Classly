@@ -120,3 +120,19 @@
         </div>
     </div>
 </div>
+
+<!-- Upgrade Account Nag Screen -->
+<div class="upgrade-backdrop" id="upgradeModal">
+    <div class="upgrade-modal">
+        <span class="upgrade-icon">🔒</span>
+        <h3 class="upgrade-title">Account sichern?</h3>
+        <p class="upgrade-text">Du bist aktuell als Gast eingeloggt. Wenn du deine Browser-Daten löschst, ist dein
+            Zugang weg.</p>
+        <button class="btn btn-upgrade btn-block mb-2" onclick="openRegisterModal(); closeUpgradeModal();">
+            Jetzt mit Email verbinden
+        </button>
+        <button class="btn btn-later" onclick="closeUpgradeModal(true)">
+            Später erinnern
+        </button>
+    </div>
+</div>

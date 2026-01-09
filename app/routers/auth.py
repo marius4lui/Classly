@@ -8,6 +8,20 @@ from app.core import security
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
+# Cookie settings - 30 days persistent login
+COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days in seconds
+
+def set_session_cookie(response: Response, session_token: str):
+    """Set session cookie with proper security settings"""
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=COOKIE_MAX_AGE,
+        samesite="lax",
+        secure=False  # Set to True in production with HTTPS
+    )
+
 @router.post("/auth/create-class")
 def create_class(
     response: Response,
@@ -39,8 +53,8 @@ def create_class(
     new_class.owner_id = new_user.id
     db.commit()
     
-    # Set Cookie
-    response.set_cookie(key="session_token", value=new_user.session_token, httponly=True)
+    # Set Cookie with proper settings
+    set_session_cookie(response, new_user.session_token)
     
     response.headers["HX-Redirect"] = "/"
     return {"status": "success"}
@@ -87,8 +101,8 @@ def login(
     if not crud.verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Set cookie
-    response.set_cookie(key="session_token", value=user.session_token, httponly=True)
+    # Set cookie with proper settings
+    set_session_cookie(response, user.session_token)
     
     response.headers["HX-Redirect"] = "/"
     return {"status": "logged in"}
@@ -135,9 +149,16 @@ def show_join_page(
             login_token.user_id = user.id
             db.commit()
         
-        # Create redirect response and set cookie on IT
+        # Create redirect response and set cookie with proper settings
         redirect = RedirectResponse(url="/", status_code=303)
-        redirect.set_cookie(key="session_token", value=user.session_token, httponly=True)
+        redirect.set_cookie(
+            key="session_token",
+            value=user.session_token,
+            httponly=True,
+            max_age=COOKIE_MAX_AGE,
+            samesite="lax",
+            secure=False
+        )
         return redirect
     
     raise HTTPException(status_code=404, detail="Invalid or expired link")
@@ -170,7 +191,8 @@ def join_class(
     else:
         raise HTTPException(status_code=400, detail="No token provided")
     
-    response.set_cookie(key="session_token", value=new_user.session_token, httponly=True)
+    # Set cookie with proper settings
+    set_session_cookie(response, new_user.session_token)
     response.headers["HX-Redirect"] = "/"
     return {"status": "success"}
 
