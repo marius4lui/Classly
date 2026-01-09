@@ -21,3 +21,8 @@ def require_admin(user = Depends(require_user)):
     if user.role not in ["admin", "owner"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     return user
+
+def require_class_admin(user = Depends(require_user)):
+    if user.role not in ["admin", "owner", "class_admin"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    return user

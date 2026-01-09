@@ -15,6 +15,7 @@ def generate_token():
 class UserRole(str, enum.Enum):
     OWNER = "owner"
     ADMIN = "admin"
+    CLASS_ADMIN = "class_admin"
     MEMBER = "member"
     GUEST = "guest"
 

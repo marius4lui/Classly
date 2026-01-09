@@ -58,7 +58,7 @@ def index(
         
         members = []
         login_tokens = []
-        if user.role in [models.UserRole.OWNER, models.UserRole.ADMIN]:
+        if user.role in [models.UserRole.OWNER, models.UserRole.ADMIN, models.UserRole.CLASS_ADMIN]:
             members = crud.get_class_members(db, clazz.id)
             login_tokens = crud.get_login_tokens_for_class(db, clazz.id)
         

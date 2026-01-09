@@ -23,15 +23,17 @@
 {% include 'partials/_info_feed.html' %}
 
 <!-- Expandable FAB Menu -->
-{% if user.role.value == "owner" or user.role.value == "admin" %}
+{% if user.role.value in ["owner", "admin", "class_admin"] %}
 <div class="fab-container" id="fabContainer">
     <div class="fab-options" id="fabOptions">
         <button class="fab-option" onclick="showTab('subjects'); closeFab();">
             <span>📚</span> Fach
         </button>
+        {% if user.role.value in ['owner', 'admin'] %}
         <button class="fab-option" onclick="showTab('links'); closeFab();">
             <span>👤</span> User-Link
         </button>
+        {% endif %}
         <button class="fab-option" onclick="openModal(); closeFab();">
             <span>📅</span> Termin
         </button>
@@ -45,35 +47,55 @@
 {% endif %}
 
 <!-- Admin Section -->
-{% if user.role.value == "owner" or user.role.value == "admin" %}
+{% if user.role.value in ["owner", "admin", "class_admin"] %}
 <div class="admin-section">
     <div class="tabs">
+        {% if user.role.value in ['owner', 'admin'] %}
         <button class="tab active" onclick="showTab('users')">Benutzer</button>
         <button class="tab" onclick="showTab('links')">Links</button>
-        <button class="tab" onclick="showTab('subjects')">Fächer</button>
+        {% endif %}
+        <button class="tab {% if user.role.value == 'class_admin' %}active{% endif %}"
+            onclick="showTab('subjects')">Fächer</button>
         <button class="tab" onclick="showTab('advanced')">Erweitert</button>
     </div>
 
     <!-- Users Tab -->
+    {% if user.role.value in ['owner', 'admin'] %}
     <div id="tab-users" class="tab-content active">
         {% for member in members %}
         <div class="member-item">
             <div>
                 <strong>{{ member.name }}</strong>
                 <span
-                    class="badge {% if member.role.value == 'owner' %}badge-primary{% elif member.role.value == 'admin' %}badge-success{% endif %}">
-                    {{ member.role.value }}
+                    class="badge {% if member.role.value == 'owner' %}badge-primary{% elif member.role.value == 'admin' %}badge-success{% elif member.role.value == 'class_admin' %}badge-info{% endif %}">
+                    {% if member.role.value == 'owner' %}Owner
+                    {% elif member.role.value == 'admin' %}Admin
+                    {% elif member.role.value == 'class_admin' %}Verwalter
+                    {% elif member.role.value == 'member' %}Mitglied
+                    {% elif member.role.value == 'guest' %}Gast
+                    {% else %}{{ member.role.value }}{% endif %}
                 </span>
             </div>
             {% if member.id != user.id and member.role.value != 'owner' %}
-            <div class="actions">
-                {% if member.role.value == 'member' %}
-                <button hx-post="/admin/promote/{{ member.id }}" class="btn btn-secondary btn-sm">Admin</button>
-                {% else %}
-                <button hx-post="/admin/demote/{{ member.id }}" class="btn btn-secondary btn-sm">Member</button>
+            <div class="actions" style="display:flex; align-items:center; gap:0.5rem;">
+
+                {% if user.role.value in ['owner', 'admin'] %}
+                <form hx-patch="/admin/members/{{ member.id }}/role" hx-swap="none" style="margin:0;">
+                    <select name="role" onchange="this.form.requestSubmit()" class="form-select text-xs"
+                        style="padding: 2px 4px; height: auto;">
+                        <option value="member" {% if member.role.value=='member' %}selected{% endif %}>Member</option>
+                        <option value="class_admin" {% if member.role.value=='class_admin' %}selected{% endif %}>
+                            Verwalter</option>
+                        <option value="admin" {% if member.role.value=='admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </form>
                 {% endif %}
+
+                {% if user.role.value in ['owner', 'admin'] or (user.role.value == 'class_admin' and member.role.value
+                not in ['owner', 'admin', 'class_admin']) %}
                 <button hx-delete="/admin/members/{{ member.id }}" hx-confirm="Entfernen?"
                     class="btn btn-danger btn-sm">×</button>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -111,6 +133,9 @@
                 <select name="role">
                     <option value="member">Mitglied (kann bearbeiten)</option>
                     <option value="guest">Gast (nur ansehen)</option>
+                    {% if user.role.value in ['owner', 'admin'] %}
+                    <option value="class_admin">Verwalter (eingeschränkt)</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-row">
@@ -147,9 +172,10 @@
         </div>
         {% endfor %}
     </div>
+    {% endif %}
 
     <!-- Subjects Tab -->
-    <div id="tab-subjects" class="tab-content">
+    <div id="tab-subjects" class="tab-content {% if user.role.value == 'class_admin' %}active{% endif %}">
         <form hx-post="/subjects" hx-swap="none" class="flex gap-2 mb-4">
             <input type="text" name="name" placeholder="Neues Fach" required style="flex: 1;">
             <button type="submit" class="btn btn-secondary">+</button>
@@ -190,7 +216,7 @@
             <button class="btn btn-secondary btn-block" onclick="openRegisterModal()">Mit Email registrieren</button>
             {% endif %}
 
-            {% if user.role.value == 'owner' or user.role.value == 'admin' %}
+            {% if user.role.value in ['owner', 'admin'] %}
             <hr>
             <h3 class="text-sm mb-2">Backup</h3>
             <a href="/admin/download-db" class="btn btn-primary btn-block text-center"

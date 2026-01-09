@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
-from app.core.auth import get_current_user, require_user
+from app.core.auth import get_current_user, require_user, require_class_admin
 import datetime
 import json
 
@@ -233,7 +233,7 @@ def create_subject(
     response: Response,
     name: str = Form(...),
     color: str = Form("#666666"),
-    user: models.User = Depends(require_user),
+    user: models.User = Depends(require_class_admin),
     db: Session = Depends(get_db)
 ):
     crud.create_subject(db, class_id=user.class_id, name=name, color=color)
@@ -244,7 +244,7 @@ def create_subject(
 def delete_subject(
     subject_id: str,
     response: Response,
-    user: models.User = Depends(require_user),
+    user: models.User = Depends(require_class_admin),
     db: Session = Depends(get_db)
 ):
     deleted = crud.delete_subject(db, subject_id)
