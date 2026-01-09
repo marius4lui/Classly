@@ -25,7 +25,7 @@
 
 ```bash
 # 1. Repo klonen
-git clone https://github.com/your-user/classly.git
+git clone https://github.com/marius4lui/classly.git
 cd classly
 
 # 2. Starten

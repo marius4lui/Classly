@@ -31,7 +31,7 @@ Lade [Docker Desktop](https://www.docker.com/products/docker-desktop/) herunter.
 ### 1. Projekt herunterladen
 
 ```bash
-git clone https://github.com/your-user/classly.git
+git clone https://github.com/marius4lui/classly.git
 cd classly
 ```
 
