@@ -8,84 +8,49 @@
 
 ---
 
-## ✨ Features
+## 👋 Was ist Classly?
 
-- 📅 **Kalender** – Übersicht aller Termine auf einen Blick
-- 📝 **Event-Typen** – KA, Test, Hausaufgaben, Info
-- 🎯 **Themen-Blöcke** – Bei KA/Tests: z.B. "Vokabeln S. 20-30 (50 Wörter)"
-- 👥 **Klassen-System** – Erstelle eine Klasse, teile den Link
-- 🔗 **Login-Links** – Personalisierte Links für jeden Schüler
-- 📱 **Mobile-First** – Perfekt auf dem Handy nutzbar
-- 🔒 **Owner-Login** – Optional mit E-Mail/Passwort sichern
-- 📊 **Audit-Logs** – Wer hat was geändert? (90 Tage)
+Classly ist eine **Web-App für Schulklassen**. Statt zehn verschiedener WhatsApp-Gruppen und Fotos von der Tafel, hast du **einen Link**, unter dem alle Termine (Klassenarbeiten, Tests, Hausaufgaben) übersichtlich zu finden sind.
+
+👉 **[Hier geht's zur kompletten Dokumentation!](docs/index.md)**
+
+### ✨ Features
+
+- 📅 **Zentraler Kalender:** Ein Blick, alles im Griff.
+- 📱 **Keine App-Installation:** Läuft im Browser auf jedem Handy.
+- 🔗 **Einfacher Zugang:** Login via "Magic Links" – keine Passwörter merken für Schüler.
+- 🔒 **Rollen-System:** Owner, Admins, Class-Admins und Mitglieder.
+- ☁️ **CalDAV Sync:** Termine direkt im privaten Handy-Kalender abonnieren.
+- 🛡️ **Self-Hosted:** Deine Daten, dein Server.
 
 ---
 
-## 🚀 Schnellstart mit Docker
+## 🚀 Schnellstart (Docker)
+
+Du willst es sofort ausprobieren?
 
 ```bash
-# 1. Repo klonen
 git clone https://github.com/marius4lui/classly.git
 cd classly
-
-# 2. Starten
 docker compose up -d
-
-# 3. Öffnen
-open http://localhost:8000
 ```
 
-**Das war's!** 🎉
+Öffne dann `http://localhost:8000` im Browser.
+
+➡️ **[Ausführliche Installations-Anleitung](docs/setup/installation.md)**
 
 ---
 
 ## 📖 Dokumentation
 
-➡️ Siehe [docs/SELFHOST.md](docs/SELFHOST.md) für die vollständige Anleitung
+Wir haben eine ausführliche Dokumentation für dich erstellt:
 
----
-
-## 🛠️ Entwicklung
-
-```bash
-# Virtual Environment erstellen
-python -m venv venv
-./venv/Scripts/activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# Dependencies installieren
-pip install -r requirements.txt
-
-# Server starten
-uvicorn app.main:app --reload --port 8000
-```
-
----
-
-## 📁 Projektstruktur
-
-```
-classly/
-├── app/
-│   ├── main.py          # FastAPI App
-│   ├── models.py        # SQLAlchemy Models
-│   ├── crud.py          # Datenbankoperationen
-│   ├── database.py      # DB Connection
-│   ├── routers/         # API Endpoints
-│   │   ├── auth.py      # Login/Register
-│   │   ├── pages.py     # HTML Pages
-│   │   ├── events.py    # Events CRUD
-│   │   ├── admin.py     # Admin Functions
-│   │   └── caldav.py    # CalDAV Support
-│   ├── templates/       # Jinja2 HTML
-│   └── static/          # CSS/JS
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
-```
+- **[Installation & Setup](docs/setup/installation.md)** (Docker, Config, Updates)
+- **[Benutzer-Handbuch](docs/user-guide/getting-started.md)** (Erste Schritte, Funktionen)
+- **[Entwicklung](docs/development/contributing.md)** (Lokal entwickeln, Tech Stack)
 
 ---
 
 ## 📜 Lizenz
 
-MIT License – Mach damit was du willst! 🎁
+MIT License – Open Source & Free. 🎉
