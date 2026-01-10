@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Response, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
@@ -166,22 +166,121 @@ def delete_login_token(
 
 @router.get("/admin/download-db")
 def download_db(
-    admin: models.User = Depends(require_admin)
+    background_tasks: BackgroundTasks,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
 ):
     from fastapi.responses import FileResponse
+    from fastapi import BackgroundTasks
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker, make_transient
+    import tempfile
     import os
+    import shutil
     
-    # Check default location
-    # Determine path based on environment
-    paths_to_check = ["/data/classly.db", "classly.db"]
-    db_path = None
+    # 1. Create a secure temporary file
+    fd, temp_path = tempfile.mkstemp(suffix=".db", prefix=f"classly_{admin.class_id}_")
+    os.close(fd) # Close the file descriptor, we will access by path
     
-    for path in paths_to_check:
-        if os.path.exists(path):
-            db_path = path
-            break
-            
-    if not db_path:
-        raise HTTPException(status_code=404, detail="Database file not found")
+    try:
+        # 2. Setup destination database (Temp SQLite)
+        dst_engine = create_engine(f"sqlite:///{temp_path}")
+        models.Base.metadata.create_all(bind=dst_engine)
+        DstSession = sessionmaker(bind=dst_engine)
+        dst_db = DstSession()
         
-    return FileResponse(db_path, media_type='application/octet-stream', filename=f"classly_backup_{datetime.date.today()}.db")
+        # 3. Fetch Data for this Class ONLY
+        cid = admin.class_id
+        
+        # Entities to export
+        # IMPORTANT: We use Detached objects to copy them
+        
+        # Class
+        clazz = db.query(models.Class).filter(models.Class.id == cid).first()
+        if clazz:
+            db.expunge(clazz) # Detach from source session
+            make_transient(clazz) # Remove session state
+            dst_db.add(clazz)
+            
+        # Subjects
+        subjects = db.query(models.Subject).filter(models.Subject.class_id == cid).all()
+        for obj in subjects:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+
+        # Users & Preferences
+        users = db.query(models.User).filter(models.User.class_id == cid).all()
+        user_ids = [u.id for u in users]
+        for obj in users:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+            
+        prefs = db.query(models.UserPreferences).filter(models.UserPreferences.user_id.in_(user_ids)).all()
+        for obj in prefs:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+
+        # Events & Related
+        events = db.query(models.Event).filter(models.Event.class_id == cid).all()
+        event_ids = [e.id for e in events]
+        for obj in events:
+            # Manually load relations if lazy=True to ensure they export, 
+            # OR just query them separately if they are separate tables.
+            # Eager loading is safer but let's just query tables.
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+            
+        topics = db.query(models.EventTopic).filter(models.EventTopic.event_id.in_(event_ids)).all()
+        for obj in topics:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+
+        links = db.query(models.EventLink).filter(models.EventLink.event_id.in_(event_ids)).all()
+        for obj in links:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+            
+        # Login Tokens
+        tokens = db.query(models.LoginToken).filter(models.LoginToken.class_id == cid).all()
+        for obj in tokens:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+            
+        # Audit Logs
+        logs = db.query(models.AuditLog).filter(models.AuditLog.class_id == cid).all()
+        for obj in logs:
+            db.expunge(obj)
+            make_transient(obj)
+            dst_db.add(obj)
+
+        # 4. Commit and Close Logic
+        dst_db.commit()
+        dst_db.close()
+        
+        # 5. Serve File w/ Cleanup
+        def remove_file():
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
+                
+        background_tasks.add_task(remove_file)
+        
+        return FileResponse(
+            temp_path, 
+            media_type='application/octet-stream', 
+            filename=f"classly_backup_{datetime.date.today()}.db"
+        )
+
+    except Exception as e:
+        # Cleanup on error
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
