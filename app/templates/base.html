@@ -13,7 +13,7 @@
 </head>
 
 <body>
-    <main class="container">
+    <main class="{% block main_class %}container{% endblock %}">
         {% block content %}{% endblock %}
     </main>
     <footer style="margin-top: 3rem; padding-bottom: 2rem; text-align: center; font-size: 0.85rem; color: #999;">
