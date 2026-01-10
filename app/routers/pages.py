@@ -37,7 +37,8 @@ def index(
     user: models.User | None = Depends(get_current_user), 
     db: Session = Depends(get_db),
     year: int = Query(default=None),
-    month: int = Query(default=None, ge=1, le=12)
+    month: int = Query(default=None, ge=1, le=12),
+    welcome_back: int = Query(default=None)
 ):
     if user:
         clazz = crud.get_class(db, user.class_id)
@@ -105,7 +106,8 @@ def index(
             "login_tokens": login_tokens,
             "upcoming_events": upcoming_events,
             "infos": infos,
-            "base_url": str(request.base_url).rstrip("/")
+            "base_url": str(request.base_url).rstrip("/"),
+            "welcome_back": welcome_back
         })
     else:
         return templates.TemplateResponse("landing.html", {"request": request})

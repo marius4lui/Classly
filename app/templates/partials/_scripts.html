@@ -524,4 +524,17 @@
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
     });
+
+    // Show welcome back message if user was already logged in
+    {% if welcome_back %}
+    setTimeout(() => {
+        showToast('Willkommen zurück, {{ user.name }}! 👋', 'success');
+        // Clean up the URL without reloading
+        if (window.history.replaceState) {
+            const url = new URL(window.location);
+            url.searchParams.delete('welcome_back');
+            window.history.replaceState({}, '', url);
+        }
+    }, 500);
+    {% endif %}
 </script>

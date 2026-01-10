@@ -13,6 +13,12 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
+def capitalize_name(name: str) -> str:
+    """Capitalize each word in a name (e.g. 'max mustermann' -> 'Max Mustermann')"""
+    if not name:
+        return name
+    return ' '.join(word.capitalize() for word in name.strip().split())
+
 # --- Class CRUD ---
 def create_class(db: Session, name: str, join_token: str):
     db_class = models.Class(name=name, join_token=join_token)
@@ -29,6 +35,8 @@ def get_class(db: Session, class_id: str):
 
 # --- User CRUD ---
 def create_user(db: Session, name: str, class_id: str, role: models.UserRole = models.UserRole.MEMBER, email: str = None, password: str = None):
+    # Capitalize each word in the name
+    name = capitalize_name(name)
     db_user = models.User(name=name, class_id=class_id, role=role)
     # Handle empty strings from HTML forms
     email = email.strip() if email else None
@@ -124,6 +132,9 @@ def get_subject(db: Session, subject_id: str):
 # --- Login Token CRUD ---
 def create_login_token(db: Session, class_id: str, created_by: str, user_id: str = None, user_name: str = None, max_uses: int = None, expires_at: datetime.datetime = None, role: models.UserRole = models.UserRole.MEMBER):
     """Create a login token for a specific user (existing or new by name)"""
+    # Capitalize user_name if provided
+    if user_name:
+        user_name = capitalize_name(user_name)
     db_token = models.LoginToken(
         class_id=class_id,
         created_by=created_by,
@@ -327,3 +338,30 @@ def get_audit_logs_for_class(db: Session, class_id: str, limit: int = 50):
     return db.query(models.AuditLog).filter(
         models.AuditLog.class_id == class_id
     ).order_by(models.AuditLog.created_at.desc()).limit(limit).all()
+
+# --- Data Migrations ---
+def migrate_capitalize_user_names(db: Session):
+    """
+    Migration: Capitalize all existing user names.
+    Called on startup to ensure all names are properly formatted.
+    """
+    users = db.query(models.User).all()
+    updated_count = 0
+    for user in users:
+        capitalized = capitalize_name(user.name)
+        if user.name != capitalized:
+            user.name = capitalized
+            updated_count += 1
+    
+    # Also update login token user names
+    tokens = db.query(models.LoginToken).filter(models.LoginToken.user_name.isnot(None)).all()
+    for token in tokens:
+        capitalized = capitalize_name(token.user_name)
+        if token.user_name != capitalized:
+            token.user_name = capitalized
+            updated_count += 1
+    
+    if updated_count > 0:
+        db.commit()
+        print(f"[Migration] Capitalized {updated_count} user names")
+    return updated_count
