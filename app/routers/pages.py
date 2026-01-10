@@ -10,6 +10,26 @@ import datetime
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
+@router.get("/impressum")
+def impressum(request: Request):
+    legal_info = {
+        "name": os.getenv("IMPRESSUM_NAME", "Nicht konfiguriert"),
+        "street": os.getenv("IMPRESSUM_STREET", "Nicht konfiguriert"),
+        "plz_ort": os.getenv("IMPRESSUM_PLZ_ORT", "Nicht konfiguriert"),
+        "email": os.getenv("CONTACT_EMAIL", "Nicht konfiguriert")
+    }
+    return templates.TemplateResponse("impressum.html", {"request": request, "legal_info": legal_info})
+
+@router.get("/datenschutz")
+def datenschutz(request: Request):
+    legal_info = {
+        "name": os.getenv("IMPRESSUM_NAME", "Nicht konfiguriert"),
+        "street": os.getenv("IMPRESSUM_STREET", "Nicht konfiguriert"),
+        "plz_ort": os.getenv("IMPRESSUM_PLZ_ORT", "Nicht konfiguriert"),
+        "email": os.getenv("CONTACT_EMAIL", "Nicht konfiguriert")
+    }
+    return templates.TemplateResponse("datenschutz.html", {"request": request, "legal_info": legal_info})
+
 @router.get("/")
 def index(
     request: Request, 
