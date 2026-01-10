@@ -4,7 +4,9 @@
     {% if upcoming_events %}
     <div class="upcoming-list">
         {% for event in upcoming_events %}
-        <div class="upcoming-item" onclick="openEventDetail('{{ event.id }}')" style="cursor: pointer;">
+        <div class="upcoming-item filterable-event" data-type="{{ event.type.value }}"
+            data-subject="{{ event.subject_id or '' }}" onclick="openEventDetail('{{ event.id }}')"
+            style="cursor: pointer;">
             <div class="upcoming-date">
                 <span class="day">{{ event.date.strftime('%d') }}</span>
                 <span class="month">{{ event.date.strftime('%b') }}</span>

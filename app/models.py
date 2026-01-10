@@ -39,6 +39,7 @@ class Class(Base):
     events = relationship("Event", back_populates="clazz")
     subjects = relationship("Subject", back_populates="clazz")
     login_tokens = relationship("LoginToken", back_populates="clazz")
+    audit_logs = relationship("AuditLog", back_populates="clazz")
 
 class User(Base):
     __tablename__ = "users"
@@ -173,5 +174,16 @@ class AuditLog(Base):
     permanent = Column(Boolean, default=False)  # Event-related logs are permanent
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
-    clazz = relationship("Class")
+    clazz = relationship("Class", back_populates="audit_logs")
     user = relationship("User")
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+
+    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    filter_subjects = Column(String, default="[]")  # JSON list of subjects
+    filter_event_types = Column(String, default="[]")  # JSON list of types
+    filter_priority = Column(String, default="[]")  # JSON list of priorities (high, medium, low)
+
+    user = relationship("User", backref="preferences")
+

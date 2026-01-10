@@ -537,4 +537,171 @@
         }
     }, 500);
     {% endif %}
+
+    // === MULTI-FILTER LOGIC ===
+    const FilterState = {
+        subjects: [],
+        types: [],
+        priority: [] // Reserved
+    };
+
+    const IS_GUEST = USER_ROLE === 'guest';
+    const PREFS_API_URL = '/preferences';
+
+    // Init - Load Filters
+    async function initFilters() {
+        if (IS_GUEST) {
+            loadFiltersLocal();
+        } else {
+            await loadFiltersRemote();
+        }
+        renderFilterState();
+        applyFilters();
+    }
+
+    // Load from LocalStorage
+    function loadFiltersLocal() {
+        const stored = localStorage.getItem('classly_filters');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            FilterState.subjects = parsed.subjects || [];
+            FilterState.types = parsed.types || [];
+        }
+    }
+
+    // Load from API
+    async function loadFiltersRemote() {
+        try {
+            const res = await fetch(PREFS_API_URL);
+            if (res.ok) {
+                const data = await res.json();
+                FilterState.subjects = data.filter_subjects || [];
+                FilterState.types = data.filter_event_types || [];
+            }
+        } catch (e) {
+            console.error("Failed to load prefs", e);
+        }
+    }
+
+    // Save Filters
+    function saveFilters() {
+        if (IS_GUEST) {
+            localStorage.setItem('classly_filters', JSON.stringify(FilterState));
+        } else {
+            // Debounce or just save
+            fetch(PREFS_API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filter_subjects: FilterState.subjects,
+                    filter_event_types: FilterState.types,
+                    filter_priority: FilterState.priority
+                })
+            });
+        }
+    }
+
+    // Toggle Filter Logic
+    function toggleFilter(category, value, el) {
+        let list;
+        if (category === 'subject') list = FilterState.subjects;
+        else if (category === 'type') list = FilterState.types;
+        else return;
+
+        const idx = list.indexOf(value);
+        if (idx > -1) {
+            list.splice(idx, 1); // Remove
+        } else {
+            list.push(value); // Add
+        }
+
+        saveFilters();
+        renderFilterState();
+        applyFilters();
+    }
+
+    // Update UI Chips
+    function renderFilterState() {
+        // Clear all active classes
+        document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+
+        // Apply active to subjects
+        FilterState.subjects.forEach(id => {
+            const el = document.querySelector(`.filter-chip[data-filter-type="subject"][data-value="${id}"]`);
+            if (el) el.classList.add('active');
+        });
+
+        // Apply active to types
+        FilterState.types.forEach(type => {
+            const el = document.querySelector(`.filter-chip[data-filter-type="type"][data-value="${type}"]`);
+            if (el) el.classList.add('active');
+        });
+
+        // Update count text
+        const totalFilters = FilterState.subjects.length + FilterState.types.length;
+        const countEl = document.getElementById('activeFilterCount');
+        if (totalFilters === 0) {
+            countEl.innerText = "Alle Termine sichtbar";
+        } else {
+            countEl.innerText = `${totalFilters} Filter aktiv`;
+        }
+    }
+
+    // Apply Logic to DOM
+    function applyFilters() {
+        const events = document.querySelectorAll('.filterable-event');
+        let visibleCount = 0;
+
+        events.forEach(el => {
+            const type = el.dataset.type;
+            const subject = el.dataset.subject; // might be empty string
+
+            // Check Subject Filter (if active, event must match one of the subjects)
+            let subjectMatch = true;
+            if (FilterState.subjects.length > 0) {
+                // If event has no subject, and we are filtering by subject, should it be shown?
+                // Usually "Other/All" is hidden if specific subjects are selected.
+                // Assuming stricter filtering: Must match.
+                subjectMatch = FilterState.subjects.includes(subject);
+            }
+
+            // Check Type Filter
+            let typeMatch = true;
+            if (FilterState.types.length > 0) {
+                typeMatch = FilterState.types.includes(type);
+            }
+
+            if (subjectMatch && typeMatch) {
+                el.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+    }
+
+    function resetFilters() {
+        FilterState.subjects = [];
+        FilterState.types = [];
+        saveFilters();
+        renderFilterState();
+        applyFilters();
+    }
+
+    function toggleFilterContent() {
+        const content = document.getElementById('filterContent');
+        const icon = document.getElementById('filterCollapseIcon');
+        const isHidden = content.style.display === 'none';
+
+        if (isHidden) {
+            content.style.display = 'block';
+            icon.innerText = '▲';
+        } else {
+            content.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    // Init on load
+    document.addEventListener('DOMContentLoaded', initFilters);
 </script>

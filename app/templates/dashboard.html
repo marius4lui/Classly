@@ -57,7 +57,54 @@
     </aside>
 
     <!-- Main Content -->
+    <!-- Main Content -->
     <main class="dashboard-main">
+        <!-- Filter Bar -->
+        <div class="filter-bar" id="filterBar">
+            <div class="filter-header">
+                <div>
+                    <h3 class="text-sm">Filter</h3>
+                    <p class="text-xs text-muted" id="activeFilterCount">Alle Termine sichtbar</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-secondary" onclick="resetFilters()">Reset</button>
+                    <button class="btn btn-sm btn-ghost" onclick="toggleFilterContent()">
+                        <span id="filterCollapseIcon">▼</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="filterContent" style="display: none;">
+                <!-- Subject Filter -->
+                <div class="filter-section">
+                    <div class="filter-title">Fächer</div>
+                    <div class="chip-container" id="subjectFilterContainer">
+                        {% for subject in subjects %}
+                        <button class="filter-chip" data-filter-type="subject" data-value="{{ subject.id }}"
+                            onclick="toggleFilter('subject', '{{ subject.id }}', this)">
+                            {{ subject.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="filter-section mt-2">
+                    <div class="filter-title">Typ</div>
+                    <div class="chip-container" id="typeFilterContainer">
+                        <button class="filter-chip" data-filter-type="type" data-value="KA"
+                            onclick="toggleFilter('type', 'KA', this)">Klassenarbeit</button>
+                        <button class="filter-chip" data-filter-type="type" data-value="TEST"
+                            onclick="toggleFilter('type', 'TEST', this)">Test</button>
+                        <button class="filter-chip" data-filter-type="type" data-value="HA"
+                            onclick="toggleFilter('type', 'HA', this)">Hausaufgabe</button>
+                        <button class="filter-chip" data-filter-type="type" data-value="INFO"
+                            onclick="toggleFilter('type', 'INFO', this)">Info</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {% include 'partials/_calendar.html' %}
 
         <!-- Admin Section -->

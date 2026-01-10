@@ -1406,7 +1406,7 @@ hr {
         grid-template-areas:
             "header header"
             "main widgets";
-        gap: 2rem;
+        gap: 1.5rem;
     }
 
     .header {
@@ -1431,7 +1431,7 @@ hr {
         grid-template-areas:
             "header header header"
             "sidebar main widgets";
-        gap: 2rem;
+        gap: 1.5rem;
         max-width: 1400px;
         margin: 0 auto;
     }
@@ -1493,4 +1493,79 @@ hr {
     .hide-on-lg {
         display: none !important;
     }
+}
+
+/* === Multi-Filter Styles === */
+.filter-bar {
+    background: var(--bg);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    position: sticky;
+    top: calc(1rem + 60px);
+    /* Adjust based on header height, simple sticky for now */
+    z-index: 90;
+    transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+    .filter-bar {
+        position: static;
+        top: auto;
+    }
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-section {
+    margin-top: 1rem;
+}
+
+.filter-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 0.5rem;
+}
+
+.chip-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--gray-300);
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
+.filter-chip.active {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+}
+
+/* Filter Logic Visibility */
+.filterable-event.hidden {
+    display: none !important;
 }

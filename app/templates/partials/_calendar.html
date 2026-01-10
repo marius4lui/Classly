@@ -1,5 +1,5 @@
 <!-- Calendar Title -->
-<div class="flex justify-between items-center mb-4 desktop-only">
+<div class="flex justify-between items-center mb-2 desktop-only">
     <h2>Kalender</h2>
     {% if user.role.value != 'guest' %}
     <button class="btn btn-primary" onclick="openModal()">+ Event</button>
@@ -8,7 +8,7 @@
 
 <!-- Calendar -->
 <!-- Legend -->
-<div class="flex items-center gap-3 mb-4 text-xs text-muted" style="flex-wrap: wrap;">
+<div class="flex items-center gap-2 mb-2 text-xs text-muted" style="flex-wrap: wrap;">
     <div class="flex items-center gap-2">
         <span
             style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color: var(--event-ka);"></span>
@@ -60,7 +60,8 @@
                 {{ day.day }}
             </div>
             {% for event in day.events %}
-            <div class="event-pill {{ event.type.value|lower }}"
+            <div class="event-pill {{ event.type.value|lower }} filterable-event" data-type="{{ event.type.value }}"
+                data-subject="{{ event.subject_id or '' }}"
                 onclick="openEventDetail('{{ event.id }}'); event.stopPropagation();">
                 {{ event.subject_name or event.type.value }}
             </div>
