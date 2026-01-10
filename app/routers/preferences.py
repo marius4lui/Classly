@@ -35,9 +35,9 @@ def get_preferences(
         }
         
     return {
-        "filter_subjects": json.loads(prefs.filter_subjects),
-        "filter_event_types": json.loads(prefs.filter_event_types),
-        "filter_priority": json.loads(prefs.filter_priority),
+        "filter_subjects": json.loads(prefs.filter_subjects or "[]"),
+        "filter_event_types": json.loads(prefs.filter_event_types or "[]"),
+        "filter_priority": json.loads(prefs.filter_priority or "[]"),
     }
 
 @router.put("")

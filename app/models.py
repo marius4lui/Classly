@@ -25,6 +25,11 @@ class EventType(str, enum.Enum):
     HA = "HA"
     INFO = "INFO"
 
+class Priority(str, enum.Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
 class Class(Base):
     __tablename__ = "classes"
 
@@ -112,6 +117,7 @@ class Event(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     class_id = Column(String, ForeignKey("classes.id"), nullable=False)
     type = Column(Enum(EventType), nullable=False)
+    priority = Column(Enum(Priority), default=Priority.MEDIUM)
     subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
     subject_name = Column(String, nullable=True)
     title = Column(String, nullable=True)

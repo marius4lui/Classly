@@ -102,6 +102,19 @@
                             onclick="toggleFilter('type', 'INFO', this)">Info</button>
                     </div>
                 </div>
+
+                <!-- Priority Filter -->
+                <div class="filter-section mt-2">
+                    <div class="filter-title">Priorität</div>
+                    <div class="chip-container" id="priorityFilterContainer">
+                        <button class="filter-chip" data-filter-type="priority" data-value="high"
+                            onclick="toggleFilter('priority', 'high', this)">Hoch 🔴</button>
+                        <button class="filter-chip" data-filter-type="priority" data-value="medium"
+                            onclick="toggleFilter('priority', 'medium', this)">Normal</button>
+                        <button class="filter-chip" data-filter-type="priority" data-value="low"
+                            onclick="toggleFilter('priority', 'low', this)">Niedrig</button>
+                    </div>
+                </div>
             </div>
         </div>
 

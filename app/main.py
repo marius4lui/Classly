@@ -3,10 +3,11 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base, SQLALCHEMY_DATABASE_URL, SessionLocal
 from app.routers import auth, pages, events, admin, caldav, preferences
-from app import fix_db_schema, crud
+from app import fix_db_schema, crud, auto_migrate
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
 fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
+auto_migrate.run_auto_migrations()
 
 # Create Tables
 Base.metadata.create_all(bind=engine)

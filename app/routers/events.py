@@ -15,6 +15,7 @@ def create_event(
     type: str = Form(...),
     subject_id: str = Form(None),
     subject_name: str = Form(None),
+    priority: str = Form("medium"), # Default medium
 
     date: str = Form(None),
     title: str = Form(None),
@@ -34,6 +35,12 @@ def create_event(
         subject = crud.get_subject(db, subject_id)
         if subject:
             actual_subject_name = subject.name
+    
+    # Parse Priority
+    try:
+        event_priority = models.Priority(priority)
+    except ValueError:
+        event_priority = models.Priority.MEDIUM
 
     event = crud.create_event(
         db=db, 
@@ -43,12 +50,13 @@ def create_event(
         subject_id=subject_id,
         subject_name=actual_subject_name,
         date=event_date, 
-        title=title
+        title=title,
+        priority=event_priority
     )
     
     # Audit log (permanent)
     crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.EVENT_CREATE,
-                          target_id=event.id, data=json.dumps({"type": type, "subject": actual_subject_name}),
+                          target_id=event.id, data=json.dumps({"type": type, "subject": actual_subject_name, "priority": priority}),
                           permanent=True)
     
     response.headers["HX-Redirect"] = "/"
@@ -69,6 +77,7 @@ def get_event_details(
     return {
         "id": event.id,
         "type": event.type.value,
+        "priority": event.priority.value if event.priority else "medium", 
         "subject_name": event.subject_name,
         "title": event.title,
         "date": event.date.strftime("%Y-%m-%d") if event.date else None,
@@ -86,6 +95,7 @@ def edit_event(
     subject_name: str = Form(None),
     title: str = Form(None),
     date: str = Form(None),
+    priority: str = Form(None),
     user: models.User = Depends(require_user),
     db: Session = Depends(get_db)
 ):
@@ -106,8 +116,16 @@ def edit_event(
             event_type = models.EventType(type)
         except:
             pass
+            
+    event_priority = None
+    if priority:
+        try:
+            event_priority = models.Priority(priority)
+        except:
+            pass
     
-    crud.update_event(db, event_id, type=event_type, subject_name=subject_name, title=title, date=event_date)
+    crud.update_event(db, event_id, type=event_type, subject_name=subject_name, 
+                      title=title, date=event_date, priority=event_priority)
     
     # Audit log (permanent)
     crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.EVENT_EDIT,

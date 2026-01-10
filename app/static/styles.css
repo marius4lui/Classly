@@ -1569,3 +1569,38 @@ hr {
 .filterable-event.hidden {
     display: none !important;
 }
+
+/* === Event Priority Styles === */
+.event-pill.priority-high {
+    border: 2px solid var(--error) !important;
+    padding-right: 4px;
+    /* Adjust for icon */
+}
+
+.event-pill.priority-high::after {
+    content: "🔴";
+    margin-left: 4px;
+    font-size: 0.8em;
+}
+
+.event-pill.priority-medium {
+    border: 2px solid #facc15 !important;
+    /* Yellow */
+}
+
+.event-pill.priority-low {
+    border: 2px solid var(--gray-300) !important;
+}
+
+/* Upcoming Item Priorities */
+.upcoming-item.priority-high {
+    border-left: 4px solid var(--error) !important;
+}
+
+.upcoming-item.priority-medium {
+    border-left: 4px solid #facc15 !important;
+}
+
+.upcoming-item.priority-low {
+    border-left: 4px solid var(--gray-300) !important;
+}

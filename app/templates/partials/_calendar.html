@@ -60,8 +60,9 @@
                 {{ day.day }}
             </div>
             {% for event in day.events %}
-            <div class="event-pill {{ event.type.value|lower }} filterable-event" data-type="{{ event.type.value }}"
-                data-subject="{{ event.subject_id or '' }}"
+            <div class="event-pill {{ event.type.value|lower }} priority-{{ event.priority.value }} filterable-event"
+                data-type="{{ event.type.value }}" data-subject="{{ event.subject_id or '' }}"
+                data-priority="{{ event.priority.value }}"
                 onclick="openEventDetail('{{ event.id }}'); event.stopPropagation();">
                 {{ event.subject_name or event.type.value }}
             </div>

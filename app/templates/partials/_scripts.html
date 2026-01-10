@@ -253,7 +253,10 @@
         // Main Content
         document.getElementById('eventDetailContent').innerHTML = `
             <div class="event-detail-header">
-                <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
+                <div>
+                    <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
+                     ${event.priority === 'high' ? '<span class="text-error font-bold ml-2">🔴 Hoch</span>' : (event.priority === 'low' ? '<span class="text-muted ml-2">Niedrig</span>' : '')}
+                </div>
                 <span class="text-muted text-sm">${event.date || 'Info'}</span>
             </div>
             <h2 class="mt-2">${event.subject_name || 'Allgemein'}</h2>
@@ -397,6 +400,14 @@
                 <div class="form-group">
                     <label>Details</label>
                     <input type="text" name="title" value="${event.title || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Priorität</label>
+                    <select name="priority">
+                        <option value="medium" ${(!event.priority || event.priority === 'medium') ? 'selected' : ''}>Normal (Standard)</option>
+                        <option value="high" ${event.priority === 'high' ? 'selected' : ''}>Hoch 🔴</option>
+                        <option value="low" ${event.priority === 'low' ? 'selected' : ''}>Niedrig</option>
+                    </select>
                 </div>
                 <!-- Hidden submit button to allow Enter key to work -->
                 <button type="submit" style="display:none;"></button>
@@ -606,6 +617,7 @@
         let list;
         if (category === 'subject') list = FilterState.subjects;
         else if (category === 'type') list = FilterState.types;
+        else if (category === 'priority') list = FilterState.priority;
         else return;
 
         const idx = list.indexOf(value);
@@ -637,8 +649,14 @@
             if (el) el.classList.add('active');
         });
 
+        // Apply active to priorities
+        FilterState.priority.forEach(p => {
+            const el = document.querySelector(`.filter-chip[data-filter-type="priority"][data-value="${p}"]`);
+            if (el) el.classList.add('active');
+        });
+
         // Update count text
-        const totalFilters = FilterState.subjects.length + FilterState.types.length;
+        const totalFilters = FilterState.subjects.length + FilterState.types.length + FilterState.priority.length;
         const countEl = document.getElementById('activeFilterCount');
         if (totalFilters === 0) {
             countEl.innerText = "Alle Termine sichtbar";
@@ -671,7 +689,16 @@
                 typeMatch = FilterState.types.includes(type);
             }
 
-            if (subjectMatch && typeMatch) {
+            // Check Priority Filter
+            let priorityMatch = true;
+            if (FilterState.priority.length > 0) {
+                // If event has no priority (default?), element dataset might act weird if empty.
+                // But we rendered it as 'priority-medium' or something.
+                const p = el.dataset.priority || 'medium';
+                priorityMatch = FilterState.priority.includes(p);
+            }
+
+            if (subjectMatch && typeMatch && priorityMatch) {
                 el.classList.remove('hidden');
                 visibleCount++;
             } else {
@@ -683,6 +710,7 @@
     function resetFilters() {
         FilterState.subjects = [];
         FilterState.types = [];
+        FilterState.priority = [];
         saveFilters();
         renderFilterState();
         applyFilters();

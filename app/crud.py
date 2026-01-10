@@ -183,7 +183,9 @@ def delete_login_token(db: Session, token_id: str):
     return False
 
 # --- Event CRUD ---
-def create_event(db: Session, class_id: str, author_id: str, type: models.EventType, date: datetime.datetime, subject_id: str = None, subject_name: str = None, title: str = None):
+def create_event(db: Session, class_id: str, author_id: str, type: models.EventType, date: datetime.datetime, 
+                 subject_id: str = None, subject_name: str = None, title: str = None, 
+                 priority: models.Priority = models.Priority.MEDIUM):
     db_event = models.Event(
         class_id=class_id,
         author_id=author_id,
@@ -191,7 +193,8 @@ def create_event(db: Session, class_id: str, author_id: str, type: models.EventT
         subject_id=subject_id,
         subject_name=subject_name,
         date=date,
-        title=title
+        title=title,
+        priority=priority
     )
     db.add(db_event)
     db.commit()
@@ -241,13 +244,14 @@ def get_event(db: Session, event_id: str):
     return db.query(models.Event).filter(models.Event.id == event_id).first()
 
 def update_event(db: Session, event_id: str, type: models.EventType = None, subject_name: str = None, 
-                 title: str = None, date: datetime.datetime = None):
+                 title: str = None, date: datetime.datetime = None, priority: models.Priority = None):
     event = get_event(db, event_id)
     if event:
         if type: event.type = type
         if subject_name is not None: event.subject_name = subject_name
         if title is not None: event.title = title
         if date: event.date = date
+        if priority: event.priority = priority
         db.commit()
         db.refresh(event)
         return event

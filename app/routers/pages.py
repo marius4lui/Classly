@@ -70,9 +70,18 @@ def index(
         subjects = crud.get_subjects_for_class(db, clazz.id)
         
         # Filter upcoming events (today or future, sorted by date)
+        # Filter upcoming events (today or future, sorted by date)
         dated_events = [e for e in events if e.date is not None]
         upcoming_events = [e for e in dated_events if e.date.date() >= today.date()]
-        upcoming_events = sorted(upcoming_events, key=lambda x: x.date)[:10]
+        
+        # Sort by Date ASC, then Priority (High > Medium > Low)
+        def priority_score(e):
+            val = e.priority.value if e.priority else 'medium'
+            if val == 'high': return 3
+            if val == 'medium': return 2
+            return 1
+            
+        upcoming_events = sorted(upcoming_events, key=lambda x: (x.date.date(), -priority_score(x)))[:10]
         
         # Infos (Type INFO)
         infos = [e for e in events if e.type == models.EventType.INFO]
