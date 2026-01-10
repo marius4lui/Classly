@@ -1,15 +1,26 @@
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.database import engine, Base, SQLALCHEMY_DATABASE_URL
-from app.routers import auth, pages, events, admin, caldav
-from app import fix_db_schema
+from app.database import engine, Base, SQLALCHEMY_DATABASE_URL, SessionLocal
+from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable
+from app import fix_db_schema, crud, auto_migrate
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
 fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
+auto_migrate.run_auto_migrations()
 
 # Create Tables
 Base.metadata.create_all(bind=engine)
+
+# Run Data Migrations
+def run_migrations():
+    db = SessionLocal()
+    try:
+        crud.migrate_capitalize_user_names(db)
+    finally:
+        db.close()
+
+run_migrations()
 
 app = FastAPI(title="Classly")
 
@@ -50,3 +61,6 @@ app.include_router(pages.router)
 app.include_router(events.router)
 app.include_router(admin.router)
 app.include_router(caldav.router)
+app.include_router(preferences.router)
+app.include_router(grades.router)
+app.include_router(timetable.router)

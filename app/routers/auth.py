@@ -137,7 +137,7 @@ def show_join_page(
     if session_token:
         user = crud.get_user_by_session(db, session_token)
         if user:
-            return RedirectResponse(url="/")
+            return RedirectResponse(url="/?welcome_back=1")
 
     # First check if it's a class join token
     clazz = crud.get_class_by_token(db, token)
@@ -182,6 +182,8 @@ def join_class(
     join_token: str = Form(None),
     login_token: str = Form(None),
     user_name: str = Form(...),
+    email: str = Form(None),
+    password: str = Form(None),
     db: Session = Depends(get_db)
 ):
     if join_token:
@@ -203,7 +205,7 @@ def join_class(
         if target_user:
             new_user = target_user
         else:
-            new_user = crud.create_user(db, name=user_name, class_id=clazz.id, role=models.UserRole.MEMBER)
+            new_user = crud.create_user(db, name=user_name, class_id=clazz.id, role=models.UserRole.MEMBER, email=email, password=password)
         
     elif login_token:
         # Login token
@@ -211,7 +213,7 @@ def join_class(
         if not token_obj:
             raise HTTPException(status_code=403, detail="Invalid or expired link")
         
-        new_user = crud.create_user(db, name=user_name, class_id=token_obj.class_id, role=models.UserRole.MEMBER)
+        new_user = crud.create_user(db, name=user_name, class_id=token_obj.class_id, role=models.UserRole.MEMBER, email=email, password=password)
     else:
         raise HTTPException(status_code=400, detail="No token provided")
     
@@ -219,6 +221,31 @@ def join_class(
     set_session_cookie(response, new_user.session_token)
     response.headers["HX-Redirect"] = "/"
     return {"status": "success"}
+
+@router.post("/auth/login-class")
+def login_class(
+    response: Response,
+    class_id: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Login with email/password but verify user belongs to specific class"""
+    user = crud.get_user_by_email(db, email)
+    if not user or not user.password_hash:
+        raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
+    
+    if not crud.verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Ungültige Anmeldedaten")
+    
+    # Verify user belongs to this class
+    if user.class_id != class_id:
+        raise HTTPException(status_code=401, detail="Du bist nicht Mitglied dieser Klasse")
+    
+    # Set cookie with proper settings
+    set_session_cookie(response, user.session_token)
+    response.headers["HX-Redirect"] = "/"
+    return {"status": "logged in"}
 
 @router.get("/auth/logout")
 def logout():

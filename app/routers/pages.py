@@ -37,7 +37,8 @@ def index(
     user: models.User | None = Depends(get_current_user), 
     db: Session = Depends(get_db),
     year: int = Query(default=None),
-    month: int = Query(default=None, ge=1, le=12)
+    month: int = Query(default=None, ge=1, le=12),
+    welcome_back: int = Query(default=None)
 ):
     if user:
         clazz = crud.get_class(db, user.class_id)
@@ -69,9 +70,18 @@ def index(
         subjects = crud.get_subjects_for_class(db, clazz.id)
         
         # Filter upcoming events (today or future, sorted by date)
+        # Filter upcoming events (today or future, sorted by date)
         dated_events = [e for e in events if e.date is not None]
         upcoming_events = [e for e in dated_events if e.date.date() >= today.date()]
-        upcoming_events = sorted(upcoming_events, key=lambda x: x.date)[:10]
+        
+        # Sort by Date ASC, then Priority (High > Medium > Low)
+        def priority_score(e):
+            val = e.priority.value if e.priority else 'medium'
+            if val == 'high': return 3
+            if val == 'medium': return 2
+            return 1
+            
+        upcoming_events = sorted(upcoming_events, key=lambda x: (x.date.date(), -priority_score(x)))[:10]
         
         # Infos (Type INFO)
         infos = [e for e in events if e.type == models.EventType.INFO]
@@ -86,6 +96,11 @@ def index(
         # Single month calendar
         calendar_data = calendar_utils.get_month_calendar(cal_year, cal_month, dated_events)
         current_month_name = datetime.date(cal_year, cal_month, 1).strftime("%B %Y")
+        
+        # Grade statistics (only for registered users)
+        grade_stats = None
+        if user.is_registered:
+            grade_stats = crud.get_grade_statistics(db, user.id, clazz.id)
         
         return templates.TemplateResponse("dashboard.html", {
             "request": request, 
@@ -105,7 +120,26 @@ def index(
             "login_tokens": login_tokens,
             "upcoming_events": upcoming_events,
             "infos": infos,
-            "base_url": str(request.base_url).rstrip("/")
+            "base_url": str(request.base_url).rstrip("/"),
+            "welcome_back": welcome_back,
+            "grade_stats": grade_stats
         })
     else:
         return templates.TemplateResponse("landing.html", {"request": request})
+
+@router.get("/stundenplan")
+def stundenplan(
+    request: Request,
+    user: models.User | None = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Timetable page - requires registered user"""
+    if not user:
+        return RedirectResponse("/", status_code=302)
+    if not user.is_registered:
+        return RedirectResponse("/", status_code=302)
+    
+    return templates.TemplateResponse("timetable.html", {
+        "request": request,
+        "user": user
+    })

@@ -230,6 +230,20 @@
             `;
         }
 
+        // Grade Section (only for KA/TEST and registered users)
+        let gradeHtml = '';
+        if ((event.type === 'KA' || event.type === 'TEST') && IS_REGISTERED) {
+            gradeHtml = `
+                <hr>
+                <h3 class="text-sm mb-2">📝 Deine Note</h3>
+                <div id="gradeSection">
+                    <div class="add-grade-btn" onclick="openGradeModal('${event.id}')" id="gradeLoadingBtn">
+                        <span>⏳</span> Lade...
+                    </div>
+                </div>
+            `;
+        }
+
         // Footer / Actions
         // Clear previous footer buttons first
         const modalFooter = document.querySelector('#eventDetailModal .modal-footer');
@@ -253,7 +267,10 @@
         // Main Content
         document.getElementById('eventDetailContent').innerHTML = `
             <div class="event-detail-header">
-                <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
+                <div>
+                    <span class="upcoming-type ${event.type.toLowerCase()}">${event.type}</span>
+                     ${event.priority === 'high' ? '<span class="text-error font-bold ml-2">🔴 Hoch</span>' : (event.priority === 'low' ? '<span class="text-muted ml-2">Niedrig</span>' : '')}
+                </div>
                 <span class="text-muted text-sm">${event.date || 'Info'}</span>
             </div>
             <h2 class="mt-2">${event.subject_name || 'Allgemein'}</h2>
@@ -262,7 +279,54 @@
 
             ${topicsHtml}
             ${linksHtml}
+            ${gradeHtml}
         `;
+
+        // Load grade asynchronously if applicable
+        if ((event.type === 'KA' || event.type === 'TEST') && IS_REGISTERED) {
+            loadAndDisplayGrade(event.id, event.type);
+        }
+    }
+
+    async function loadAndDisplayGrade(eventId, eventType = 'KA') {
+        const gradeSection = document.getElementById('gradeSection');
+        if (!gradeSection) return;
+
+        try {
+            const res = await fetch(`/grades/event/${eventId}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.grade !== null) {
+                    // Show existing grade with weight
+                    const weightLabel = data.weight === 1.0 ? '' : ` (×${data.weight})`;
+                    gradeSection.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <span class="event-grade-badge">📝 ${data.grade.toFixed(1)}${weightLabel}</span>
+                            <button class="btn btn-sm btn-secondary" onclick="openGradeModal('${eventId}', ${data.grade}, ${data.weight}, '${eventType}')">Ändern</button>
+                        </div>
+                    `;
+                } else {
+                    // Show add button
+                    gradeSection.innerHTML = `
+                        <div class="add-grade-btn" onclick="openGradeModal('${eventId}', null, null, '${eventType}')">
+                            <span>➕</span> Note hinzufügen
+                        </div>
+                    `;
+                }
+            } else if (res.status === 403) {
+                // Not registered
+                gradeSection.innerHTML = `
+                    <p class="text-xs text-muted">Registriere dich, um Noten zu erfassen</p>
+                `;
+            }
+        } catch (e) {
+            console.error('Failed to load grade', e);
+            gradeSection.innerHTML = `
+                <div class="add-grade-btn" onclick="openGradeModal('${eventId}', null, null, '${eventType}')">
+                    <span>➕</span> Note hinzufügen
+                </div>
+            `;
+        }
     }
 
     function renderEditMode() {
@@ -398,6 +462,14 @@
                     <label>Details</label>
                     <input type="text" name="title" value="${event.title || ''}">
                 </div>
+                <div class="form-group">
+                    <label>Priorität</label>
+                    <select name="priority">
+                        <option value="medium" ${(!event.priority || event.priority === 'medium') ? 'selected' : ''}>Normal (Standard)</option>
+                        <option value="high" ${event.priority === 'high' ? 'selected' : ''}>Hoch 🔴</option>
+                        <option value="low" ${event.priority === 'low' ? 'selected' : ''}>Niedrig</option>
+                    </select>
+                </div>
                 <!-- Hidden submit button to allow Enter key to work -->
                 <button type="submit" style="display:none;"></button>
             </form>
@@ -524,4 +596,315 @@
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
     });
+
+    // Show welcome back message if user was already logged in
+    {% if welcome_back %}
+    setTimeout(() => {
+        showToast('Willkommen zurück, {{ user.name }}! 👋', 'success');
+        // Clean up the URL without reloading
+        if (window.history.replaceState) {
+            const url = new URL(window.location);
+            url.searchParams.delete('welcome_back');
+            window.history.replaceState({}, '', url);
+        }
+    }, 500);
+    {% endif %}
+
+    // === MULTI-FILTER LOGIC ===
+    const FilterState = {
+        subjects: [],
+        types: [],
+        priority: [] // Reserved
+    };
+
+    const IS_GUEST = USER_ROLE === 'guest';
+    const PREFS_API_URL = '/preferences';
+
+    // Init - Load Filters
+    async function initFilters() {
+        if (IS_GUEST) {
+            loadFiltersLocal();
+        } else {
+            await loadFiltersRemote();
+        }
+        renderFilterState();
+        applyFilters();
+    }
+
+    // Load from LocalStorage
+    function loadFiltersLocal() {
+        const stored = localStorage.getItem('classly_filters');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            FilterState.subjects = parsed.subjects || [];
+            FilterState.types = parsed.types || [];
+        }
+    }
+
+    // Load from API
+    async function loadFiltersRemote() {
+        try {
+            const res = await fetch(PREFS_API_URL);
+            if (res.ok) {
+                const data = await res.json();
+                FilterState.subjects = data.filter_subjects || [];
+                FilterState.types = data.filter_event_types || [];
+            }
+        } catch (e) {
+            console.error("Failed to load prefs", e);
+        }
+    }
+
+    // Save Filters
+    function saveFilters() {
+        if (IS_GUEST) {
+            localStorage.setItem('classly_filters', JSON.stringify(FilterState));
+        } else {
+            // Debounce or just save
+            fetch(PREFS_API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filter_subjects: FilterState.subjects,
+                    filter_event_types: FilterState.types,
+                    filter_priority: FilterState.priority
+                })
+            });
+        }
+    }
+
+    // Toggle Filter Logic
+    function toggleFilter(category, value, el) {
+        let list;
+        if (category === 'subject') list = FilterState.subjects;
+        else if (category === 'type') list = FilterState.types;
+        else if (category === 'priority') list = FilterState.priority;
+        else return;
+
+        const idx = list.indexOf(value);
+        if (idx > -1) {
+            list.splice(idx, 1); // Remove
+        } else {
+            list.push(value); // Add
+        }
+
+        saveFilters();
+        renderFilterState();
+        applyFilters();
+    }
+
+    // Update UI Chips
+    function renderFilterState() {
+        // Clear all active classes
+        document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+
+        // Apply active to subjects
+        FilterState.subjects.forEach(id => {
+            const el = document.querySelector(`.filter-chip[data-filter-type="subject"][data-value="${id}"]`);
+            if (el) el.classList.add('active');
+        });
+
+        // Apply active to types
+        FilterState.types.forEach(type => {
+            const el = document.querySelector(`.filter-chip[data-filter-type="type"][data-value="${type}"]`);
+            if (el) el.classList.add('active');
+        });
+
+        // Apply active to priorities
+        FilterState.priority.forEach(p => {
+            const el = document.querySelector(`.filter-chip[data-filter-type="priority"][data-value="${p}"]`);
+            if (el) el.classList.add('active');
+        });
+
+        // Update count text
+        const totalFilters = FilterState.subjects.length + FilterState.types.length + FilterState.priority.length;
+        const countEl = document.getElementById('activeFilterCount');
+        if (totalFilters === 0) {
+            countEl.innerText = "Alle Termine sichtbar";
+        } else {
+            countEl.innerText = `${totalFilters} Filter aktiv`;
+        }
+    }
+
+    // Apply Logic to DOM
+    function applyFilters() {
+        const events = document.querySelectorAll('.filterable-event');
+        let visibleCount = 0;
+
+        events.forEach(el => {
+            const type = el.dataset.type;
+            const subject = el.dataset.subject; // might be empty string
+
+            // Check Subject Filter (if active, event must match one of the subjects)
+            let subjectMatch = true;
+            if (FilterState.subjects.length > 0) {
+                // If event has no subject, and we are filtering by subject, should it be shown?
+                // Usually "Other/All" is hidden if specific subjects are selected.
+                // Assuming stricter filtering: Must match.
+                subjectMatch = FilterState.subjects.includes(subject);
+            }
+
+            // Check Type Filter
+            let typeMatch = true;
+            if (FilterState.types.length > 0) {
+                typeMatch = FilterState.types.includes(type);
+            }
+
+            // Check Priority Filter
+            let priorityMatch = true;
+            if (FilterState.priority.length > 0) {
+                // If event has no priority (default?), element dataset might act weird if empty.
+                // But we rendered it as 'priority-medium' or something.
+                const p = el.dataset.priority || 'medium';
+                priorityMatch = FilterState.priority.includes(p);
+            }
+
+            if (subjectMatch && typeMatch && priorityMatch) {
+                el.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+    }
+
+    function resetFilters() {
+        FilterState.subjects = [];
+        FilterState.types = [];
+        FilterState.priority = [];
+        saveFilters();
+        renderFilterState();
+        applyFilters();
+    }
+
+    function toggleFilterContent() {
+        const content = document.getElementById('filterContent');
+        const icon = document.getElementById('filterCollapseIcon');
+        const isHidden = content.style.display === 'none';
+
+        if (isHidden) {
+            content.style.display = 'block';
+            icon.innerText = '▲';
+        } else {
+            content.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    // Init on load
+    document.addEventListener('DOMContentLoaded', initFilters);
+
+    // === GRADE MANAGEMENT ===
+    function openGradeModal(eventId, existingGrade = null, existingWeight = null, eventType = 'KA') {
+        document.getElementById('gradeEventId').value = eventId;
+        document.getElementById('gradeEventType').value = eventType;
+        const gradeInput = document.getElementById('gradeInput');
+        const weightSelect = document.getElementById('gradeWeight');
+
+        if (existingGrade) {
+            gradeInput.value = existingGrade;
+        } else {
+            gradeInput.value = '';
+        }
+
+        // Set default weight based on event type
+        if (existingWeight) {
+            weightSelect.value = existingWeight.toString();
+        } else if (eventType === 'TEST') {
+            weightSelect.value = '0.5';
+        } else {
+            weightSelect.value = '1.0';
+        }
+
+        updateGradePreview();
+        document.getElementById('gradeModal').classList.add('active');
+        gradeInput.focus();
+    }
+
+    function closeGradeModal() {
+        document.getElementById('gradeModal').classList.remove('active');
+        document.getElementById('gradeInput').value = '';
+    }
+
+    function updateGradePreview() {
+        const gradeInput = document.getElementById('gradeInput');
+        const previewBox = document.getElementById('gradePreviewBox');
+        const previewValue = document.getElementById('gradePreviewValue');
+        const value = parseFloat(gradeInput.value);
+
+        if (isNaN(value) || value < 1 || value > 6) {
+            previewBox.style.display = 'none';
+            return;
+        }
+
+        previewBox.style.display = 'block';
+        previewValue.textContent = value.toFixed(1);
+
+        // Update color based on grade
+        previewValue.classList.remove('grade-good', 'grade-medium', 'grade-bad');
+        if (value <= 2.0) {
+            previewValue.classList.add('grade-good');
+        } else if (value <= 3.5) {
+            previewValue.classList.add('grade-medium');
+        } else {
+            previewValue.classList.add('grade-bad');
+        }
+    }
+
+    async function submitGrade(e) {
+        e.preventDefault();
+        const eventId = document.getElementById('gradeEventId').value;
+        const grade = document.getElementById('gradeInput').value;
+        const weight = document.getElementById('gradeWeight').value;
+
+        // Validate
+        const gradeNum = parseFloat(grade);
+        if (isNaN(gradeNum) || gradeNum < 1 || gradeNum > 6) {
+            showToast('Note muss zwischen 1.0 und 6.0 sein', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('event_id', eventId);
+        formData.append('grade', grade);
+        formData.append('weight', weight);
+
+        try {
+            const res = await fetch('/grades', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                showToast('Note gespeichert! 📝', 'success');
+                closeGradeModal();
+                // Refresh current event detail if open
+                if (currentEventId === eventId) {
+                    await refreshEventDetailContent(eventId);
+                }
+                // Reload page to update widget
+                setTimeout(() => location.reload(), 500);
+            } else {
+                const data = await res.json();
+                showToast(data.detail || 'Fehler beim Speichern', 'error');
+            }
+        } catch (err) {
+            showToast('Netzwerkfehler', 'error');
+        }
+    }
+
+    async function loadGradeForEvent(eventId) {
+        if (!IS_REGISTERED) return null;
+
+        try {
+            const res = await fetch(`/grades/event/${eventId}`);
+            if (res.ok) {
+                const data = await res.json();
+                return data;
+            }
+        } catch (e) {
+            console.error('Failed to load grade', e);
+        }
+        return null;
+    }
 </script>

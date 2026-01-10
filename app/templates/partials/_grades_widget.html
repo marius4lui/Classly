@@ -1,0 +1,76 @@
+<!-- Grade Statistics Widget - Only for registered users -->
+{% if user.is_registered and grade_stats %}
+<section class="grade-stats-section" style="margin-top: 2rem; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>📊 Dein Notenschnitt</h2>
+    </div>
+
+    {% if grade_stats.count > 0 %}
+    <div class="grade-stats-card">
+        <!-- Overall Average -->
+        <div class="grade-overall">
+            <div class="grade-overall-value">{{ grade_stats.overall }}</div>
+            <div class="grade-overall-label">Gesamtschnitt (gewichtet)</div>
+            <div class="text-xs text-muted">aus {{ grade_stats.count }} Note{% if grade_stats.count != 1 %}n{% endif %}
+            </div>
+        </div>
+
+        <!-- Per Subject Averages with Details -->
+        {% if grade_stats.subjects %}
+        <div class="grade-subjects-list">
+            {% for subject, data in grade_stats.subjects.items() %}
+            <div class="grade-subject-item">
+                <div style="flex: 1;">
+                    <div class="grade-subject-name">{{ subject }}</div>
+                    <div style="font-size: 0.7rem; opacity: 0.7;">{{ data.count }} Note{% if data.count != 1 %}n{% endif
+                        %}</div>
+                </div>
+                <div class="grade-subject-score">
+                    <span
+                        class="grade-value {% if data.average <= 2.0 %}grade-good{% elif data.average <= 3.5 %}grade-medium{% else %}grade-bad{% endif %}">
+                        {{ data.average }}
+                    </span>
+                </div>
+            </div>
+            <!-- Show individual grades per subject (expandable) -->
+            {% if data.grades %}
+            <div class="grade-detail-list" style="margin-left: 0.5rem; margin-bottom: 0.75rem;">
+                {% for grade in data.grades %}
+                <div class="grade-detail-item">
+                    <div class="grade-detail-info">
+                        <span class="grade-detail-title">{{ grade.type }}{% if grade.title %}: {{ grade.title }}{% endif
+                            %}</span>
+                        <span class="grade-detail-meta">{{ grade.date or 'Kein Datum' }}{% if grade.weight != 1.0 %} ·
+                            ×{{ grade.weight }}{% endif %}</span>
+                    </div>
+                    <span class="grade-detail-value">{{ grade.grade }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="grade-empty-state">
+        <div class="grade-empty-icon">📝</div>
+        <p class="text-muted text-center">Noch keine Noten eingetragen</p>
+        <p class="text-xs text-muted text-center">Du kannst bei KA/Test Terminen deine Noten hinzufügen</p>
+    </div>
+    {% endif %}
+</section>
+{% elif not user.is_registered %}
+<section class="grade-stats-section" style="margin-top: 2rem; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>📊 Notenschnitt</h2>
+    </div>
+    <div class="grade-locked-state">
+        <div class="grade-locked-icon">🔒</div>
+        <p class="text-sm text-center">Registriere dich, um deine Noten privat zu verwalten</p>
+        <button onclick="openRegisterModal()" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;">
+            Account verbinden
+        </button>
+    </div>
+</section>
+{% endif %}

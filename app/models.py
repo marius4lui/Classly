@@ -2,7 +2,7 @@ import enum
 import datetime
 import uuid
 import secrets
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum, Float, Time
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -25,6 +25,11 @@ class EventType(str, enum.Enum):
     HA = "HA"
     INFO = "INFO"
 
+class Priority(str, enum.Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
 class Class(Base):
     __tablename__ = "classes"
 
@@ -39,6 +44,7 @@ class Class(Base):
     events = relationship("Event", back_populates="clazz")
     subjects = relationship("Subject", back_populates="clazz")
     login_tokens = relationship("LoginToken", back_populates="clazz")
+    audit_logs = relationship("AuditLog", back_populates="clazz")
 
 class User(Base):
     __tablename__ = "users"
@@ -111,6 +117,7 @@ class Event(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     class_id = Column(String, ForeignKey("classes.id"), nullable=False)
     type = Column(Enum(EventType), nullable=False)
+    priority = Column(Enum(Priority), default=Priority.MEDIUM)
     subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
     subject_name = Column(String, nullable=True)
     title = Column(String, nullable=True)
@@ -173,5 +180,74 @@ class AuditLog(Base):
     permanent = Column(Boolean, default=False)  # Event-related logs are permanent
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
-    clazz = relationship("Class")
+    clazz = relationship("Class", back_populates="audit_logs")
     user = relationship("User")
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+
+    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    filter_subjects = Column(String, default="[]")  # JSON list of subjects
+    filter_event_types = Column(String, default="[]")  # JSON list of types
+    filter_priority = Column(String, default="[]")  # JSON list of priorities (high, medium, low)
+
+    user = relationship("User", backref="preferences")
+
+class Grade(Base):
+    """Private grades for registered users - only visible to the user who created them"""
+    __tablename__ = "grades"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    event_id = Column(String, ForeignKey("events.id"), nullable=False)
+    grade = Column(Float, nullable=False)  # 1.0 - 6.0 (German grading scale)
+    weight = Column(Float, default=1.0)  # Weight for averaging (e.g. KA=1.0, Test=0.5)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    user = relationship("User", backref="grades")
+    event = relationship("Event", backref="grades")
+
+# === Timetable Models ===
+
+class TimetableSettings(Base):
+    """Stundenplan-Einstellungen pro Klasse"""
+    __tablename__ = "timetable_settings"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    class_id = Column(String, ForeignKey("classes.id"), unique=True, nullable=False)
+    slot_duration = Column(Integer, default=45)  # Minuten pro Stunde
+    break_duration = Column(Integer, default=15)  # Minuten Pause
+    day_start_hour = Column(Integer, default=8)   # Startzeit Stunde (08:00)
+    day_start_minute = Column(Integer, default=0)
+    day_end_hour = Column(Integer, default=16)    # Endzeit Stunde (16:00)
+    day_end_minute = Column(Integer, default=0)
+    
+    clazz = relationship("Class", backref="timetable_settings")
+
+class TimetableSlot(Base):
+    """Ein Zeitslot im Stundenplan - von Admin erstellt"""
+    __tablename__ = "timetable_slots"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    weekday = Column(Integer, nullable=False)  # 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr
+    slot_number = Column(Integer, nullable=False)  # 1, 2, 3... (Stundennummer des Tages)
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
+    subject_name = Column(String, nullable=True)  # Fallback/Override für Fachname
+    group_name = Column(String, nullable=True)  # z.B. "Bili", "Grundkurs", "LK"
+    room = Column(String, nullable=True)
+    
+    clazz = relationship("Class", backref="timetable_slots")
+    subject = relationship("Subject", backref="timetable_slots")
+
+class UserTimetableSelection(Base):
+    """User-Auswahl für Kurse/Gruppen - für personalisierten Stundenplan"""
+    __tablename__ = "user_timetable_selections"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    slot_id = Column(String, ForeignKey("timetable_slots.id"), nullable=False)
+    
+    user = relationship("User", backref="timetable_selections")
+    slot = relationship("TimetableSlot", backref="user_selections")
+

@@ -1,26 +1,332 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Header -->
-<header class="header">
-    <div>
-        <h1>{{ clazz.name }}</h1>
-        <p class="text-sm text-muted">{{ user.name }}</p>
-    </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        {% if not user.is_registered %}
-        <button onclick="openRegisterModal()" class="btn btn-header-upgrade">
-            🔒 Account verbinden
-        </button>
+<div class="dashboard-layout">
+    <!-- Header -->
+    <header class="header">
+        <div>
+            <h1>{{ clazz.name }}</h1>
+            <p class="text-sm text-muted">{{ user.name }}</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            {% if not user.is_registered %}
+            <button onclick="openRegisterModal()" class="btn btn-header-upgrade">
+                🔒 Account verbinden
+            </button>
+            {% endif %}
+            <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
+        </div>
+    </header>
+
+    <!-- Sidebar (Desktop) -->
+    <aside class="dashboard-sidebar">
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-title">Menu</div>
+            <a href="#" class="sidebar-link active" onclick="setActiveSidebar(this)">
+                <span>🏠</span> Übersicht
+            </a>
+            <!-- Filter placeholder as requested -->
+            <a href="#" class="sidebar-link" onclick="toggleFilterContent(); setActiveSidebar(this); return false;">
+                <span>🔍</span> Filter
+            </a>
+
+            {% if user.is_registered %}
+            <a href="#" class="sidebar-link sidebar-link-grades"
+                onclick="scrollToGrades(); setActiveSidebar(this); return false;">
+                <span>📊</span> Noten
+            </a>
+            <a href="/stundenplan" class="sidebar-link">
+                <span>🕒</span> Stundenplan
+            </a>
+            {% else %}
+            <a href="#" class="sidebar-link" style="opacity: 0.6;"
+                onclick="showLoginRequiredModal('Noten'); return false;">
+                <span>📊</span> Noten <span class="text-xs">🔒</span>
+            </a>
+            <a href="#" class="sidebar-link" style="opacity: 0.6;"
+                onclick="showLoginRequiredModal('Stundenplan'); return false;">
+                <span>🕒</span> Stundenplan <span class="text-xs">🔒</span>
+            </a>
+            {% endif %}
+
+            {% if user.role.value in ["owner", "admin", "class_admin"] %}
+            <div class="sidebar-section-title">Verwaltung</div>
+            {% if user.role.value in ['owner', 'admin'] %}
+            <div onclick="showTab('users'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
+                <span>👥</span> Benutzer
+            </div>
+            <div onclick="showTab('links'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
+                <span>🔗</span> Links
+            </div>
+            {% endif %}
+            <div onclick="showTab('subjects'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
+                <span>📚</span> Fächer
+            </div>
+            <div onclick="showTab('advanced'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
+                <span>⚙️</span> Erweitert
+            </div>
+            {% endif %}
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Filter Bar -->
+        <div class="filter-bar" id="filterBar">
+            <div class="filter-header">
+                <div>
+                    <h3 class="text-sm">Filter</h3>
+                    <p class="text-xs text-muted" id="activeFilterCount">Alle Termine sichtbar</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-secondary" onclick="resetFilters()">Reset</button>
+                    <button class="btn btn-sm btn-ghost" onclick="toggleFilterContent()">
+                        <span id="filterCollapseIcon">▼</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="filterContent" style="display: none;">
+                <!-- Subject Filter -->
+                <div class="filter-section">
+                    <div class="filter-title">Fächer</div>
+                    <div class="chip-container" id="subjectFilterContainer">
+                        {% for subject in subjects %}
+                        <button class="filter-chip" data-filter-type="subject" data-value="{{ subject.id }}"
+                            onclick="toggleFilter('subject', '{{ subject.id }}', this)">
+                            {{ subject.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="filter-section mt-2">
+                    <div class="filter-title">Typ</div>
+                    <div class="chip-container" id="typeFilterContainer">
+                        <button class="filter-chip" data-filter-type="type" data-value="KA"
+                            onclick="toggleFilter('type', 'KA', this)">Klassenarbeit</button>
+                        <button class="filter-chip" data-filter-type="type" data-value="TEST"
+                            onclick="toggleFilter('type', 'TEST', this)">Test</button>
+                        <button class="filter-chip" data-filter-type="type" data-value="HA"
+                            onclick="toggleFilter('type', 'HA', this)">Hausaufgabe</button>
+                        <button class="filter-chip" data-filter-type="type" data-value="INFO"
+                            onclick="toggleFilter('type', 'INFO', this)">Info</button>
+                    </div>
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="filter-section mt-2">
+                    <div class="filter-title">Priorität</div>
+                    <div class="chip-container" id="priorityFilterContainer">
+                        <button class="filter-chip" data-filter-type="priority" data-value="high"
+                            onclick="toggleFilter('priority', 'high', this)">Hoch 🔴</button>
+                        <button class="filter-chip" data-filter-type="priority" data-value="medium"
+                            onclick="toggleFilter('priority', 'medium', this)">Normal</button>
+                        <button class="filter-chip" data-filter-type="priority" data-value="low"
+                            onclick="toggleFilter('priority', 'low', this)">Niedrig</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include 'partials/_calendar.html' %}
+
+        <!-- Admin Section -->
+        {% if user.role.value in ["owner", "admin", "class_admin"] %}
+        <div class="admin-section" id="adminSection">
+            <!-- Mobile/Tablet Tabs Navigation -->
+            <div class="tabs hide-on-lg">
+                {% if user.role.value in ['owner', 'admin'] %}
+                <button class="tab active" onclick="showTab('users')">Benutzer</button>
+                <button class="tab" onclick="showTab('links')">Links</button>
+                {% endif %}
+                <button class="tab {% if user.role.value == 'class_admin' %}active{% endif %}"
+                    onclick="showTab('subjects')">Fächer</button>
+                <button class="tab" onclick="showTab('advanced')">Erweitert</button>
+            </div>
+
+            <!-- TAB CONTENT: USERS -->
+            {% if user.role.value in ['owner', 'admin'] %}
+            <div id="tab-users" class="tab-content active">
+                {% for member in members %}
+                <div class="member-item">
+                    <div>
+                        <strong>{{ member.name }}</strong>
+                        <span
+                            class="badge {% if member.role.value == 'owner' %}badge-primary{% elif member.role.value == 'admin' %}badge-success{% elif member.role.value == 'class_admin' %}badge-info{% endif %}">
+                            {% if member.role.value == 'owner' %}Owner
+                            {% elif member.role.value == 'admin' %}Admin
+                            {% elif member.role.value == 'class_admin' %}Verwalter
+                            {% elif member.role.value == 'member' %}Mitglied
+                            {% elif member.role.value == 'guest' %}Gast
+                            {% else %}{{ member.role.value }}{% endif %}
+                        </span>
+                    </div>
+                    {% if member.id != user.id and member.role.value != 'owner' %}
+                    <div class="actions" style="display:flex; align-items:center; gap:0.5rem;">
+                        {% if user.role.value in ['owner', 'admin'] %}
+                        <form hx-patch="/admin/members/{{ member.id }}/role" hx-swap="none" style="margin:0;">
+                            <select name="role" onchange="this.form.requestSubmit()" class="form-select text-xs"
+                                style="padding: 2px 4px; height: auto;">
+                                <option value="member" {% if member.role.value=='member' %}selected{% endif %}>Member
+                                </option>
+                                <option value="class_admin" {% if member.role.value=='class_admin' %}selected{% endif
+                                    %}>
+                                    Verwalter</option>
+                                <option value="admin" {% if member.role.value=='admin' %}selected{% endif %}>Admin
+                                </option>
+                            </select>
+                        </form>
+                        {% endif %}
+                        {% if user.role.value in ['owner', 'admin'] or (user.role.value == 'class_admin' and
+                        member.role.value
+                        not in ['owner', 'admin', 'class_admin']) %}
+                        <button hx-delete="/admin/members/{{ member.id }}" hx-confirm="Entfernen?"
+                            class="btn btn-danger btn-sm">×</button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- TAB CONTENT: LINKS -->
+            <div id="tab-links" class="tab-content">
+                <h3 class="text-sm mb-2">Klassen-Link</h3>
+                <div class="invite-link-box">
+                    <input type="text" readonly value="{{ base_url }}/join/{{ clazz.join_token }}" id="classLink"
+                        onclick="this.select()">
+                    <button class="btn btn-secondary btn-sm" onclick="copyText('classLink')">Kopieren</button>
+                </div>
+
+                <hr>
+
+                <h3 class="text-sm mb-2">Login-Link für Benutzer</h3>
+                <form hx-post="/admin/login-tokens" hx-swap="none" class="card mb-4">
+                    <div class="form-group">
+                        <label>Benutzer auswählen ODER neuen Namen eingeben</label>
+                        <select name="user_id" id="userSelect" onchange="toggleNameInput()">
+                            <option value="">— Neuer Benutzer —</option>
+                            {% for member in members %}
+                            <option value="{{ member.id }}">{{ member.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" id="nameInputGroup">
+                        <label>Name für neuen Benutzer</label>
+                        <input type="text" name="user_name" id="userNameInput" placeholder="z.B. Max">
+                    </div>
+                    <div class="form-group" id="roleInputGroup">
+                        <label>Rolle</label>
+                        <select name="role">
+                            <option value="member">Mitglied (kann bearbeiten)</option>
+                            <option value="guest">Gast (nur ansehen)</option>
+                            {% if user.role.value in ['owner', 'admin'] %}
+                            <option value="class_admin">Verwalter (eingeschränkt)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Max. Nutzungen</label>
+                            <input type="number" name="max_uses" placeholder="∞" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Gültig für</label>
+                            <select name="expires_hours">
+                                <option value="">Unbegrenzt</option>
+                                <option value="24">24h</option>
+                                <option value="168">1 Woche</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Link erstellen</button>
+                </form>
+
+                {% for token in login_tokens %}
+                <div class="token-item">
+                    <div>
+                        <div class="text-sm">
+                            <strong>{% if token.user %}{{ token.user.name }}{% else %}{{ token.user_name }} (neu){%
+                                endif
+                                %}</strong>
+                        </div>
+                        <div class="text-xs text-muted">{{ token.uses }}/{{ token.max_uses or '∞' }} Nutzungen</div>
+                    </div>
+                    <div class="actions">
+                        <button onclick="copyToClipboard('{{ base_url }}/join/{{ token.token }}')"
+                            class="btn btn-sm btn-secondary">Kopieren</button>
+                        <button hx-delete="/admin/login-tokens/{{ token.id }}" class="btn btn-sm btn-danger">×</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- TAB CONTENT: SUBJECTS -->
+            <div id="tab-subjects" class="tab-content {% if user.role.value == 'class_admin' %}active{% endif %}">
+                <form hx-post="/subjects" hx-swap="none" class="flex gap-2 mb-4">
+                    <input type="text" name="name" placeholder="Neues Fach" required style="flex: 1;">
+                    <button type="submit" class="btn btn-secondary">+</button>
+                </form>
+                <div class="subject-list">
+                    {% for subject in subjects %}
+                    <div class="subject-tag">
+                        {{ subject.name }}
+                        <button hx-delete="/subjects/{{ subject.id }}">×</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB CONTENT: ADVANCED -->
+            <div id="tab-advanced" class="tab-content">
+                <h3 class="text-sm mb-2">Kalender abonnieren (Read-Only)</h3>
+                <p class="text-muted text-sm mb-4">Du kannst diesen Kalender in deiner Handy-App (Google Kalender, Apple
+                    Kalender) abonnieren. Events werden automatisch aktualisiert.</p>
+
+                <div class="invite-link-box">
+                    <input type="text" readonly value="{{ base_url }}/caldav/{{ user.caldav_token }}/calendar.ics"
+                        id="caldavUrl" onclick="this.select()">
+                    <button class="btn btn-secondary btn-sm" onclick="copyText('caldavUrl')">Kopieren</button>
+                </div>
+
+                <div class="mt-4">
+                    <form hx-post="/caldav/regenerate">
+                        <button type="submit" class="btn btn-secondary btn-sm">Neuen Link erstellen</button>
+                    </form>
+                </div>
+
+                {% if not user.is_registered %}
+                <hr>
+                <h3 class="text-sm mb-2">Account sichern</h3>
+                <button class="btn btn-secondary btn-block" onclick="openRegisterModal()">Mit Email
+                    registrieren</button>
+                {% endif %}
+
+                {% if user.role.value in ['owner', 'admin'] %}
+                <hr>
+                <h3 class="text-sm mb-2">Backup</h3>
+                <a href="/admin/download-db" class="btn btn-primary btn-block text-center"
+                    style="display:block; text-decoration:none;">
+                    Datenbank herunterladen (.db)
+                </a>
+                {% endif %}
+            </div>
+        </div>
         {% endif %}
-        <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
-    </div>
-</header>
+    </main>
 
-
-{% include 'partials/_calendar.html' %}
-{% include 'partials/_upcoming.html' %}
-{% include 'partials/_info_feed.html' %}
+    <!-- Widgets -->
+    <aside class="dashboard-widgets">
+        {% include 'partials/_next_lesson.html' %}
+        {% include 'partials/_upcoming.html' %}
+        {% include 'partials/_grades_widget.html' %}
+        {% include 'partials/_info_feed.html' %}
+    </aside>
+</div>
 
 <!-- Expandable FAB Menu -->
 {% if user.role.value in ["owner", "admin", "class_admin"] %}
@@ -46,189 +352,74 @@
 <button class="fab" onclick="openModal()">+</button>
 {% endif %}
 
-<!-- Admin Section -->
-{% if user.role.value in ["owner", "admin", "class_admin"] %}
-<div class="admin-section">
-    <div class="tabs">
-        {% if user.role.value in ['owner', 'admin'] %}
-        <button class="tab active" onclick="showTab('users')">Benutzer</button>
-        <button class="tab" onclick="showTab('links')">Links</button>
-        {% endif %}
-        <button class="tab {% if user.role.value == 'class_admin' %}active{% endif %}"
-            onclick="showTab('subjects')">Fächer</button>
-        <button class="tab" onclick="showTab('advanced')">Erweitert</button>
-    </div>
-
-    <!-- Users Tab -->
-    {% if user.role.value in ['owner', 'admin'] %}
-    <div id="tab-users" class="tab-content active">
-        {% for member in members %}
-        <div class="member-item">
-            <div>
-                <strong>{{ member.name }}</strong>
-                <span
-                    class="badge {% if member.role.value == 'owner' %}badge-primary{% elif member.role.value == 'admin' %}badge-success{% elif member.role.value == 'class_admin' %}badge-info{% endif %}">
-                    {% if member.role.value == 'owner' %}Owner
-                    {% elif member.role.value == 'admin' %}Admin
-                    {% elif member.role.value == 'class_admin' %}Verwalter
-                    {% elif member.role.value == 'member' %}Mitglied
-                    {% elif member.role.value == 'guest' %}Gast
-                    {% else %}{{ member.role.value }}{% endif %}
-                </span>
-            </div>
-            {% if member.id != user.id and member.role.value != 'owner' %}
-            <div class="actions" style="display:flex; align-items:center; gap:0.5rem;">
-
-                {% if user.role.value in ['owner', 'admin'] %}
-                <form hx-patch="/admin/members/{{ member.id }}/role" hx-swap="none" style="margin:0;">
-                    <select name="role" onchange="this.form.requestSubmit()" class="form-select text-xs"
-                        style="padding: 2px 4px; height: auto;">
-                        <option value="member" {% if member.role.value=='member' %}selected{% endif %}>Member</option>
-                        <option value="class_admin" {% if member.role.value=='class_admin' %}selected{% endif %}>
-                            Verwalter</option>
-                        <option value="admin" {% if member.role.value=='admin' %}selected{% endif %}>Admin</option>
-                    </select>
-                </form>
-                {% endif %}
-
-                {% if user.role.value in ['owner', 'admin'] or (user.role.value == 'class_admin' and member.role.value
-                not in ['owner', 'admin', 'class_admin']) %}
-                <button hx-delete="/admin/members/{{ member.id }}" hx-confirm="Entfernen?"
-                    class="btn btn-danger btn-sm">×</button>
-                {% endif %}
-            </div>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- Links Tab -->
-    <div id="tab-links" class="tab-content">
-        <h3 class="text-sm mb-2">Klassen-Link</h3>
-        <div class="invite-link-box">
-            <input type="text" readonly value="{{ base_url }}/join/{{ clazz.join_token }}" id="classLink"
-                onclick="this.select()">
-            <button class="btn btn-secondary btn-sm" onclick="copyText('classLink')">Kopieren</button>
-        </div>
-
-        <hr>
-
-        <h3 class="text-sm mb-2">Login-Link für Benutzer</h3>
-        <form hx-post="/admin/login-tokens" hx-swap="none" class="card mb-4">
-            <div class="form-group">
-                <label>Benutzer auswählen ODER neuen Namen eingeben</label>
-                <select name="user_id" id="userSelect" onchange="toggleNameInput()">
-                    <option value="">— Neuer Benutzer —</option>
-                    {% for member in members %}
-                    <option value="{{ member.id }}">{{ member.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group" id="nameInputGroup">
-                <label>Name für neuen Benutzer</label>
-                <input type="text" name="user_name" id="userNameInput" placeholder="z.B. Max">
-            </div>
-            <div class="form-group" id="roleInputGroup">
-                <label>Rolle</label>
-                <select name="role">
-                    <option value="member">Mitglied (kann bearbeiten)</option>
-                    <option value="guest">Gast (nur ansehen)</option>
-                    {% if user.role.value in ['owner', 'admin'] %}
-                    <option value="class_admin">Verwalter (eingeschränkt)</option>
-                    {% endif %}
-                </select>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Max. Nutzungen</label>
-                    <input type="number" name="max_uses" placeholder="∞" min="1" value="1">
-                </div>
-                <div class="form-group">
-                    <label>Gültig für</label>
-                    <select name="expires_hours">
-                        <option value="">Unbegrenzt</option>
-                        <option value="24">24h</option>
-                        <option value="168">1 Woche</option>
-                    </select>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Link erstellen</button>
-        </form>
-
-        {% for token in login_tokens %}
-        <div class="token-item">
-            <div>
-                <div class="text-sm">
-                    <strong>{% if token.user %}{{ token.user.name }}{% else %}{{ token.user_name }} (neu){% endif
-                        %}</strong>
-                </div>
-                <div class="text-xs text-muted">{{ token.uses }}/{{ token.max_uses or '∞' }} Nutzungen</div>
-            </div>
-            <div class="actions">
-                <button onclick="copyToClipboard('{{ base_url }}/join/{{ token.token }}')"
-                    class="btn btn-sm btn-secondary">Kopieren</button>
-                <button hx-delete="/admin/login-tokens/{{ token.id }}" class="btn btn-sm btn-danger">×</button>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Subjects Tab -->
-    <div id="tab-subjects" class="tab-content {% if user.role.value == 'class_admin' %}active{% endif %}">
-        <form hx-post="/subjects" hx-swap="none" class="flex gap-2 mb-4">
-            <input type="text" name="name" placeholder="Neues Fach" required style="flex: 1;">
-            <button type="submit" class="btn btn-secondary">+</button>
-        </form>
-        <div class="subject-list">
-            {% for subject in subjects %}
-            <div class="subject-tag">
-                {{ subject.name }}
-                <button hx-delete="/subjects/{{ subject.id }}">×</button>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Advanced Tab -->
-    <div id="tab-advanced" class="tab-content">
-        <!-- Calendar Subscription Tab -->
-        <div id="tab-advanced" class="tab-content">
-            <h3 class="text-sm mb-2">Kalender abonnieren (Read-Only)</h3>
-            <p class="text-muted text-sm mb-4">Du kannst diesen Kalender in deiner Handy-App (Google Kalender, Apple
-                Kalender) abonnieren. Events werden automatisch aktualisiert.</p>
-
-            <div class="invite-link-box">
-                <input type="text" readonly value="{{ base_url }}/caldav/{{ user.caldav_token }}/calendar.ics"
-                    id="caldavUrl" onclick="this.select()">
-                <button class="btn btn-secondary btn-sm" onclick="copyText('caldavUrl')">Kopieren</button>
-            </div>
-
-            <div class="mt-4">
-                <form hx-post="/caldav/regenerate">
-                    <button type="submit" class="btn btn-secondary btn-sm">Neuen Link erstellen</button>
-                </form>
-            </div>
-
-            {% if not user.is_registered %}
-            <hr>
-            <h3 class="text-sm mb-2">Account sichern</h3>
-            <button class="btn btn-secondary btn-block" onclick="openRegisterModal()">Mit Email registrieren</button>
-            {% endif %}
-
-            {% if user.role.value in ['owner', 'admin'] %}
-            <hr>
-            <h3 class="text-sm mb-2">Backup</h3>
-            <a href="/admin/download-db" class="btn btn-primary btn-block text-center"
-                style="display:block; text-decoration:none;">
-                Datenbank herunterladen (.db)
-            </a>
-            {% endif %}
-        </div>
-    </div>
-</div>
-{% endif %}
-
 {% include 'partials/_modals.html' %}
 {% include 'partials/_scripts.html' %}
-{% endblock %}
+
+<script>
+    function setActiveSidebar(element) {
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        element.classList.add('active');
+    }
+
+    function toggleFilterContent() {
+        const content = document.getElementById('filterContent');
+        const icon = document.getElementById('filterIcon');
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function scrollToGrades() {
+        const widget = document.getElementById('gradesWidget');
+        if (widget) {
+            widget.scrollIntoView({ behavior: 'smooth' });
+            // Highlight effect
+            widget.style.transition = 'box-shadow 0.3s ease';
+            widget.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5)';
+            setTimeout(() => {
+                widget.style.boxShadow = '';
+            }, 2000);
+        }
+    }
+
+    function showLoginRequiredModal(featureName) {
+        const modal = document.getElementById('loginRequiredModal');
+        const text = document.getElementById('loginRequiredText');
+        if (text) text.textContent = `Die Funktion "${featureName}" ist nur für registrierte und eingeloggte Benutzer verfügbar.`;
+        modal.classList.add('active');
+    }
+
+    function closeLoginRequiredModal() {
+        document.getElementById('loginRequiredModal').classList.remove('active');
+    }
+</script>
+
+<!-- Login Required Modal -->
+<div class="modal-backdrop" id="loginRequiredModal">
+    <div class="modal" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>🔒 Login Erforderlich</h3>
+            <button class="btn btn-ghost" onclick="closeLoginRequiredModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="text-center mb-4">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🛡️</div>
+                <p id="loginRequiredText" class="mb-4">Diese Funktion ist nur für registrierte Benutzer verfügbar.</p>
+                <p class="text-sm text-muted mb-4">Aus Datenschutz- und Sicherheitsgründen ist eine Anmeldung
+                    erforderlich, um auf persönliche Daten wie Noten oder Stundenpläne zuzugreifen.</p>
+            </div>
+            <div class="flex gap-2 justify-center">
+                <a href="/login" class="btn btn-primary">Einloggen</a>
+                <button
+                    onclick="document.getElementById('registerModal').classList.add('active'); closeLoginRequiredModal();"
+                    class="btn btn-secondary">Registrieren</button>
+            </div>
+        </div>
+    </div>
+    {% endblock %}

@@ -1,0 +1,60 @@
+<!-- Next Lesson Widget - Only for registered users -->
+{% if user.is_registered %}
+<section class="next-lesson-section" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h2>🕒 Nächste Stunde</h2>
+        <a href="/stundenplan" class="btn btn-ghost btn-sm">Stundenplan →</a>
+    </div>
+
+    <div class="next-lesson-widget" id="nextLessonWidget">
+        <div class="next-lesson-empty">
+            <span>⏳</span> Lädt...
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        try {
+            const res = await fetch('/timetable/next');
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const widget = document.getElementById('nextLessonWidget');
+
+            if (data.next_lesson) {
+                const lesson = data.next_lesson;
+                widget.innerHTML = `
+                <div class="next-lesson-header">
+                    <span class="next-lesson-title">${lesson.is_today ? 'Heute' : lesson.weekday}</span>
+                </div>
+                <div class="next-lesson-subject">${lesson.subject_name}</div>
+                <div class="next-lesson-details">
+                    ${lesson.group_name ? `<span>${lesson.group_name}</span> · ` : ''}
+                    ${lesson.room ? `📍 ${lesson.room}` : ''}
+                </div>
+                <div class="next-lesson-time">
+                    <span>🕐</span>
+                    <span>${lesson.start_time} - ${lesson.end_time}</span>
+                </div>
+            `;
+            } else if (data.message) {
+                widget.innerHTML = `
+                <div class="next-lesson-empty">
+                    <p>${data.message}</p>
+                    <a href="/stundenplan" style="color: white; text-decoration: underline; font-size: 0.85rem;">Kurse auswählen</a>
+                </div>
+            `;
+            } else {
+                widget.innerHTML = `
+                <div class="next-lesson-empty">
+                    <p>Keine weiteren Stunden diese Woche 🎉</p>
+                </div>
+            `;
+            }
+        } catch (e) {
+            console.error('Failed to load next lesson', e);
+        }
+    });
+</script>
+{% endif %}
