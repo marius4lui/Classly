@@ -26,9 +26,9 @@ class EventType(str, enum.Enum):
     INFO = "INFO"
 
 class Priority(str, enum.Enum):
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 class Class(Base):
     __tablename__ = "classes"

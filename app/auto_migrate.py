@@ -29,9 +29,20 @@ def run_auto_migrations():
             
             if "priority" not in columns:
                 logger.info("Migrating: Adding 'priority' column to events table.")
-                cursor.execute("ALTER TABLE events ADD COLUMN priority VARCHAR DEFAULT 'medium'")
+                cursor.execute("ALTER TABLE events ADD COLUMN priority VARCHAR DEFAULT 'MEDIUM'")
                 conn.commit()
-            
+
+            # 2. Migrate lowercase priority values to uppercase
+            cursor.execute("SELECT COUNT(*) FROM events WHERE priority IN ('high', 'medium', 'low')")
+            count = cursor.fetchone()[0]
+
+            if count > 0:
+                logger.info(f"Migrating: Converting {count} priority values to uppercase.")
+                cursor.execute("UPDATE events SET priority = 'HIGH' WHERE priority = 'high'")
+                cursor.execute("UPDATE events SET priority = 'MEDIUM' WHERE priority = 'medium'")
+                cursor.execute("UPDATE events SET priority = 'LOW' WHERE priority = 'low'")
+                conn.commit()
+
             # Add other migrations here as needed
             
         except Exception as e:
