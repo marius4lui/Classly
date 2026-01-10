@@ -67,6 +67,12 @@ body {
     }
 }
 
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1400px;
+    }
+}
+
 /* === Typography === */
 h1 {
     font-size: 1.5rem;
@@ -1365,4 +1371,126 @@ hr {
     padding: 1rem 2rem;
     font-size: 1.125rem;
     min-height: 56px;
+}
+
+/* === Responsive Grid Layout === */
+
+.dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.dashboard-sidebar {
+    display: none;
+    /* Hidden on mobile by default */
+}
+
+.dashboard-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.dashboard-widgets {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Tablet (≥768px): 2-Column Grid */
+@media (min-width: 768px) {
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        grid-template-areas:
+            "header header"
+            "main widgets";
+        gap: 2rem;
+    }
+
+    .header {
+        grid-area: header;
+        margin-bottom: 0 !important;
+    }
+
+    .dashboard-main {
+        grid-area: main;
+    }
+
+    .dashboard-widgets {
+        grid-area: widgets;
+    }
+}
+
+/* Desktop (≥1024px): 3-Column Grid + Sidebar */
+@media (min-width: 1024px) {
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 250px 1fr 300px;
+        grid-template-areas:
+            "header header header"
+            "sidebar main widgets";
+        gap: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .dashboard-sidebar {
+        grid-area: sidebar;
+        display: block;
+        background: var(--bg);
+        /* border-right: 1px solid var(--gray-200); */
+        /* padding-right: 1.5rem; */
+        /* Removed border/padding to keep it cleaner, maybe just spacing */
+        height: fit-content;
+        position: sticky;
+        top: 2rem;
+    }
+
+    .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: var(--gray-600);
+        text-decoration: none;
+        border-radius: var(--radius);
+        font-weight: 600;
+        transition: all 0.1s ease;
+        cursor: pointer;
+        /* generic pointer */
+    }
+
+    .sidebar-link:hover {
+        background: var(--gray-50);
+        color: var(--fg);
+    }
+
+    .sidebar-link.active {
+        background: var(--gray-100);
+        color: var(--fg);
+    }
+
+    .sidebar-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-500);
+        font-weight: 700;
+        margin: 1.5rem 0 0.5rem 1rem;
+    }
+}
+
+/* Visibility Utility for Tablet Support */
+@media (min-width: 1024px) {
+    .hide-on-lg {
+        display: none !important;
+    }
 }
