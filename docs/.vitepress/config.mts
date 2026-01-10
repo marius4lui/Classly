@@ -13,6 +13,7 @@ export default defineConfig({
             { text: 'Home', link: '/' },
             { text: 'Funktionen', link: '/features/' },
             { text: 'Guide', link: '/user-guide/getting-started' },
+            { text: 'Status', link: 'https://info.classly.site/status/classly-info' },
             { text: 'Setup', link: '/setup/installation' },
             { text: 'Entwicklung', link: '/development/contributing' }
         ],
@@ -64,7 +65,7 @@ export default defineConfig({
 
         footer: {
             message: 'Released under the MIT License.',
-            copyright: 'Copyright © 2024-present Classly'
+            copyright: 'Copyright © 2026-present Classly'
         },
 
         search: {
