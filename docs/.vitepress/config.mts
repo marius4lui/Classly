@@ -5,7 +5,7 @@ export default defineConfig({
     title: "Classly",
     description: "Der einfachste Weg, deine Klasse zu organisieren.",
     lang: 'de-DE',
-    base: '/Classly/', // Important for GitHub Pages repo deployment
+    // base: '/Classly/', // Removed for custom domain docs.classly.site
 
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
