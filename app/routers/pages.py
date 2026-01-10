@@ -10,6 +10,7 @@ import os
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["gtm_id"] = os.getenv("GTM_ID")
 
 @router.get("/impressum")
 def impressum(request: Request):

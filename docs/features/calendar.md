@@ -11,10 +11,10 @@ Classly unterscheidet vier Arten von Einträgen, die farblich markiert sind, dam
 *   **Wichtigkeit:** Hoch
 *   Für große Prüfungen, Klausuren oder Schulaufgaben. Diese Termine stechen sofort ins Auge.
 
-### 🟠 Tests & Hü's
+### 🟠 Tests & HA's
 *   **Farbe:** Orange
 *   **Wichtigkeit:** Mittel
-*   Für Vokabeltests, Hü's, Abfragen oder kleinere Leistungskontrollen.
+*   Für Vokabeltests, HA's, Abfragen oder kleinere Leistungskontrollen.
 
 ### 🟢 Hausaufgaben
 *   **Farbe:** Grün
