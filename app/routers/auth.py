@@ -201,3 +201,33 @@ def logout(response: Response):
     response.delete_cookie("session_token")
     response.headers["HX-Redirect"] = "/"
     return {"status": "logged out"}
+
+@router.get("/auth/migrate-session")
+def migrate_session(
+    token: str,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Migrates a session from another domain.
+    Validates the token exists in DB before setting the cookie.
+    """
+    from fastapi.responses import RedirectResponse
+    
+    # Validate token exists
+    user = crud.get_user_by_session(db, token)
+    if not user:
+        # Invalid token, just redirect to home
+        return RedirectResponse(url="/")
+        
+    # Set the cookie for this domain
+    redirect = RedirectResponse(url="/", status_code=303)
+    redirect.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        max_age=COOKIE_MAX_AGE,
+        samesite="lax",
+        secure=False # Should be true in prod
+    )
+    return redirect

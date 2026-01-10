@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base, SQLALCHEMY_DATABASE_URL
@@ -14,6 +15,34 @@ app = FastAPI(title="Classly")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Domain Migration Middleware
+from fastapi import Request
+from fastapi.responses import RedirectResponse
+
+@app.middleware("http")
+async def domain_migration_middleware(request: Request, call_next):
+    # Configuration via Environment Variables
+    # Example: MIGRATE_FROM_DOMAIN="old.example.com", MIGRATE_TO_DOMAIN="new.example.com"
+    old_domain = os.getenv("MIGRATE_FROM_DOMAIN")
+    new_domain = os.getenv("MIGRATE_TO_DOMAIN")
+    
+    if old_domain and new_domain:
+        host = request.headers.get("host", "").split(":")[0]
+        
+        if host == old_domain:
+            # Check for session token
+            session_token = request.cookies.get("session_token")
+            
+            if session_token:
+                # Redirect with token for migration
+                # Ensure we use https if likely (or respect scheme)
+                return RedirectResponse(f"https://{new_domain}/auth/migrate-session?token={session_token}")
+            else:
+                # Just redirect guests
+                return RedirectResponse(f"https://{new_domain}")
+            
+    return await call_next(request)
 
 # Include Routers
 app.include_router(auth.router)

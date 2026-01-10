@@ -28,6 +28,8 @@ Classly nutzt folgende Umgebungsvariablen zur Konfiguration:
 | Variable | Standardwert | Beschreibung |
 | :--- | :--- | :--- |
 | `DATABASE_URL` | `sqlite:////data/classly.db` | Pfad zur Datenbank (SQLAlchemy Format). |
+| `MIGRATE_FROM_DOMAIN` | - | Alte Domain für Umleitungen (z.B. `old.com`). Users werden automatisch migriert. |
+| `MIGRATE_TO_DOMAIN` | - | Neue Domain Ziel (z.B. `new.com`). |
 
 > [!NOTE]
 > Aktuell ist Classly primär für **SQLite** optimiert. PostgreSQL support ist experimentell.

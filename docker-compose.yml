@@ -11,11 +11,15 @@ services:
       - "${PORT:-8000}:8000"
     volumes:
       - classly_data:/data
+    env_file:
+      - .env
     environment:
       - PORT=8000
       - DATABASE_URL=sqlite:////data/classly.db
       # - SECRET_KEY=changeme
       # - TZ=Europe/Berlin
+      - MIGRATE_FROM_DOMAIN=${MIGRATE_FROM_DOMAIN}
+      - MIGRATE_TO_DOMAIN=${MIGRATE_TO_DOMAIN}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
