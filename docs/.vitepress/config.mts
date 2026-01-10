@@ -11,12 +11,25 @@ export default defineConfig({
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: 'Home', link: '/' },
+            { text: 'Funktionen', link: '/features/' },
             { text: 'Guide', link: '/user-guide/getting-started' },
             { text: 'Setup', link: '/setup/installation' },
             { text: 'Entwicklung', link: '/development/contributing' }
         ],
 
         sidebar: {
+            '/features/': [
+                {
+                    text: 'Funktionen',
+                    items: [
+                        { text: 'Übersicht', link: '/features/' },
+                        { text: '📅 Kalender & Events', link: '/features/calendar' },
+                        { text: '👥 Rollen & Rechte', link: '/features/roles' },
+                        { text: '🔑 Zugang & Logins', link: '/features/access' },
+                        { text: '📱 Handy & App', link: '/features/mobile' }
+                    ]
+                }
+            ],
             '/setup/': [
                 {
                     text: 'Einrichtung & Hosting',
