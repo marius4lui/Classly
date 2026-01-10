@@ -50,6 +50,12 @@ jobs:
         run: pnpm install
       - name: Build with VitePress
         run: pnpm docs:build
+
+      - name: Copy Scripts to Docs
+        run: |
+          mkdir -p docs/.vitepress/dist/scripts
+          cp -r scripts/* docs/.vitepress/dist/scripts/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

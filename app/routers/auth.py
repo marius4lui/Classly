@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request
+import os
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -31,6 +32,18 @@ def create_class(
     password: str = Form(None),
     db: Session = Depends(get_db)
 ):
+    # Check Max Classes Limit
+    max_classes = os.getenv("MAX_CLASSES")
+    if max_classes:
+        try:
+            limit = int(max_classes)
+            if limit > 0:
+                count = db.query(models.Class).count()
+                if count >= limit:
+                    raise HTTPException(status_code=403, detail=f"Maximum number of classes ({limit}) reached on this server.")
+        except ValueError:
+            pass # Ignore invalid config
+
     # Generate unique token
     token = security.generate_join_token()
     while crud.get_class_by_token(db, token):

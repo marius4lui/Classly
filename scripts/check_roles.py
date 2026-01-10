@@ -1,6 +1,10 @@
 import sys
 import os
-sys.path.append(os.getcwd())
+
+# Add parent directory to path so we can import 'app'
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,7 +13,8 @@ from app import models
 
 # Connect to ACTUAL database file
 # The file is in root: classly.db
-SQLALCHEMY_DATABASE_URL = "sqlite:///./classly.db"
+db_path = os.path.join(parent_dir, "classly.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_path}"
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -22,8 +27,9 @@ def check_roles():
     
     # Also check if 'member' is present in DB as string
     # By using direct cursor
+    # By using direct cursor
     import sqlite3
-    conn = sqlite3.connect("classly.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT name, role FROM users")
     print("\nRaw DB Values:")

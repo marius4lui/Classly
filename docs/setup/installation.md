@@ -63,7 +63,30 @@ Der Parameter `-d` bedeutet "detached", also im Hintergrund.
 
 Du solltest nun die Classly Startseite sehen! 🎉
 
+### 4. Setup Wizard (Optional)
+
+Wenn du Classly auf einem öffentlichen Server hostest und nicht willst, dass sich Fremde registrieren, kannst du:
+1.  Ein Limit für Klassen setzen (siehe unten).
+2.  Den interaktiven Setup-Wizard nutzen, um deine Klasse zu erstellen.
+
+```bash
+# Lade das Setup-Script und starte es
+curl -sL https://docs.classly.site/scripts/setup.sh | bash
+```
+Das Skript fragt dich nach Klassenname, Lehrername, etc. und generiert dir direkt die Links.
+Hinweis: Auf dem Server muss Python installiert sein.
+
 ---
+
+## ⚙️ Limitierung (Self-Hosting)
+
+Du kannst in der `.env` Datei festlegen, wie viele Klassen auf deinem Server maximal erlaubt sind.
+
+```bash
+# .env
+MAX_CLASSES=1 
+```
+Wenn dieses Limit erreicht ist (z.B. 1), können über die Webseite keine weiteren Klassen mehr erstellt werden. Perfekt, wenn du Classly nur für deine eigene Klasse hostest!
 
 ## 🔄 Updates installieren
 
