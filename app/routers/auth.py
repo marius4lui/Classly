@@ -192,7 +192,18 @@ def join_class(
         if not clazz.join_enabled:
             raise HTTPException(status_code=403, detail="Joining disabled")
         
-        new_user = crud.create_user(db, name=user_name, class_id=clazz.id, role=models.UserRole.MEMBER)
+        # Check if name is already taken in this class -> Login as that user
+        existing_users = crud.get_class_members(db, clazz.id)
+        target_user = None
+        for user in existing_users:
+            if user.name.lower() == user_name.lower():
+                target_user = user
+                break
+        
+        if target_user:
+            new_user = target_user
+        else:
+            new_user = crud.create_user(db, name=user_name, class_id=clazz.id, role=models.UserRole.MEMBER)
         
     elif login_token:
         # Login token
