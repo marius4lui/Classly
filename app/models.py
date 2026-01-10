@@ -2,7 +2,7 @@ import enum
 import datetime
 import uuid
 import secrets
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum, Float
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum, Float, Time
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -206,3 +206,48 @@ class Grade(Base):
     
     user = relationship("User", backref="grades")
     event = relationship("Event", backref="grades")
+
+# === Timetable Models ===
+
+class TimetableSettings(Base):
+    """Stundenplan-Einstellungen pro Klasse"""
+    __tablename__ = "timetable_settings"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    class_id = Column(String, ForeignKey("classes.id"), unique=True, nullable=False)
+    slot_duration = Column(Integer, default=45)  # Minuten pro Stunde
+    break_duration = Column(Integer, default=15)  # Minuten Pause
+    day_start_hour = Column(Integer, default=8)   # Startzeit Stunde (08:00)
+    day_start_minute = Column(Integer, default=0)
+    day_end_hour = Column(Integer, default=16)    # Endzeit Stunde (16:00)
+    day_end_minute = Column(Integer, default=0)
+    
+    clazz = relationship("Class", backref="timetable_settings")
+
+class TimetableSlot(Base):
+    """Ein Zeitslot im Stundenplan - von Admin erstellt"""
+    __tablename__ = "timetable_slots"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    weekday = Column(Integer, nullable=False)  # 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr
+    slot_number = Column(Integer, nullable=False)  # 1, 2, 3... (Stundennummer des Tages)
+    subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
+    subject_name = Column(String, nullable=True)  # Fallback/Override für Fachname
+    group_name = Column(String, nullable=True)  # z.B. "Bili", "Grundkurs", "LK"
+    room = Column(String, nullable=True)
+    
+    clazz = relationship("Class", backref="timetable_slots")
+    subject = relationship("Subject", backref="timetable_slots")
+
+class UserTimetableSelection(Base):
+    """User-Auswahl für Kurse/Gruppen - für personalisierten Stundenplan"""
+    __tablename__ = "user_timetable_selections"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    slot_id = Column(String, ForeignKey("timetable_slots.id"), nullable=False)
+    
+    user = relationship("User", backref="timetable_selections")
+    slot = relationship("TimetableSlot", backref="user_selections")
+

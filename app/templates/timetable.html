@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Stundenplan - Classly{% endblock %}
+
+{% block content %}
+<div class="timetable-page">
+    <header class="timetable-header">
+        <div>
+            <a href="/" class="btn btn-ghost">← Zurück</a>
+            <h1>📅 Stundenplan</h1>
+        </div>
+        {% if user.role.value in ['owner', 'admin', 'class_admin'] %}
+        <button class="btn btn-primary" onclick="openTimetableSettingsModal()">⚙️ Bearbeiten</button>
+        {% endif %}
+    </header>
+
+    <!-- Mobile Day Tabs -->
+    <div class="timetable-tabs" id="dayTabs">
+        <button class="tab active" onclick="showDay(0)">Mo</button>
+        <button class="tab" onclick="showDay(1)">Di</button>
+        <button class="tab" onclick="showDay(2)">Mi</button>
+        <button class="tab" onclick="showDay(3)">Do</button>
+        <button class="tab" onclick="showDay(4)">Fr</button>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div class="timetable-container card bg-base-100 shadow-xl overflow-hidden">
+        <table class="timetable-table" id="timetableTable">
+            <thead>
+                <tr>
+                    <th class="time-col">Zeit</th>
+                    <th class="day-col" data-day="0">Montag</th>
+                    <th class="day-col" data-day="1">Dienstag</th>
+                    <th class="day-col" data-day="2">Mittwoch</th>
+                    <th class="day-col" data-day="3">Donnerstag</th>
+                    <th class="day-col" data-day="4">Freitag</th>
+                </tr>
+            </thead>
+            <tbody id="timetableBody">
+                <!-- Rows will be rendered by JS -->
+            </tbody>
+        </table>
+
+        <div id="loadingTimetable" class="text-center text-muted py-8">
+            <span class="loading loading-spinner loading-lg"></span>
+            <p class="mt-2">Lädt Stundenplan...</p>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-4 text-xs text-muted text-center" id="timetableLegend">
+        Tipp: Klicke auf eine Stunde, um sie zu deinem Plan hinzuzufügen.
+    </div>
+</div>
+
+<!-- Timetable Settings Modal (Admin) -->
+<div class="modal-backdrop" id="timetableSettingsModal">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>⚙️ Stundenplan bearbeiten</h2>
+            <button class="btn btn-ghost" onclick="closeTimetableSettingsModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tabs -->
+            <div class="tabs tabs-boxed mb-4">
+                <a class="tab tab-active" onclick="showSettingsTab('slots', this)">Stunden</a>
+                <a class="tab" onclick="showSettingsTab('settings', this)">Einstellungen</a>
+            </div>
+
+            <!-- Slots Tab -->
+            <div id="slotsTab">
+                <div class="slot-editor-grid custom-scrollbar" id="slotEditorGrid">
+                    <!-- Will be rendered by JS -->
+                </div>
+
+                <hr class="my-4" style="border: 0; border-top: 1px solid var(--border-color);">
+
+                <div
+                    style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius);">
+                    <h3 class="text-sm font-bold mb-3">Neue Stunde hinzufügen</h3>
+                    <form id="addSlotForm" onsubmit="addSlot(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="label-text text-xs mb-1 block font-bold">Tag</label>
+                                <select id="newSlotDay" class="select w-full" required>
+                                    <option value="0">Montag</option>
+                                    <option value="1">Dienstag</option>
+                                    <option value="2">Mittwoch</option>
+                                    <option value="3">Donnerstag</option>
+                                    <option value="4">Freitag</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="label-text text-xs mb-1 block font-bold">Stunde Nr.</label>
+                                <select id="newSlotNumber" class="select w-full" required>
+                                    {% for i in range(1, 11) %}
+                                    <option value="{{ i }}">{{ i }}. Stunde</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2">
+                                <label class="label-text text-xs mb-1 block font-bold">Fach</label>
+                                <input type="text" id="newSlotSubject" class="input w-full" placeholder="z.B. Mathe"
+                                    required>
+                            </div>
+                            <div class="form-group" style="flex: 1">
+                                <label class="label-text text-xs mb-1 block font-bold">Gruppe</label>
+                                <input type="text" id="newSlotGroup" class="input w-full" placeholder="z.B. GK1">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="label-text text-xs mb-1 block font-bold">Raum</label>
+                            <input type="text" id="newSlotRoom" class="input w-full" placeholder="z.B. R102">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">+
+                            Hinzufügen</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settingsTab" style="display: none;">
+                <form id="settingsForm" onsubmit="saveSettings(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="label-text text-xs mb-1 block font-bold">Dauer (Min)</label>
+                            <input type="number" id="slotDuration" name="slot_duration" class="input w-full" value="45">
+                        </div>
+                        <div class="form-group">
+                            <label class="label-text text-xs mb-1 block font-bold">Pause (Min)</label>
+                            <input type="number" id="breakDuration" name="break_duration" class="input w-full"
+                                value="15">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="label-text text-xs mb-1 block font-bold">Start</label>
+                            <input type="time" id="dayStart" class="input w-full">
+                        </div>
+                        <div class="form-group">
+                            <label class="label-text text-xs mb-1 block font-bold">Ende</label>
+                            <input type="time" id="dayEnd" class="input w-full">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block" style="margin-top: 1rem;">Einstellungen
+                        speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const IS_ADMIN = {{ 'true' if user.role.value in ['owner', 'admin', 'class_admin']else 'false' }};
+    const IS_REGISTERED = {{ 'true' if user.is_registered else 'false' }};
+    const WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+
+    let timetableData = { slots: [] };
+    let settingsData = {};
+
+    async function loadTimetable() {
+        try {
+            const [slotsRes, settingsRes] = await Promise.all([
+                fetch('/timetable/my'),
+                fetch('/timetable/settings')
+            ]);
+
+            if (slotsRes.ok) timetableData = await slotsRes.json();
+            if (settingsRes.ok) settingsData = await settingsRes.json();
+
+            renderTimetable();
+            document.getElementById('loadingTimetable').style.display = 'none';
+        } catch (e) {
+            console.error(e);
+            const loader = document.getElementById('loadingTimetable');
+            loader.innerHTML = '<span class="text-error">Fehler beim Laden</span>';
+        }
+    }
+
+    function renderTimetable() {
+        const tbody = document.getElementById('timetableBody');
+        tbody.innerHTML = '';
+
+        // Find max slot number
+        let maxSlot = 8;
+        if (timetableData.slots.length > 0) {
+            maxSlot = Math.max(...timetableData.slots.map(s => s.slot_number), 8);
+        }
+
+        // Generate rows
+        for (let slotNum = 1; slotNum <= maxSlot; slotNum++) {
+            const row = document.createElement('tr');
+
+            // Time cell
+            const timeCell = document.createElement('td');
+            timeCell.className = 'time-cell';
+
+            // Find time from any slot in this number (assuming consistent times)
+            // Or calculate if we implemented that fully on frontend, but backend sends it
+            const anySlot = timetableData.slots.find(s => s.slot_number === slotNum);
+            const startTime = anySlot ? anySlot.start_time : '';
+            const endTime = anySlot ? anySlot.end_time : '';
+
+            timeCell.innerHTML = `
+            <div class="slot-number">${slotNum}.</div>
+            <div class="slot-time">${startTime}</div>
+            <div class="slot-time text-xs opacity-50">${endTime}</div>
+        `;
+            row.appendChild(timeCell);
+
+            // Day cells
+            for (let day = 0; day < 5; day++) {
+                const daySlots = timetableData.slots.filter(s => s.weekday === day && s.slot_number === slotNum);
+                const cell = document.createElement('td');
+                cell.className = 'day-cell';
+                cell.dataset.day = day;
+
+                if (daySlots.length === 0) {
+                    // Empty cell
+                } else if (daySlots.length === 1) {
+                    const s = daySlots[0];
+                    cell.innerHTML = renderSlotContent(s);
+                    if (s.selected) cell.classList.add('selected');
+                    cell.onclick = () => toggleSlotSelection(s.id, s.selected);
+                } else {
+                    // Multiple groups
+                    const container = document.createElement('div');
+                    container.className = 'multi-slot-container';
+                    daySlots.forEach(s => {
+                        const div = document.createElement('div');
+                        div.className = `slot-item ${s.selected ? 'selected' : ''}`;
+                        div.innerHTML = renderSlotContent(s, true);
+                        div.onclick = (e) => { e.stopPropagation(); toggleSlotSelection(s.id, s.selected); };
+                        container.appendChild(div);
+                    });
+                    cell.appendChild(container);
+                }
+
+                row.appendChild(cell);
+            }
+
+            tbody.appendChild(row);
+        }
+
+        // Apply mobile visibility
+        const today = new Date().getDay();
+        if (window.innerWidth < 768 && today >= 1 && today <= 5) {
+            showDay(today - 1);
+        } else if (window.innerWidth < 768) {
+            showDay(0); // Default to Monday
+        }
+    }
+
+    function renderSlotContent(slot, compact = false) {
+        if (compact) {
+            return `
+            <div class="font-bold text-sm">${slot.subject_name}</div>
+            <div class="text-xs flex justify-between">
+                <span>${slot.group_name || ''}</span>
+                <span>${slot.room || ''}</span>
+            </div>
+        `;
+        }
+        return `
+        <div class="slot-subject">${slot.subject_name}</div>
+        ${slot.group_name ? `<div class="badge badge-sm badge-ghost my-1">${slot.group_name}</div>` : ''}
+        ${slot.room ? `<div class="slot-room">📍 ${slot.room}</div>` : ''}
+    `;
+    }
+
+    async function toggleSlotSelection(slotId, currentlySelected) {
+        if (!IS_REGISTERED) return;
+
+        const method = currentlySelected ? 'DELETE' : 'POST';
+        await fetch(`/timetable/select/${slotId}`, { method });
+        // Optimistic update
+        const slot = timetableData.slots.find(s => s.id === slotId);
+        if (slot) slot.selected = !currentlySelected;
+        renderTimetable(); // Re-render to show change
+
+        // Background refresh
+        loadTimetable();
+    }
+
+    function showDay(dayIndex) {
+        // Mobile only function to hide/show columns
+        document.querySelectorAll('#dayTabs .tab').forEach((t, i) => {
+            t.classList.toggle('tab-active', i === dayIndex);
+        });
+
+        // In table, we hide TH and TD cells for other days
+        document.querySelectorAll('.day-col').forEach((th, i) => {
+            th.style.display = (i === dayIndex) ? 'table-cell' : 'none';
+        });
+
+        document.querySelectorAll('.day-cell').forEach(td => {
+            const day = parseInt(td.dataset.day);
+            td.style.display = (day === dayIndex) ? 'table-cell' : 'none';
+        });
+    }
+
+    // Settings Modal
+    function openTimetableSettingsModal() {
+        document.getElementById('timetableSettingsModal').classList.add('active');
+        loadSettingsForm();
+        loadSlotsEditor();
+        // Ensure the 'slots' tab is active by default when opening the modal
+        showSettingsTab('slots', document.querySelector('.tabs .tab:first-child'));
+    }
+
+    function closeTimetableSettingsModal() {
+        document.getElementById('timetableSettingsModal').classList.remove('active');
+    }
+
+    function showSettingsTab(tabName, tabElement) {
+        document.getElementById('settingsTab').style.display = tabName === 'settings' ? 'block' : 'none';
+        document.getElementById('slotsTab').style.display = tabName === 'slots' ? 'block' : 'none';
+
+        // Update active tab visual
+        if (tabElement) {
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('tab-active'));
+            tabElement.classList.add('tab-active');
+        }
+    }
+
+    async function loadSettingsForm() {
+        const res = await fetch('/timetable/settings');
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('slotDuration').value = data.slot_duration;
+            document.getElementById('breakDuration').value = data.break_duration;
+            document.getElementById('dayStart').value = `${String(data.day_start_hour).padStart(2, '0')}:${String(data.day_start_minute).padStart(2, '0')}`;
+            document.getElementById('dayEnd').value = `${String(data.day_end_hour).padStart(2, '0')}:${String(data.day_end_minute).padStart(2, '0')}`;
+        }
+    }
+
+    async function saveSettings(e) {
+        e.preventDefault();
+        const startTime = document.getElementById('dayStart').value.split(':');
+        const endTime = document.getElementById('dayEnd').value.split(':');
+
+        const formData = new FormData();
+        formData.append('slot_duration', document.getElementById('slotDuration').value);
+        formData.append('break_duration', document.getElementById('breakDuration').value);
+        formData.append('day_start_hour', startTime[0]);
+        formData.append('day_start_minute', startTime[1]);
+        formData.append('day_end_hour', endTime[0]);
+        formData.append('day_end_minute', endTime[1]);
+
+        await fetch('/timetable/settings', { method: 'PUT', body: formData });
+        await loadTimetable();
+        alert('Einstellungen gespeichert!');
+    }
+
+    async function loadSlotsEditor() {
+        const res = await fetch('/timetable/slots');
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const grid = document.getElementById('slotEditorGrid');
+
+        if (data.slots.length === 0) {
+            grid.innerHTML = '<p class="text-muted text-center py-4">Noch keine Stunden angelegt</p>';
+            return;
+        }
+
+        grid.innerHTML = data.slots.map(s => `
+        <div class="slot-editor-item">
+            <div>
+                <strong>${WEEKDAYS[s.weekday]}, ${s.slot_number}. Stunde</strong><br>
+                ${s.subject_name}${s.group_name ? ` (${s.group_name})` : ''}
+                ${s.room ? ` - ${s.room}` : ''}
+            </div>
+            <button class="btn btn-ghost btn-sm text-error" onclick="deleteSlot('${s.id}')">🗑️</button>
+        </div>
+    `).join('');
+    }
+
+    async function addSlot(e) {
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('weekday', document.getElementById('newSlotDay').value);
+        formData.append('slot_number', document.getElementById('newSlotNumber').value);
+        formData.append('subject_name', document.getElementById('newSlotSubject').value);
+        formData.append('group_name', document.getElementById('newSlotGroup').value);
+        formData.append('room', document.getElementById('newSlotRoom').value);
+
+        const res = await fetch('/timetable/slots', { method: 'POST', body: formData });
+        if (res.ok) {
+            document.getElementById('newSlotSubject').value = '';
+            document.getElementById('newSlotGroup').value = '';
+            document.getElementById('newSlotRoom').value = '';
+            await loadSlotsEditor();
+            await loadTimetable();
+        }
+    }
+
+    async function deleteSlot(slotId) {
+        if (!confirm('Stunde löschen?')) return;
+        await fetch(`/timetable/slots/${slotId}`, { method: 'DELETE' });
+        await loadSlotsEditor();
+        await loadTimetable();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', loadTimetable);
+
+    // Mobile: show current day
+    const today = new Date().getDay();
+    if (today >= 1 && today <= 5) showDay(today - 1);
+</script>
+{% endblock %}

@@ -29,14 +29,25 @@
             <a href="#" class="sidebar-link" onclick="toggleFilterContent(); setActiveSidebar(this); return false;">
                 <span>🔍</span> Filter
             </a>
-            <a href="#" class="sidebar-link sidebar-link-grades {% if not user.is_registered %}disabled{% endif %}" {%
-                if user.is_registered %}onclick="scrollToGrades(); setActiveSidebar(this); return false;" {% endif %}
-                style="{% if not user.is_registered %}opacity: 0.5; cursor: not-allowed;{% endif %}">
-                <span>📊</span> Noten {% if not user.is_registered %}<span class="text-xs">🔒</span>{% endif %}
+
+            {% if user.is_registered %}
+            <a href="#" class="sidebar-link sidebar-link-grades"
+                onclick="scrollToGrades(); setActiveSidebar(this); return false;">
+                <span>📊</span> Noten
             </a>
-            <a href="#" class="sidebar-link" style="opacity: 0.5; cursor: not-allowed;">
-                <span>🕒</span> Stunden
+            <a href="/stundenplan" class="sidebar-link">
+                <span>🕒</span> Stundenplan
             </a>
+            {% else %}
+            <a href="#" class="sidebar-link" style="opacity: 0.6;"
+                onclick="showLoginRequiredModal('Noten'); return false;">
+                <span>📊</span> Noten <span class="text-xs">🔒</span>
+            </a>
+            <a href="#" class="sidebar-link" style="opacity: 0.6;"
+                onclick="showLoginRequiredModal('Stundenplan'); return false;">
+                <span>🕒</span> Stundenplan <span class="text-xs">🔒</span>
+            </a>
+            {% endif %}
 
             {% if user.role.value in ["owner", "admin", "class_admin"] %}
             <div class="sidebar-section-title">Verwaltung</div>
@@ -310,6 +321,7 @@
 
     <!-- Widgets -->
     <aside class="dashboard-widgets">
+        {% include 'partials/_next_lesson.html' %}
         {% include 'partials/_upcoming.html' %}
         {% include 'partials/_grades_widget.html' %}
         {% include 'partials/_info_feed.html' %}
@@ -345,15 +357,69 @@
 
 <script>
     function setActiveSidebar(element) {
-        document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+        });
         element.classList.add('active');
     }
 
-    function scrollToGrades() {
-        const gradeSection = document.querySelector('.grade-stats-section');
-        if (gradeSection) {
-            gradeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    function toggleFilterContent() {
+        const content = document.getElementById('filterContent');
+        const icon = document.getElementById('filterIcon');
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
         }
     }
+
+    function scrollToGrades() {
+        const widget = document.getElementById('gradesWidget');
+        if (widget) {
+            widget.scrollIntoView({ behavior: 'smooth' });
+            // Highlight effect
+            widget.style.transition = 'box-shadow 0.3s ease';
+            widget.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.5)';
+            setTimeout(() => {
+                widget.style.boxShadow = '';
+            }, 2000);
+        }
+    }
+
+    function showLoginRequiredModal(featureName) {
+        const modal = document.getElementById('loginRequiredModal');
+        const text = document.getElementById('loginRequiredText');
+        if (text) text.textContent = `Die Funktion "${featureName}" ist nur für registrierte und eingeloggte Benutzer verfügbar.`;
+        modal.classList.add('active');
+    }
+
+    function closeLoginRequiredModal() {
+        document.getElementById('loginRequiredModal').classList.remove('active');
+    }
 </script>
-{% endblock %}
+
+<!-- Login Required Modal -->
+<div class="modal-backdrop" id="loginRequiredModal">
+    <div class="modal" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>🔒 Login Erforderlich</h3>
+            <button class="btn btn-ghost" onclick="closeLoginRequiredModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="text-center mb-4">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🛡️</div>
+                <p id="loginRequiredText" class="mb-4">Diese Funktion ist nur für registrierte Benutzer verfügbar.</p>
+                <p class="text-sm text-muted mb-4">Aus Datenschutz- und Sicherheitsgründen ist eine Anmeldung
+                    erforderlich, um auf persönliche Daten wie Noten oder Stundenpläne zuzugreifen.</p>
+            </div>
+            <div class="flex gap-2 justify-center">
+                <a href="/login" class="btn btn-primary">Einloggen</a>
+                <button
+                    onclick="document.getElementById('registerModal').classList.add('active'); closeLoginRequiredModal();"
+                    class="btn btn-secondary">Registrieren</button>
+            </div>
+        </div>
+    </div>
+    {% endblock %}

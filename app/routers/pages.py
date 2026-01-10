@@ -126,3 +126,20 @@ def index(
         })
     else:
         return templates.TemplateResponse("landing.html", {"request": request})
+
+@router.get("/stundenplan")
+def stundenplan(
+    request: Request,
+    user: models.User | None = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Timetable page - requires registered user"""
+    if not user:
+        return RedirectResponse("/", status_code=302)
+    if not user.is_registered:
+        return RedirectResponse("/", status_code=302)
+    
+    return templates.TemplateResponse("timetable.html", {
+        "request": request,
+        "user": user
+    })

@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base, SQLALCHEMY_DATABASE_URL, SessionLocal
-from app.routers import auth, pages, events, admin, caldav, preferences, grades
+from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable
 from app import fix_db_schema, crud, auto_migrate
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
@@ -63,3 +63,4 @@ app.include_router(admin.router)
 app.include_router(caldav.router)
 app.include_router(preferences.router)
 app.include_router(grades.router)
+app.include_router(timetable.router)

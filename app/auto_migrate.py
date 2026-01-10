@@ -71,6 +71,62 @@ def run_auto_migrations():
                     cursor.execute("ALTER TABLE grades ADD COLUMN weight FLOAT DEFAULT 1.0")
                     conn.commit()
 
+            # 5. Create timetable_settings table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='timetable_settings'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'timetable_settings' table.")
+                cursor.execute("""
+                    CREATE TABLE timetable_settings (
+                        id VARCHAR PRIMARY KEY,
+                        class_id VARCHAR NOT NULL UNIQUE,
+                        slot_duration INTEGER DEFAULT 45,
+                        break_duration INTEGER DEFAULT 15,
+                        day_start_hour INTEGER DEFAULT 8,
+                        day_start_minute INTEGER DEFAULT 0,
+                        day_end_hour INTEGER DEFAULT 16,
+                        day_end_minute INTEGER DEFAULT 0,
+                        FOREIGN KEY (class_id) REFERENCES classes(id)
+                    )
+                """)
+                conn.commit()
+
+            # 6. Create timetable_slots table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='timetable_slots'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'timetable_slots' table.")
+                cursor.execute("""
+                    CREATE TABLE timetable_slots (
+                        id VARCHAR PRIMARY KEY,
+                        class_id VARCHAR NOT NULL,
+                        weekday INTEGER NOT NULL,
+                        slot_number INTEGER NOT NULL,
+                        subject_id VARCHAR,
+                        subject_name VARCHAR,
+                        group_name VARCHAR,
+                        room VARCHAR,
+                        FOREIGN KEY (class_id) REFERENCES classes(id),
+                        FOREIGN KEY (subject_id) REFERENCES subjects(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_timetable_slots_class_id ON timetable_slots(class_id)")
+                conn.commit()
+
+            # 7. Create user_timetable_selections table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_timetable_selections'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'user_timetable_selections' table.")
+                cursor.execute("""
+                    CREATE TABLE user_timetable_selections (
+                        id VARCHAR PRIMARY KEY,
+                        user_id VARCHAR NOT NULL,
+                        slot_id VARCHAR NOT NULL,
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (slot_id) REFERENCES timetable_slots(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_user_timetable_selections_user_id ON user_timetable_selections(user_id)")
+                conn.commit()
+
             # Add other migrations here as needed
             
         except Exception as e:
