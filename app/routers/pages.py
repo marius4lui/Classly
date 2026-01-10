@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, Depends, Query
+from fastapi import APIRouter, Request, Depends, Query, Response
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.core.auth import get_current_user
 from app import crud, models
@@ -11,6 +12,14 @@ import os
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["gtm_id"] = os.getenv("GTM_ID")
+
+@router.get("/sitemap.xml")
+def sitemap():
+    return FileResponse("app/static/sitemap.xml")
+
+@router.get("/robots.txt")
+def robots():
+    return FileResponse("app/static/robots.txt")
 
 @router.get("/impressum")
 def impressum(request: Request):
