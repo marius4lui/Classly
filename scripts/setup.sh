@@ -42,7 +42,7 @@ if [ $# -eq 0 ]; then
     # Check if setup_class.py exists. If not (e.g. piped via curl), download it.
     if [ ! -f "$SCRIPT_PATH" ]; then
         echo "Downloading helper script..."
-        curl -sL https://docs.classly.site/scripts/setup_class.py -o setup_class_temp.py
+        curl -sL https://scripts.classly.site/setup_class.py -o setup_class_temp.py
         SCRIPT_PATH="setup_class_temp.py"
     fi
     

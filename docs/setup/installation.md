@@ -71,7 +71,7 @@ Wenn du Classly auf einem öffentlichen Server hostest und nicht willst, dass si
 
 ```bash
 # Lade das Setup-Script und starte es
-curl -sL https://docs.classly.site/scripts/setup.sh | bash
+curl -sL https://scripts.classly.site/setup.sh | bash
 ```
 Das Skript fragt dich nach Klassenname, Lehrername, etc. und generiert dir direkt die Links.
 Hinweis: Auf dem Server muss Python installiert sein.
