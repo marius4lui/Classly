@@ -6,6 +6,7 @@ from app.database import get_db
 from sqlalchemy.orm import Session
 from app.core import calendar_utils
 import datetime
+import os
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")

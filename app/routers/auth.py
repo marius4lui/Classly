@@ -210,10 +210,11 @@ def join_class(
     return {"status": "success"}
 
 @router.get("/auth/logout")
-def logout(response: Response):
+def logout():
+    from fastapi.responses import RedirectResponse
+    response = RedirectResponse(url="/", status_code=303)
     response.delete_cookie("session_token")
-    response.headers["HX-Redirect"] = "/"
-    return {"status": "logged out"}
+    return response
 
 @router.get("/auth/migrate-session")
 def migrate_session(
