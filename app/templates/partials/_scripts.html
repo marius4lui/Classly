@@ -230,6 +230,20 @@
             `;
         }
 
+        // Grade Section (only for KA/TEST and registered users)
+        let gradeHtml = '';
+        if ((event.type === 'KA' || event.type === 'TEST') && IS_REGISTERED) {
+            gradeHtml = `
+                <hr>
+                <h3 class="text-sm mb-2">📝 Deine Note</h3>
+                <div id="gradeSection">
+                    <div class="add-grade-btn" onclick="openGradeModal('${event.id}')" id="gradeLoadingBtn">
+                        <span>⏳</span> Lade...
+                    </div>
+                </div>
+            `;
+        }
+
         // Footer / Actions
         // Clear previous footer buttons first
         const modalFooter = document.querySelector('#eventDetailModal .modal-footer');
@@ -265,7 +279,54 @@
 
             ${topicsHtml}
             ${linksHtml}
+            ${gradeHtml}
         `;
+
+        // Load grade asynchronously if applicable
+        if ((event.type === 'KA' || event.type === 'TEST') && IS_REGISTERED) {
+            loadAndDisplayGrade(event.id, event.type);
+        }
+    }
+
+    async function loadAndDisplayGrade(eventId, eventType = 'KA') {
+        const gradeSection = document.getElementById('gradeSection');
+        if (!gradeSection) return;
+
+        try {
+            const res = await fetch(`/grades/event/${eventId}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.grade !== null) {
+                    // Show existing grade with weight
+                    const weightLabel = data.weight === 1.0 ? '' : ` (×${data.weight})`;
+                    gradeSection.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <span class="event-grade-badge">📝 ${data.grade.toFixed(1)}${weightLabel}</span>
+                            <button class="btn btn-sm btn-secondary" onclick="openGradeModal('${eventId}', ${data.grade}, ${data.weight}, '${eventType}')">Ändern</button>
+                        </div>
+                    `;
+                } else {
+                    // Show add button
+                    gradeSection.innerHTML = `
+                        <div class="add-grade-btn" onclick="openGradeModal('${eventId}', null, null, '${eventType}')">
+                            <span>➕</span> Note hinzufügen
+                        </div>
+                    `;
+                }
+            } else if (res.status === 403) {
+                // Not registered
+                gradeSection.innerHTML = `
+                    <p class="text-xs text-muted">Registriere dich, um Noten zu erfassen</p>
+                `;
+            }
+        } catch (e) {
+            console.error('Failed to load grade', e);
+            gradeSection.innerHTML = `
+                <div class="add-grade-btn" onclick="openGradeModal('${eventId}', null, null, '${eventType}')">
+                    <span>➕</span> Note hinzufügen
+                </div>
+            `;
+        }
     }
 
     function renderEditMode() {
@@ -732,4 +793,118 @@
 
     // Init on load
     document.addEventListener('DOMContentLoaded', initFilters);
+
+    // === GRADE MANAGEMENT ===
+    function openGradeModal(eventId, existingGrade = null, existingWeight = null, eventType = 'KA') {
+        document.getElementById('gradeEventId').value = eventId;
+        document.getElementById('gradeEventType').value = eventType;
+        const gradeInput = document.getElementById('gradeInput');
+        const weightSelect = document.getElementById('gradeWeight');
+
+        if (existingGrade) {
+            gradeInput.value = existingGrade;
+        } else {
+            gradeInput.value = '';
+        }
+
+        // Set default weight based on event type
+        if (existingWeight) {
+            weightSelect.value = existingWeight.toString();
+        } else if (eventType === 'TEST') {
+            weightSelect.value = '0.5';
+        } else {
+            weightSelect.value = '1.0';
+        }
+
+        updateGradePreview();
+        document.getElementById('gradeModal').classList.add('active');
+        gradeInput.focus();
+    }
+
+    function closeGradeModal() {
+        document.getElementById('gradeModal').classList.remove('active');
+        document.getElementById('gradeInput').value = '';
+    }
+
+    function updateGradePreview() {
+        const gradeInput = document.getElementById('gradeInput');
+        const previewBox = document.getElementById('gradePreviewBox');
+        const previewValue = document.getElementById('gradePreviewValue');
+        const value = parseFloat(gradeInput.value);
+
+        if (isNaN(value) || value < 1 || value > 6) {
+            previewBox.style.display = 'none';
+            return;
+        }
+
+        previewBox.style.display = 'block';
+        previewValue.textContent = value.toFixed(1);
+
+        // Update color based on grade
+        previewValue.classList.remove('grade-good', 'grade-medium', 'grade-bad');
+        if (value <= 2.0) {
+            previewValue.classList.add('grade-good');
+        } else if (value <= 3.5) {
+            previewValue.classList.add('grade-medium');
+        } else {
+            previewValue.classList.add('grade-bad');
+        }
+    }
+
+    async function submitGrade(e) {
+        e.preventDefault();
+        const eventId = document.getElementById('gradeEventId').value;
+        const grade = document.getElementById('gradeInput').value;
+        const weight = document.getElementById('gradeWeight').value;
+
+        // Validate
+        const gradeNum = parseFloat(grade);
+        if (isNaN(gradeNum) || gradeNum < 1 || gradeNum > 6) {
+            showToast('Note muss zwischen 1.0 und 6.0 sein', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('event_id', eventId);
+        formData.append('grade', grade);
+        formData.append('weight', weight);
+
+        try {
+            const res = await fetch('/grades', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                showToast('Note gespeichert! 📝', 'success');
+                closeGradeModal();
+                // Refresh current event detail if open
+                if (currentEventId === eventId) {
+                    await refreshEventDetailContent(eventId);
+                }
+                // Reload page to update widget
+                setTimeout(() => location.reload(), 500);
+            } else {
+                const data = await res.json();
+                showToast(data.detail || 'Fehler beim Speichern', 'error');
+            }
+        } catch (err) {
+            showToast('Netzwerkfehler', 'error');
+        }
+    }
+
+    async function loadGradeForEvent(eventId) {
+        if (!IS_REGISTERED) return null;
+
+        try {
+            const res = await fetch(`/grades/event/${eventId}`);
+            if (res.ok) {
+                const data = await res.json();
+                return data;
+            }
+        } catch (e) {
+            console.error('Failed to load grade', e);
+        }
+        return null;
+    }
 </script>

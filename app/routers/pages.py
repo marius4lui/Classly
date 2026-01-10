@@ -97,6 +97,11 @@ def index(
         calendar_data = calendar_utils.get_month_calendar(cal_year, cal_month, dated_events)
         current_month_name = datetime.date(cal_year, cal_month, 1).strftime("%B %Y")
         
+        # Grade statistics (only for registered users)
+        grade_stats = None
+        if user.is_registered:
+            grade_stats = crud.get_grade_statistics(db, user.id, clazz.id)
+        
         return templates.TemplateResponse("dashboard.html", {
             "request": request, 
             "user": user, 
@@ -116,7 +121,8 @@ def index(
             "upcoming_events": upcoming_events,
             "infos": infos,
             "base_url": str(request.base_url).rstrip("/"),
-            "welcome_back": welcome_back
+            "welcome_back": welcome_back,
+            "grade_stats": grade_stats
         })
     else:
         return templates.TemplateResponse("landing.html", {"request": request})

@@ -369,3 +369,149 @@ def migrate_capitalize_user_names(db: Session):
         db.commit()
         print(f"[Migration] Capitalized {updated_count} user names")
     return updated_count
+
+# --- Grade CRUD ---
+def create_grade(db: Session, user_id: str, event_id: str, grade: float, weight: float = 1.0):
+    """Create or update a grade for an event (only one grade per user per event)"""
+    # Validate grade range
+    if grade < 1.0 or grade > 6.0:
+        return None
+    
+    # Validate weight range
+    if weight < 0.1 or weight > 2.0:
+        weight = 1.0
+    
+    # Check if grade already exists for this user/event
+    existing = db.query(models.Grade).filter(
+        models.Grade.user_id == user_id,
+        models.Grade.event_id == event_id
+    ).first()
+    
+    if existing:
+        existing.grade = grade
+        existing.weight = weight
+        db.commit()
+        db.refresh(existing)
+        return existing
+    
+    db_grade = models.Grade(
+        user_id=user_id,
+        event_id=event_id,
+        grade=grade,
+        weight=weight
+    )
+    db.add(db_grade)
+    db.commit()
+    db.refresh(db_grade)
+    return db_grade
+
+def get_grade(db: Session, user_id: str, event_id: str):
+    """Get a user's grade for a specific event"""
+    return db.query(models.Grade).filter(
+        models.Grade.user_id == user_id,
+        models.Grade.event_id == event_id
+    ).first()
+
+def get_grades_for_user(db: Session, user_id: str):
+    """Get all grades for a user"""
+    return db.query(models.Grade).filter(
+        models.Grade.user_id == user_id
+    ).all()
+
+def get_grades_with_events(db: Session, user_id: str, class_id: str):
+    """Get all grades for a user with event details - for the grades overview page"""
+    grades = db.query(
+        models.Grade,
+        models.Event
+    ).join(
+        models.Event, models.Grade.event_id == models.Event.id
+    ).filter(
+        models.Grade.user_id == user_id,
+        models.Event.class_id == class_id
+    ).order_by(models.Event.date.desc()).all()
+    
+    return grades
+
+def delete_grade(db: Session, grade_id: str, user_id: str):
+    """Delete a grade (only if it belongs to the user)"""
+    grade = db.query(models.Grade).filter(
+        models.Grade.id == grade_id,
+        models.Grade.user_id == user_id
+    ).first()
+    if grade:
+        db.delete(grade)
+        db.commit()
+        return True
+    return False
+
+def get_grade_statistics(db: Session, user_id: str, class_id: str):
+    """
+    Get grade statistics for a user: weighted average per subject and overall.
+    Returns: { "subjects": { "subject_name": { "average": X, "count": Y, "grades": [...] } }, "overall": Z }
+    """
+    # Get all grades for this user, joined with events
+    results = db.query(
+        models.Grade.grade,
+        models.Grade.weight,
+        models.Grade.id,
+        models.Event.subject_name,
+        models.Event.type,
+        models.Event.date,
+        models.Event.title
+    ).join(
+        models.Event, models.Grade.event_id == models.Event.id
+    ).filter(
+        models.Grade.user_id == user_id,
+        models.Event.class_id == class_id
+    ).order_by(models.Event.date.desc()).all()
+    
+    if not results:
+        return {"subjects": {}, "overall": None, "count": 0, "grades": []}
+    
+    # Aggregate by subject with weighted averages
+    subject_data = {}
+    all_weighted_sum = 0.0
+    all_weight_sum = 0.0
+    all_grades_list = []
+    
+    for grade_val, weight, grade_id, subject_name, event_type, event_date, event_title in results:
+        subject = subject_name or "Allgemein"
+        
+        grade_info = {
+            "id": grade_id,
+            "grade": grade_val,
+            "weight": weight,
+            "type": event_type.value if event_type else "TEST",
+            "date": event_date.strftime("%d.%m.%Y") if event_date else None,
+            "title": event_title
+        }
+        all_grades_list.append({**grade_info, "subject": subject})
+        
+        if subject not in subject_data:
+            subject_data[subject] = {"grades": [], "weighted_sum": 0.0, "weight_sum": 0.0}
+        
+        subject_data[subject]["grades"].append(grade_info)
+        subject_data[subject]["weighted_sum"] += grade_val * weight
+        subject_data[subject]["weight_sum"] += weight
+        
+        all_weighted_sum += grade_val * weight
+        all_weight_sum += weight
+    
+    # Calculate weighted averages
+    subjects = {}
+    for subject, data in subject_data.items():
+        avg = data["weighted_sum"] / data["weight_sum"] if data["weight_sum"] > 0 else 0
+        subjects[subject] = {
+            "average": round(avg, 2),
+            "count": len(data["grades"]),
+            "grades": data["grades"]
+        }
+    
+    overall = round(all_weighted_sum / all_weight_sum, 2) if all_weight_sum > 0 else None
+    
+    return {
+        "subjects": subjects,
+        "overall": overall,
+        "count": len(all_grades_list),
+        "grades": all_grades_list
+    }

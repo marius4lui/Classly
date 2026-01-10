@@ -26,11 +26,13 @@
                 <span>🏠</span> Übersicht
             </a>
             <!-- Filter placeholder as requested -->
-            <div class="sidebar-link" style="opacity: 0.5; cursor: not-allowed;">
+            <a href="#" class="sidebar-link" onclick="toggleFilterContent(); setActiveSidebar(this); return false;">
                 <span>🔍</span> Filter
-            </div>
-            <a href="#" class="sidebar-link" style="opacity: 0.5; cursor: not-allowed;">
-                <span>📊</span> Noten
+            </a>
+            <a href="#" class="sidebar-link sidebar-link-grades {% if not user.is_registered %}disabled{% endif %}" {%
+                if user.is_registered %}onclick="scrollToGrades(); setActiveSidebar(this); return false;" {% endif %}
+                style="{% if not user.is_registered %}opacity: 0.5; cursor: not-allowed;{% endif %}">
+                <span>📊</span> Noten {% if not user.is_registered %}<span class="text-xs">🔒</span>{% endif %}
             </a>
             <a href="#" class="sidebar-link" style="opacity: 0.5; cursor: not-allowed;">
                 <span>🕒</span> Stunden
@@ -309,6 +311,7 @@
     <!-- Widgets -->
     <aside class="dashboard-widgets">
         {% include 'partials/_upcoming.html' %}
+        {% include 'partials/_grades_widget.html' %}
         {% include 'partials/_info_feed.html' %}
     </aside>
 </div>
@@ -344,6 +347,13 @@
     function setActiveSidebar(element) {
         document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
+    }
+
+    function scrollToGrades() {
+        const gradeSection = document.querySelector('.grade-stats-section');
+        if (gradeSection) {
+            gradeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 </script>
 {% endblock %}

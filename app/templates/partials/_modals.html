@@ -130,6 +130,52 @@
     </div>
 </div>
 
+<!-- Grade Modal -->
+<div class="modal-backdrop" id="gradeModal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2>📝 Note eintragen</h2>
+            <button class="btn btn-ghost" onclick="closeGradeModal()">✕</button>
+        </div>
+        <form id="gradeForm" onsubmit="submitGrade(event)">
+            <div class="modal-body">
+                <input type="hidden" id="gradeEventId" name="event_id">
+                <input type="hidden" id="gradeEventType" value="">
+
+                <div class="form-group">
+                    <label>Note (1.0 - 6.0)</label>
+                    <input type="number" id="gradeInput" name="grade" step="0.1" min="1" max="6" placeholder="z.B. 2.3"
+                        required oninput="updateGradePreview()">
+                </div>
+
+                <div class="form-group">
+                    <label>Gewichtung</label>
+                    <select id="gradeWeight" name="weight">
+                        <option value="1.0" selected>Normal (1.0) - Standard für KA</option>
+                        <option value="0.5">Halb (0.5) - z.B. für Tests</option>
+                        <option value="0.25">Viertel (0.25) - kleine Tests</option>
+                        <option value="2.0">Doppelt (2.0) - wichtige Arbeit</option>
+                    </select>
+                    <p class="text-xs text-muted mt-2">Die Gewichtung beeinflusst den Durchschnitt</p>
+                </div>
+
+                <div class="grade-preview-box" id="gradePreviewBox" style="display: none;">
+                    <div class="grade-preview-value" id="gradePreviewValue">-</div>
+                    <div class="grade-preview-label">Deine Note</div>
+                </div>
+
+                <p class="text-xs text-muted text-center mt-4">
+                    🔒 Deine Note ist privat und nur für dich sichtbar
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeGradeModal()">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Upgrade Account Nag Screen -->
 <div class="upgrade-backdrop" id="upgradeModal">
     <div class="upgrade-modal">

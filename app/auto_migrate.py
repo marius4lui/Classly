@@ -43,6 +43,34 @@ def run_auto_migrations():
                 cursor.execute("UPDATE events SET priority = 'LOW' WHERE priority = 'low'")
                 conn.commit()
 
+            # 3. Check if grades table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='grades'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'grades' table.")
+                cursor.execute("""
+                    CREATE TABLE grades (
+                        id VARCHAR PRIMARY KEY,
+                        user_id VARCHAR NOT NULL,
+                        event_id VARCHAR NOT NULL,
+                        grade FLOAT NOT NULL,
+                        weight FLOAT DEFAULT 1.0,
+                        created_at DATETIME,
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (event_id) REFERENCES events(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_grades_user_id ON grades(user_id)")
+                cursor.execute("CREATE INDEX ix_grades_event_id ON grades(event_id)")
+                conn.commit()
+            else:
+                # 4. Check if weight column exists in grades table
+                cursor.execute("PRAGMA table_info(grades)")
+                grade_columns = [info[1] for info in cursor.fetchall()]
+                if "weight" not in grade_columns:
+                    logger.info("Migrating: Adding 'weight' column to grades table.")
+                    cursor.execute("ALTER TABLE grades ADD COLUMN weight FLOAT DEFAULT 1.0")
+                    conn.commit()
+
             # Add other migrations here as needed
             
         except Exception as e:

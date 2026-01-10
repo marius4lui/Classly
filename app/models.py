@@ -2,7 +2,7 @@ import enum
 import datetime
 import uuid
 import secrets
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -193,3 +193,16 @@ class UserPreferences(Base):
 
     user = relationship("User", backref="preferences")
 
+class Grade(Base):
+    """Private grades for registered users - only visible to the user who created them"""
+    __tablename__ = "grades"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    event_id = Column(String, ForeignKey("events.id"), nullable=False)
+    grade = Column(Float, nullable=False)  # 1.0 - 6.0 (German grading scale)
+    weight = Column(Float, default=1.0)  # Weight for averaging (e.g. KA=1.0, Test=0.5)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    user = relationship("User", backref="grades")
+    event = relationship("Event", backref="grades")
