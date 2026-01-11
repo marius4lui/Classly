@@ -24,6 +24,7 @@ export default defineConfig({
                     text: 'Funktionen',
                     items: [
                         { text: 'Übersicht', link: '/features/' },
+                        { text: '👀 Demo Modus', link: '/features/demo' },
                         { text: '📅 Kalender & Events', link: '/features/calendar' },
                         { text: '👥 Rollen & Rechte', link: '/features/roles' },
                         { text: '🔑 Zugang & Logins', link: '/features/access' },
