@@ -63,7 +63,7 @@ Für nicht-kommerzielle Nutzung – siehe [LICENSE](LICENSE).
 |---------|----------|
 | Private Nutzung | ✅ Ja |
 | Self-Hosting (privat) | ✅ Ja |
-| Bildungseinrichtungen (Schulen, Unis) | ✅ Ja |
+| Bildungseinrichtungen (Schulen, Unis) | ❌ Nein |
 | Non-Profit Organisationen | ✅ Ja |
 | Modifikation & Beiträge | ✅ Ja |
 | Code studieren & lernen | ✅ Ja |
