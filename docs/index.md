@@ -12,6 +12,9 @@ hero:
     - theme: alt
       text: Selbst hosten
       link: /setup/installation
+    - theme: alt
+      text: Lizenzierung
+      link: /licensing
 
 features:
   - title: 📅 Klassen-Kalender
@@ -22,5 +25,8 @@ features:
     details: Funktioniert perfekt auf deinem Smartphone als Web-App.
   - title: 🔒 Datenschutz
     details: Du hostest es selbst – deine Daten gehören dir.
+  - title: 📜 Dual Licensing
+    details: Kostenlos für Bildung & Non-Profit. Kommerzielle Nutzung erfordert eine Lizenz.
+    link: /licensing
 ---
 
