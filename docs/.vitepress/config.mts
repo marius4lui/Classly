@@ -64,7 +64,7 @@ export default defineConfig({
         ],
 
         footer: {
-            message: 'Released under the MIT License.',
+            message: 'Dual-Licensed: Community License (non-commercial) or Commercial License. See <a href="https://github.com/marius4lui/Classly/blob/main/LICENSE">LICENSE</a> and <a href="https://github.com/marius4lui/Classly/blob/main/COMMERCIAL.md">COMMERCIAL.md</a>',
             copyright: 'Copyright © 2026-present Classly'
         },
 
