@@ -19,7 +19,6 @@ Die Community License erlaubt die kostenlose Nutzung für:
 |-------------|----------|
 | Private Nutzung | ✅ Ja |
 | Self-Hosting (privat) | ✅ Ja |
-| Schulen & Universitäten | ✅ Ja |
 | Non-Profit Organisationen | ✅ Ja |
 | Modifikation & Beiträge | ✅ Ja |
 | Code studieren & lernen | ✅ Ja |
@@ -31,6 +30,7 @@ Die Community License erlaubt die kostenlose Nutzung für:
 | Kommerzielle Nutzung | ❌ Nein |
 | For-Profit Unternehmen | ❌ Nein |
 | SaaS / Hosting für Dritte | ❌ Nein |
+| Schulen & Universitäten | ❌ Nein |
 | Weiterverkauf | ❌ Nein |
 | White-Labeling | ❌ Nein |
 
