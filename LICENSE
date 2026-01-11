@@ -1,21 +1,162 @@
-MIT License
+# Classly Community License
 
-Copyright (c) 2026 Sebastian Lui
+**Version 1.0 – Effective Date: January 2026**
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Copyright (c) 2026 Sebastian Lui. All rights reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Preamble
+
+This software is dual-licensed. This Community License governs non-commercial use.
+For commercial use, a separate Commercial License is required (see COMMERCIAL.md).
+
+**IMPORTANT:** Versions of this software released prior to this license change
+(commit d29a12d and earlier) were licensed under the MIT License. This Community
+License applies only to this version and all subsequent releases.
+
+---
+
+## Definitions
+
+- **"Software"** means the Classly source code, documentation, and associated files
+  in this repository.
+- **"You"** means the individual or legal entity exercising the rights granted by
+  this License.
+- **"Non-Commercial Use"** means use that is not primarily intended for or directed
+  toward commercial advantage or monetary compensation.
+- **"Commercial Use"** means any use primarily intended for or directed toward
+  commercial advantage, monetary compensation, or revenue generation.
+- **"For-Profit Organization"** means any entity organized or operated with the
+  primary purpose of generating profit for its owners, shareholders, or members.
+- **"Non-Profit Organization"** means any entity organized and operated exclusively
+  for charitable, educational, religious, or scientific purposes, where no part of
+  the net earnings benefits any private shareholder or individual.
+- **"Educational Institution"** means any accredited school, college, university,
+  or other educational organization.
+- **"Self-Hosting"** means deploying and operating the Software on infrastructure
+  that You own or control, solely for Your own use or the use of Your organization.
+
+---
+
+## Grant of Rights
+
+Subject to the terms of this License, You are granted a non-exclusive, worldwide,
+royalty-free license to:
+
+### ✅ Permitted Uses
+
+1. **Personal Use:** Use, copy, and modify the Software for personal, non-commercial
+   purposes.
+
+2. **Self-Hosting:** Deploy and operate the Software on Your own infrastructure for
+   Your own use, provided such use is non-commercial.
+
+3. **Educational Use:** Use, copy, modify, and deploy the Software for educational
+   purposes within Educational Institutions, including classroom instruction,
+   research, and student projects.
+
+4. **Non-Profit Use:** Use, copy, modify, and deploy the Software within Non-Profit
+   Organizations for purposes aligned with their charitable mission.
+
+5. **Contribution:** Modify the Software and contribute modifications back to the
+   original project under the same license terms.
+
+6. **Study and Learning:** Examine, study, and learn from the source code.
+
+---
+
+## Restrictions
+
+### ❌ Uses Requiring a Commercial License
+
+The following uses are **NOT permitted** under this Community License and require
+a separate Commercial License (see COMMERCIAL.md):
+
+1. **Commercial Use:** Any use of the Software for commercial purposes or within
+   a For-Profit Organization, regardless of whether the Software itself generates
+   revenue.
+
+2. **For-Profit Organizations:** Any use by For-Profit Organizations, including
+   internal business operations, is prohibited without a Commercial License.
+
+3. **Software as a Service (SaaS):** Offering the Software, or any derivative work,
+   as a hosted service to third parties, whether for payment or free of charge.
+
+4. **Hosting for Third Parties:** Operating the Software on behalf of third parties
+   or providing access to the Software's functionality to third parties.
+
+5. **Resale and Redistribution:** Selling, sublicensing, or redistributing the
+   Software or derivative works for monetary compensation.
+
+6. **White-Labeling:** Rebranding and offering the Software as Your own product
+   or service.
+
+7. **Integration into Commercial Products:** Incorporating the Software into
+   commercial products or services.
+
+---
+
+## Conditions
+
+1. **Attribution:** You must retain all copyright notices, this License, and the
+   NOTICE.md file in all copies or substantial portions of the Software.
+
+2. **No Trademark Rights:** This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor, except as
+   required for describing the origin of the Software.
+
+3. **Modifications:** If You modify the Software, You must clearly indicate that
+   changes were made and must not misrepresent the modified version as the original.
+
+4. **No Circumvention:** You may not remove, alter, or circumvent any license
+   validation, license checks, or access controls in the Software.
+
+---
+
+## Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## Limitation of Liability
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---
+
+## Termination
+
+This License and the rights granted hereunder will terminate automatically if You
+fail to comply with the terms herein. Upon termination, You must cease all use of
+the Software and destroy all copies in Your possession.
+
+---
+
+## Governing Law
+
+This License shall be governed by and construed in accordance with the laws of
+Germany, without regard to its conflict of law provisions.
+
+---
+
+## Commercial Licensing
+
+For commercial use, enterprise deployments, SaaS offerings, or any use not covered
+by this Community License, please refer to **COMMERCIAL.md** or contact the copyright
+holder to obtain a Commercial License.
+
+---
+
+**Classly** is a trademark of Sebastian Lui.
