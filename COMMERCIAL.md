@@ -139,7 +139,7 @@ versions released after the license change.
 
 To obtain a Commercial License or discuss your licensing needs:
 
-**Email:** [INSERT EMAIL ADDRESS]
+**Email:** [mariusstudio@pm.me](mailto:mariusstudio@pm.me)
 
 **Subject Line:** Commercial License Inquiry – [Your Company Name]
 
