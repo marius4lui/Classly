@@ -54,6 +54,12 @@
 </head>
 
 <body>
+    {% if demo_mode %}
+    <div style="background: #e6fffa; color: #047857; text-align: center; padding: 0.5rem; font-size: 0.9rem; border-bottom: 1px solid #d1fae5;">
+        <strong>Demo Modus:</strong> Dies ist eine öffentliche Demo-Instanz. Daten werden alle 24 Stunden zurückgesetzt.
+    </div>
+    {% endif %}
+
     {% if gtm_id %}
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ gtm_id }}" height="0" width="0"
