@@ -6,8 +6,8 @@ Classly verwendet ein **Dual-Licensing-Modell**, um sowohl der Open-Source-Commu
 
 | Lizenz | Für wen? | Kosten |
 |--------|----------|--------|
-| **Community License** | Privatpersonen, Schulen, Non-Profits | Kostenlos |
-| **Commercial License** | Unternehmen, SaaS-Anbieter | Kostenpflichtig |
+| **Community License** | Privatpersonen,,Non-Profits | Kostenlos |
+| **Commercial License** | Unternehmen, Schulen, SaaS-Anbieter | Kostenpflichtig |
 
 ---
 
