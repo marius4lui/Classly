@@ -8,3 +8,9 @@ passlib
 argon2-cffi
 icalendar
 bcrypt
+authlib
+ldap3
+pyotp
+qrcode
+python3-saml
+itsdangerous
