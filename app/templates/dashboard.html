@@ -4,9 +4,14 @@
 <div class="dashboard-layout">
     <!-- Header -->
     <header class="header">
-        <div>
-            <h1>{{ clazz.name }}</h1>
-            <p class="text-sm text-muted">{{ user.name }}</p>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            {% if app_logo_url %}
+            <img src="{{ app_logo_url }}" alt="Logo" style="height: 40px; width: auto; border-radius: 8px;">
+            {% endif %}
+            <div>
+                <h1>{{ clazz.name }}</h1>
+                <p class="text-sm text-muted">{{ user.name }}</p>
+            </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
             {% if not user.is_registered %}

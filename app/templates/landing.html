@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Classly - Organize Your Class without Stress{% endblock %}
+{% block title %}{{ app_name }} - Organize Your Class without Stress{% endblock %}
 
 {% block main_class %}{% endblock %}
 
@@ -10,7 +10,12 @@
     <!-- Navigation -->
     <nav class="landing-nav">
         <div class="nav-container">
-            <div class="logo">Classly</div>
+            <div class="logo">
+                {% if app_logo_url %}
+                <img src="{{ app_logo_url }}" alt="Logo" style="height: 32px; vertical-align: middle;">
+                {% endif %}
+                {{ app_name }}
+            </div>
             <div class="nav-links">
                 <a href="https://docs.classly.site" target="_blank" class="nav-link">Anleitung</a>
                 <a href="/login" class="btn btn-secondary btn-sm">Login</a>
@@ -51,7 +56,7 @@
     <!-- Features Section -->
     <section class="features-section">
         <div class="section-container">
-            <h2 class="section-title">Warum Classly?</h2>
+            <h2 class="section-title">Warum {{ app_name }}?</h2>
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">📅</div>
