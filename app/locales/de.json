@@ -1,0 +1,31 @@
+{
+    "common": {
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "back": "Zurück",
+        "settings": "Einstellungen",
+        "logout": "Abmelden",
+        "login": "Anmelden",
+        "home": "Startseite",
+        "profile": "Profil"
+    },
+    "dashboard": {
+        "title": "Übersicht",
+        "upcoming_events": "Anstehende Ereignisse",
+        "no_events": "Keine anstehenden Ereignisse",
+        "infos": "Informationen",
+        "subjects": "Fächer"
+    },
+    "timetable": {
+        "title": "Stundenplan",
+        "add_event": "Ereignis hinzufügen",
+        "settings": "Stundenplan-Einstellungen"
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "language": "Sprache",
+        "select_language": "Sprache auswählen"
+    }
+}

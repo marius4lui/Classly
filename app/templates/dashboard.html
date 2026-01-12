@@ -23,7 +23,7 @@
         <nav class="sidebar-nav">
             <div class="sidebar-section-title">Menu</div>
             <a href="#" class="sidebar-link active" onclick="setActiveSidebar(this)">
-                <span>🏠</span> Übersicht
+                <span>🏠</span> {{ request.state.t('dashboard.title') }}
             </a>
             <!-- Filter placeholder as requested -->
             <a href="#" class="sidebar-link" onclick="toggleFilterContent(); setActiveSidebar(this); return false;">
@@ -36,7 +36,7 @@
                 <span>📊</span> Noten
             </a>
             <a href="/stundenplan" class="sidebar-link">
-                <span>🕒</span> Stundenplan
+                <span>🕒</span> {{ request.state.t('timetable.title') }}
             </a>
             {% else %}
             <a href="#" class="sidebar-link" style="opacity: 0.6;"
@@ -45,7 +45,7 @@
             </a>
             <a href="#" class="sidebar-link" style="opacity: 0.6;"
                 onclick="showLoginRequiredModal('Stundenplan'); return false;">
-                <span>🕒</span> Stundenplan <span class="text-xs">🔒</span>
+                <span>🕒</span> {{ request.state.t('timetable.title') }} <span class="text-xs">🔒</span>
             </a>
             {% endif %}
 

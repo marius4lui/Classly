@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base, SQLALCHEMY_DATABASE_URL, SessionLocal
-from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable
+from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable, i18n_router
 from app import fix_db_schema, crud, auto_migrate
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
@@ -30,6 +30,43 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Domain Migration Middleware
 from fastapi import Request
 from fastapi.responses import RedirectResponse
+from app.i18n import i18n
+
+@app.middleware("http")
+async def language_middleware(request: Request, call_next):
+    # 1. Query Param
+    lang = request.query_params.get("lang")
+
+    # 2. Cookie
+    if not lang:
+        lang = request.cookies.get("NEXT_LOCALE") or request.cookies.get("lang")
+
+    # 3. Accept-Language Header
+    if not lang:
+        accept = request.headers.get("Accept-Language")
+        if accept:
+            # Simple parser: take first 2 chars of first part
+            # e.g., "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7" -> "de"
+            lang = accept.split(",")[0].strip()[:2]
+
+    # 4. Fallback
+    if not lang:
+        lang = i18n.default_lang
+
+    # Validation (check if we have translation)
+    if lang not in i18n.translations:
+        lang = i18n.default_lang
+
+    request.state.lang = lang
+
+    # Helper function for templates
+    def t(key):
+        return i18n.get_translation(request.state.lang, key)
+
+    request.state.t = t
+
+    response = await call_next(request)
+    return response
 
 @app.middleware("http")
 async def domain_migration_middleware(request: Request, call_next):
@@ -64,3 +101,4 @@ app.include_router(caldav.router)
 app.include_router(preferences.router)
 app.include_router(grades.router)
 app.include_router(timetable.router)
+app.include_router(i18n_router.router)
