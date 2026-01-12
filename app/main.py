@@ -6,8 +6,10 @@ from app.routers import auth, pages, events, admin, caldav, preferences, grades,
 from app import fix_db_schema, crud, auto_migrate
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
-fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
-auto_migrate.run_auto_migrations()
+# Only run this for SQLite
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
+    auto_migrate.run_auto_migrations()
 
 # Create Tables
 Base.metadata.create_all(bind=engine)
