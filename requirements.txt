@@ -8,3 +8,6 @@ passlib
 argon2-cffi
 icalendar
 bcrypt
+apscheduler
+boto3
+cryptography
