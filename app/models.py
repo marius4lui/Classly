@@ -63,6 +63,14 @@ class User(Base):
     password_hash = Column(String, nullable=True)
     is_registered = Column(Boolean, default=False)
     
+    # Auth fields
+    auth_provider = Column(String, default="local") # local, google, microsoft, github, ldap, saml
+    auth_provider_id = Column(String, nullable=True)
+
+    # 2FA
+    totp_secret = Column(String, nullable=True)
+    totp_enabled = Column(Boolean, default=False)
+
     # CalDAV fields
     caldav_token = Column(String, default=generate_token)
     caldav_enabled = Column(Boolean, default=False)
@@ -70,6 +78,17 @@ class User(Base):
 
     clazz = relationship("Class", back_populates="users")
     events = relationship("Event", back_populates="author")
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    key_hash = Column(String, nullable=False, index=True) # Store hash of key
+    name = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", backref="api_keys")
 
 class Subject(Base):
     __tablename__ = "subjects"
@@ -250,4 +269,3 @@ class UserTimetableSelection(Base):
     
     user = relationship("User", backref="timetable_selections")
     slot = relationship("TimetableSlot", backref="user_selections")
-

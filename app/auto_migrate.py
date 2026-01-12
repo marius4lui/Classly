@@ -128,6 +128,48 @@ def run_auto_migrations():
                 conn.commit()
 
             # Add other migrations here as needed
+
+            # 8. Check Auth Columns in Users
+            cursor.execute("PRAGMA table_info(users)")
+            user_columns = [info[1] for info in cursor.fetchall()]
+
+            if "auth_provider" not in user_columns:
+                logger.info("Migrating: Adding 'auth_provider' column to users table.")
+                cursor.execute("ALTER TABLE users ADD COLUMN auth_provider VARCHAR DEFAULT 'local'")
+                conn.commit()
+
+            if "auth_provider_id" not in user_columns:
+                logger.info("Migrating: Adding 'auth_provider_id' column to users table.")
+                cursor.execute("ALTER TABLE users ADD COLUMN auth_provider_id VARCHAR")
+                conn.commit()
+
+            if "totp_secret" not in user_columns:
+                logger.info("Migrating: Adding 'totp_secret' column to users table.")
+                cursor.execute("ALTER TABLE users ADD COLUMN totp_secret VARCHAR")
+                conn.commit()
+
+            if "totp_enabled" not in user_columns:
+                logger.info("Migrating: Adding 'totp_enabled' column to users table.")
+                cursor.execute("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0")
+                conn.commit()
+
+            # 9. Create api_keys table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='api_keys'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'api_keys' table.")
+                cursor.execute("""
+                    CREATE TABLE api_keys (
+                        id VARCHAR PRIMARY KEY,
+                        user_id VARCHAR NOT NULL,
+                        key_hash VARCHAR NOT NULL,
+                        name VARCHAR NOT NULL,
+                        created_at DATETIME,
+                        expires_at DATETIME,
+                        FOREIGN KEY (user_id) REFERENCES users(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_api_keys_key_hash ON api_keys(key_hash)")
+                conn.commit()
             
         except Exception as e:
             logger.error(f"Auto migration failed: {e}")

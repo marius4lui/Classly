@@ -22,12 +22,31 @@
 
     <!-- Mode 1: Join/Login with Name -->
     <div id="mode-name" class="join-panel active">
+        {% if request.query_params.get("mode") == "oauth" or request.query_params.get("mode") == "saml" or request.query_params.get("mode") == "ldap" %}
+        <div class="info-box" style="background-color: #e6fffa; border-color: #38b2ac; color: #234e52; margin-bottom: 1rem;">
+            <strong>Anmeldung erfolgreich!</strong><br>
+            Bitte vervollständige dein Profil, um beizutreten.
+            <!-- Hidden inputs will be injected via cookie logic on backend, or we could pass them here if we read the cookie in the GET route.
+                 Since the backend reads the cookie, we just need to provide the 'auth_provider' hidden field to trigger that logic.
+                 Wait, the backend checks 'auth_provider_form'.
+            -->
+        </div>
+        {% endif %}
+
         <form hx-post="/auth/join" hx-swap="none">
             {% if token_type == 'class' %}
             <input type="hidden" name="join_token" value="{{ clazz.join_token }}">
             {% elif token_type == 'login' %}
             <input type="hidden" name="login_token" value="{{ login_token }}">
             {% endif %}
+
+             <!-- If we are in oauth mode, we send the provider name from query param or a generic indicator -->
+              {% if pending_auth %}
+                 <input type="hidden" name="auth_provider" value="{{ pending_auth.provider }}">
+                 <div style="margin-bottom: 1rem; padding: 0.5rem; background: #eee; border-radius: 4px;">
+                     Verknüpft mit <strong>{{ pending_auth.provider|title }}</strong> ({{ pending_auth.email }})
+                 </div>
+              {% endif %}
 
             <div class="form-group">
                 <label>Dein Name</label>

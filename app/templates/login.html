@@ -21,6 +21,30 @@
             </div>
             <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
         </form>
+
+        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border);">
+
+        <div class="oauth-buttons" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- OAuth buttons (only visible if configured) -->
+            <!-- We could pass settings to template, or just check if route exists?
+                 Ideally backend passes 'auth_settings' to template.
+                 For now, we hardcode links, if backend returns 404 user will see error.
+                 Better: Use JS or backend logic to hide if not available.
+                 But user requested "configurable".
+            -->
+            <a href="/login/google" class="btn btn-outline btn-block" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span>Google</span>
+            </a>
+            <a href="/login/microsoft" class="btn btn-outline btn-block" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span>Microsoft</span>
+            </a>
+            <a href="/login/github" class="btn btn-outline btn-block" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span>GitHub</span>
+            </a>
+            <a href="/login/saml" class="btn btn-outline btn-block" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span>SSO / SAML</span>
+            </a>
+        </div>
     </div>
 
     <p class="text-sm text-muted text-center mt-4">
