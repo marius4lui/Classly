@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from app import models
+from app.core.config import is_feature_enabled
 import datetime
 import secrets
 
@@ -316,6 +317,9 @@ def delete_link(db: Session, link_id: str):
 # --- Audit Logs ---
 def create_audit_log(db: Session, class_id: str, user_id: str, action: models.AuditAction, 
                      target_id: str = None, data: str = None, permanent: bool = False):
+    if not is_feature_enabled("audit_log"):
+        return None
+
     db_log = models.AuditLog(
         class_id=class_id,
         user_id=user_id,
@@ -329,8 +333,12 @@ def create_audit_log(db: Session, class_id: str, user_id: str, action: models.Au
     return db_log
 
 def cleanup_old_audit_logs(db: Session):
-    """Delete non-permanent audit logs older than 90 days"""
-    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=90)
+    """Delete non-permanent audit logs older than configured retention days"""
+    from app.core.config import settings
+
+    retention_days = getattr(settings, "AUDIT_LOG_RETENTION_DAYS", 90)
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=retention_days)
+
     deleted = db.query(models.AuditLog).filter(
         models.AuditLog.permanent == False,
         models.AuditLog.created_at < cutoff

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request
 import os
-from fastapi.templating import Jinja2Templates
+from app.core.templates import templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core import security
+from app.core.config import is_feature_enabled
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 # Cookie settings - 30 days persistent login
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days in seconds
@@ -81,6 +81,9 @@ def register_admin(
     db: Session = Depends(get_db)
 ):
     """Register current user with email/password"""
+    if not is_feature_enabled("public_registration"):
+        raise HTTPException(status_code=403, detail="Registration is disabled")
+
     session_token = request.cookies.get("session_token")
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")

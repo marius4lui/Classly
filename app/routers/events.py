@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core.auth import get_current_user, require_user, require_class_admin
+from app.core.config import is_feature_enabled
 import datetime
 import json
 
@@ -254,6 +255,8 @@ def create_subject(
     user: models.User = Depends(require_class_admin),
     db: Session = Depends(get_db)
 ):
+    if not is_feature_enabled("subjects"):
+        raise HTTPException(status_code=403, detail="Subjects feature is disabled")
     crud.create_subject(db, class_id=user.class_id, name=name, color=color)
     response.headers["HX-Redirect"] = "/"
     return {"status": "created"}
@@ -265,6 +268,8 @@ def delete_subject(
     user: models.User = Depends(require_class_admin),
     db: Session = Depends(get_db)
 ):
+    if not is_feature_enabled("subjects"):
+        raise HTTPException(status_code=403, detail="Subjects feature is disabled")
     deleted = crud.delete_subject(db, subject_id)
     if deleted:
         response.headers["HX-Redirect"] = "/"
@@ -280,6 +285,9 @@ def get_rss_feed(
     class_id: str = None,
     db: Session = Depends(get_db)
 ):
+    if not is_feature_enabled("rss_feed"):
+        return Response(content="RSS feed disabled", status_code=403)
+
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
     
@@ -330,6 +338,9 @@ def get_xml_feed(
     class_id: str = None,
     db: Session = Depends(get_db)
 ):
+    if not is_feature_enabled("rss_feed"):
+        return Response(content="Feed disabled", status_code=403)
+
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
         
