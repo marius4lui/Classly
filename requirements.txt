@@ -8,3 +8,6 @@ passlib
 argon2-cffi
 icalendar
 bcrypt
+psycopg2-binary
+pymysql
+redis

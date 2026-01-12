@@ -22,6 +22,7 @@ Classly ist eine **Web-App für Schulklassen**. Statt zehn verschiedener WhatsAp
 - 🔒 **Rollen-System:** Owner, Admins, Class-Admins und Mitglieder.
 - ☁️ **CalDAV Sync:** Termine direkt im privaten Handy-Kalender abonnieren.
 - 🛡️ **Self-Hosted:** Deine Daten, dein Server.
+- 🗄️ **Multi-Database:** Unterstützt SQLite, PostgreSQL und MySQL/MariaDB.
 
 ---
 
@@ -38,6 +39,24 @@ docker compose up -d
 Öffne dann `http://localhost:8000` im Browser.
 
 ➡️ **[Ausführliche Installations-Anleitung](docs/setup/installation.md)**
+
+### Erweiterte Konfiguration
+
+#### Datenbank
+Classly unterstützt SQLite (Standard), PostgreSQL und MySQL.
+Setze die Environment-Variable `DATABASE_URL`:
+
+- **PostgreSQL**: `postgresql://user:pass@host:5432/dbname`
+- **MySQL/MariaDB**: `mysql+pymysql://user:pass@host:3306/dbname`
+- **SQLite**: `sqlite:///./classly.db` (Default)
+
+Connection Pooling kann über `DATABASE_POOL_SIZE` (default: 10) und `DATABASE_POOL_MAX_LIFETIME` (default: 3600) konfiguriert werden.
+
+#### Redis Session Cache
+Für bessere Skalierung können Sessions im Redis gecached werden.
+Setze dazu:
+- `SESSION_STORE=redis`
+- `REDIS_URL=redis://localhost:6379`
 
 ---
 

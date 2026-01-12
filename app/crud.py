@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from app import models
+from app import models, sessions
 import datetime
 import secrets
 
@@ -58,7 +58,34 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
 def get_user_by_session(db: Session, session_token: str):
-    return db.query(models.User).filter(models.User.session_token == session_token).first()
+    # 1. Try to get user_id from cache
+    user_id = sessions.get_user_id_from_cache(session_token)
+
+    if user_id:
+        user = get_user(db, user_id)
+        # Verify token matches (handle case where token was regenerated but cache is stale)
+        # Note: In a high-perf scenario, we might skip this check if we trust cache invalidation,
+        # but for security, we check if the DB token matches the requested token.
+        # IF we want to fully offload to Redis, we would need to ensure `regenerate_session_token`
+        # clears the cache (which we will do).
+        if user:
+             # Ideally we check user.session_token == session_token.
+             # If they don't match, it means the user logged out/rotated token,
+             # so the cached session is invalid.
+             if user.session_token == session_token:
+                 return user
+             else:
+                 # Token mismatch - invalid cache
+                 sessions.remove_token_from_cache(session_token)
+
+    # 2. Fallback to DB query
+    user = db.query(models.User).filter(models.User.session_token == session_token).first()
+
+    # 3. Populate cache if found
+    if user:
+        sessions.set_user_id_to_cache(session_token, user.id)
+
+    return user
 
 def get_user_by_caldav_token(db: Session, caldav_token: str):
     return db.query(models.User).filter(
@@ -102,6 +129,11 @@ def register_user(db: Session, user_id: str, email: str, password: str):
 def regenerate_session_token(db: Session, user_id: str):
     user = get_user(db, user_id)
     if user:
+        old_token = user.session_token
+        # Invalidate old token in cache
+        if old_token:
+            sessions.remove_token_from_cache(old_token)
+
         user.session_token = secrets.token_urlsafe(32)
         db.commit()
         return user
