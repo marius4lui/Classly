@@ -2,6 +2,7 @@ import json
 import os
 from typing import Dict, Any
 
+
 class I18n:
     def __init__(self, locales_dir: str = "app/locales", default_lang: str = "de"):
         self.locales_dir = locales_dir
@@ -18,7 +19,9 @@ class I18n:
             if filename.endswith(".json"):
                 lang = filename[:-5]
                 try:
-                    with open(os.path.join(self.locales_dir, filename), "r", encoding="utf-8") as f:
+                    with open(
+                        os.path.join(self.locales_dir, filename), "r", encoding="utf-8"
+                    ) as f:
                         self.translations[lang] = json.load(f)
                 except Exception as e:
                     print(f"Error loading locale {lang}: {e}")
@@ -58,6 +61,7 @@ class I18n:
         if isinstance(data, str):
             return data
         return None
+
 
 # Singleton instance
 i18n = I18n()
