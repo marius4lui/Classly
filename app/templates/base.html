@@ -48,9 +48,149 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
-    <title>{% block title %}Classly{% endblock %}</title>
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <link rel="icon" href="{{ app_favicon_url }}">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=4">
+    <link rel="stylesheet" href="/static/styles.css?v=5">
+    <style>
+        :root {
+            {% if primary_color %}
+            --primary: {{ primary_color }};
+            --fg: {{ primary_color }}; /* Override foreground if primary is set, but be careful */
+            {% endif %}
+
+            {% if secondary_color %}
+            --success: {{ secondary_color }}; /* Mapping secondary to success as requested in memory or just defined */
+            {% endif %}
+        }
+
+        /* If primary_color is set, we might need to adjust button colors specifically if they relied on --fg */
+        {% if primary_color %}
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+        }
+        /* Ensure text remains readable if --fg is changed globally (which we probably shouldn't do if it affects all text) */
+        /* Let's NOT change --fg globally if it affects black text. */
+        {% endif %}
+
+        /* Proper Override Logic */
+        {% if primary_color %}
+        :root {
+            --primary: {{ primary_color }};
+            /* We don't change --fg because it's text color.
+               But we change .btn-primary and other brand elements to use --primary */
+        }
+        .btn-primary, .badge-primary, .fab, .day-cell.selected {
+            background: var(--primary) !important;
+            color: #fff !important;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary), transparent 85%) !important;
+        }
+        .sidebar-link.active {
+            color: var(--primary) !important;
+            background: color-mix(in srgb, var(--primary), transparent 90%) !important;
+        }
+        .tab.active {
+            color: var(--primary) !important;
+            border-bottom-color: var(--primary) !important;
+        }
+        {% endif %}
+
+        {% if secondary_color %}
+        :root {
+            --secondary-brand: {{ secondary_color }};
+        }
+        .btn-secondary {
+            background: color-mix(in srgb, var(--secondary-brand), white 80%);
+            color: var(--secondary-brand);
+        }
+        {% endif %}
+
+        /* Dark Mode Overrides */
+        [data-theme="dark"] {
+            --bg: #111111;
+            --fg: #ffffff;
+            --gray-50: #1a1a1a;
+            --gray-100: #262626;
+            --gray-200: #333333;
+            --gray-300: #4d4d4d;
+            --gray-400: #666666;
+            --gray-500: #888888;
+            --gray-600: #999999;
+            --gray-700: #cccccc;
+            --gray-800: #eeeeee;
+
+            /* Dark mode specific adjustments */
+            --bg-card: #1a1a1a;
+        }
+
+        [data-theme="dark"] .card,
+        [data-theme="dark"] .member-item,
+        [data-theme="dark"] .upcoming-item,
+        [data-theme="dark"] .token-item,
+        [data-theme="dark"] .modal,
+        [data-theme="dark"] .header {
+            background: var(--gray-50);
+            border-color: var(--gray-200);
+        }
+
+        [data-theme="dark"] input,
+        [data-theme="dark"] select,
+        [data-theme="dark"] textarea {
+            background: var(--bg);
+            border-color: var(--gray-300);
+            color: var(--fg);
+        }
+
+        [data-theme="dark"] .calendar-wrapper,
+        [data-theme="dark"] .calendar-header,
+        [data-theme="dark"] .calendar-day-header,
+        [data-theme="dark"] .calendar-cell {
+            background: var(--bg);
+            border-color: var(--gray-200);
+        }
+
+        [data-theme="dark"] .calendar-cell:active,
+        [data-theme="dark"] .calendar-cell:hover {
+            background: var(--gray-100);
+        }
+
+        [data-theme="dark"] .calendar-cell.other-month {
+            background: #000;
+        }
+
+        [data-theme="dark"] .nav-btn {
+            background: var(--bg);
+            color: var(--fg);
+            border-color: var(--gray-200);
+        }
+
+        [data-theme="dark"] .nav-btn:hover {
+            background: var(--gray-100);
+        }
+    </style>
+    <script>
+        // Theme Logic
+        (function() {
+            const defaultTheme = "{{ default_theme }}";
+            const allowToggle = {{ 'true' if allow_user_theme_toggle else 'false' }};
+            const savedTheme = localStorage.getItem('theme');
+
+            let theme = defaultTheme;
+            if (allowToggle && savedTheme) {
+                theme = savedTheme;
+            } else if (defaultTheme === 'auto') {
+                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -70,6 +210,24 @@
         &bull;
         <a href="https://info.classly.site/status/classly-info" target="_blank"
             style="color: inherit; text-decoration: none; margin: 0 0.5rem;">Status</a>
+
+        {% if allow_user_theme_toggle %}
+        <div style="margin-top: 1rem;">
+            <button onclick="toggleTheme()" class="btn btn-sm btn-ghost">🌓 Theme wechseln</button>
+        </div>
+        <script>
+            function toggleTheme() {
+                const html = document.documentElement;
+                if (html.getAttribute('data-theme') === 'dark') {
+                    html.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    html.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            }
+        </script>
+        {% endif %}
     </footer>
 
     {% if gtm_id %}

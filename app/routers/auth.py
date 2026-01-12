@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request
 import os
-from fastapi.templating import Jinja2Templates
+from app.core.templates import templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core import security
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 # Cookie settings - 30 days persistent login
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days in seconds
