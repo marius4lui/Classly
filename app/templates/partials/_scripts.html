@@ -521,12 +521,39 @@
         const form = e.target;
         const formData = new FormData(form);
 
+        // Capture values to preserve
+        const preservedState = {
+            topic_type: form.querySelector('[name="topic_type"]').value,
+            parent_id: form.querySelector('[name="parent_id"]').value
+        };
+
         const res = await fetch(`/events/${eventId}/topics`, { method: 'POST', body: formData });
         if (res.ok) {
             showToast('Thema hinzugefügt', 'success');
             // Update local data and re-render edit mode
             await reloadAndRender(eventId, 'edit');
-            // Note: Form is re-rendered, so inputs are effectively cleared
+
+            // Restore preserved state
+            const newForm = document.getElementById('addTopicForm');
+            if (newForm) {
+                if (preservedState.topic_type) {
+                    const typeInput = newForm.querySelector('[name="topic_type"]');
+                    if (typeInput) typeInput.value = preservedState.topic_type;
+                }
+                if (preservedState.parent_id) {
+                    const parentInput = newForm.querySelector('[name="parent_id"]');
+                    if (parentInput) parentInput.value = preservedState.parent_id;
+                }
+
+                // Focus on the content input for the next entry
+                const contentInput = newForm.querySelector('[name="content"]');
+                if (contentInput) contentInput.focus();
+
+                // Update preview
+                if (typeof updateTopicPreview === 'function') {
+                    updateTopicPreview();
+                }
+            }
         }
     }
 
