@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Dein {{ period }} Digest</h2>
+<p>Hier ist eine Übersicht der anstehenden Ereignisse:</p>
+
+{% for event in events %}
+<div class="card">
+    <h3 style="margin-bottom: 5px;">{{ event.title }}</h3>
+    <div style="font-size: 14px; color: #666;">
+        <span style="background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 5px;">{{ event.type }}</span>
+        <span>{{ event.date }}</span>
+    </div>
+    {% if event.subject %}
+    <p style="margin: 5px 0 0 0; color: #444;">{{ event.subject }}</p>
+    {% endif %}
+</div>
+{% endfor %}
+
+<p style="text-align: center; margin: 30px 0;">
+    <a href="{{ base_url }}" class="button">Zum Kalender</a>
+</p>
+{% endblock %}

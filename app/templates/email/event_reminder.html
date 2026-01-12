@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Erinnerung: {{ event_title }}</h2>
+<p>Ein wichtiges Ereignis steht an:</p>
+<div class="card">
+    <h3>{{ event_title }}</h3>
+    <p><strong>Datum:</strong> {{ event_date }}</p>
+    {% if event_time %}
+    <p><strong>Zeit:</strong> {{ event_time }}</p>
+    {% endif %}
+</div>
+<p style="text-align: center; margin: 30px 0;">
+    <a href="{{ event_link }}" class="button">Details ansehen</a>
+</p>
+{% endblock %}

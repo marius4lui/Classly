@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Willkommen, {{ name }}!</h2>
+<p>Wir freuen uns, dass du bei {{ app_name }} dabei bist.</p>
+<p>Mit {{ app_name }} kannst du deinen Stundenplan, Hausaufgaben und Noten einfach verwalten.</p>
+<p style="text-align: center; margin: 30px 0;">
+    <a href="{{ base_url }}" class="button">Zum Dashboard</a>
+</p>
+{% endblock %}

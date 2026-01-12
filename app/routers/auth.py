@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core import security
+from app.core.email import email_service
+from app.core.config import settings
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -73,7 +75,7 @@ def create_class(
     return {"status": "success"}
 
 @router.post("/auth/register")
-def register_admin(
+async def register_admin(
     response: Response,
     request: Request,
     email: str = Form(...),
@@ -96,6 +98,9 @@ def register_admin(
     
     crud.register_user(db, user.id, email, password)
     
+    # Send welcome email
+    await email_service.send_welcome_email(email, user.name)
+
     response.headers["HX-Redirect"] = "/"
     return {"status": "registered"}
 
@@ -119,6 +124,31 @@ def login(
     
     response.headers["HX-Redirect"] = "/"
     return {"status": "logged in"}
+
+@router.post("/auth/magic-login")
+async def magic_login(
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Request a magic link via email"""
+    user = crud.get_user_by_email(db, email)
+    if not user:
+        # Don't reveal if user exists
+        return {"status": "sent"}
+
+    # Generate login token
+    token_obj = crud.create_login_token(
+        db,
+        class_id=user.class_id,
+        user_id=user.id,
+        created_by=user.id # Self-created
+    )
+
+    # Send email
+    magic_link = f"{settings.BASE_URL}/join/{token_obj.token}"
+    await email_service.send_magic_link(email, magic_link)
+
+    return {"status": "sent"}
 
 @router.get("/login")
 def show_login_page(request: Request):

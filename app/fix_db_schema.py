@@ -64,6 +64,15 @@ def fix_schema(db_url):
             print("Adding 'pages' column to event_topics...")
             cursor.execute("ALTER TABLE event_topics ADD COLUMN pages VARCHAR")
 
+        # 5. Add email preferences to user_preferences
+        try:
+            cursor.execute("SELECT email_notifications_enabled FROM user_preferences LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Adding email columns to user_preferences...")
+            cursor.execute("ALTER TABLE user_preferences ADD COLUMN email_notifications_enabled BOOLEAN DEFAULT 1")
+            cursor.execute("ALTER TABLE user_preferences ADD COLUMN email_digest_enabled BOOLEAN DEFAULT 0")
+            cursor.execute("ALTER TABLE user_preferences ADD COLUMN email_digest_schedule VARCHAR DEFAULT 'weekly'")
+
         conn.commit()
         conn.close()
         print("Schema fix executed.")
