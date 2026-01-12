@@ -8,3 +8,7 @@ passlib
 argon2-cffi
 icalendar
 bcrypt
+sentry-sdk
+prometheus-client
+python-json-logger
+prometheus-fastapi-instrumentator
