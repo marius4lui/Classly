@@ -191,6 +191,11 @@ class UserPreferences(Base):
     filter_event_types = Column(String, default="[]")  # JSON list of types
     filter_priority = Column(String, default="[]")  # JSON list of priorities (high, medium, low)
 
+    # Email Preferences
+    email_notifications_enabled = Column(Boolean, default=True)
+    email_digest_enabled = Column(Boolean, default=False)
+    email_digest_schedule = Column(String, default="weekly") # daily, weekly, monthly
+
     user = relationship("User", backref="preferences")
 
 class Grade(Base):

@@ -18,6 +18,9 @@ class PreferencesUpdate(BaseModel):
     filter_subjects: List[str]
     filter_event_types: List[str]
     filter_priority: List[str] = []
+    email_notifications_enabled: bool = True
+    email_digest_enabled: bool = False
+    email_digest_schedule: str = "weekly"
 
 @router.get("")
 def get_preferences(
@@ -31,13 +34,19 @@ def get_preferences(
         return {
             "filter_subjects": [],
             "filter_event_types": [],
-            "filter_priority": []
+            "filter_priority": [],
+            "email_notifications_enabled": True,
+            "email_digest_enabled": False,
+            "email_digest_schedule": "weekly"
         }
         
     return {
         "filter_subjects": json.loads(prefs.filter_subjects or "[]"),
         "filter_event_types": json.loads(prefs.filter_event_types or "[]"),
         "filter_priority": json.loads(prefs.filter_priority or "[]"),
+        "email_notifications_enabled": prefs.email_notifications_enabled,
+        "email_digest_enabled": prefs.email_digest_enabled,
+        "email_digest_schedule": prefs.email_digest_schedule
     }
 
 @router.put("")
@@ -55,6 +64,9 @@ def update_preferences(
     prefs.filter_subjects = json.dumps(data.filter_subjects)
     prefs.filter_event_types = json.dumps(data.filter_event_types)
     prefs.filter_priority = json.dumps(data.filter_priority)
+    prefs.email_notifications_enabled = data.email_notifications_enabled
+    prefs.email_digest_enabled = data.email_digest_enabled
+    prefs.email_digest_schedule = data.email_digest_schedule
     
     db.commit()
     return {"status": "ok"}
