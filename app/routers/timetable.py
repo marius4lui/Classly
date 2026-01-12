@@ -5,6 +5,7 @@ from sqlalchemy import and_
 from app.database import get_db
 from app import crud, models
 from app.core.auth import get_current_user
+from app.core.config import is_feature_enabled
 from datetime import datetime, time, timedelta
 from typing import Optional
 
@@ -13,6 +14,10 @@ router = APIRouter(prefix="/timetable", tags=["timetable"])
 # === Helper Functions ===
 
 def require_user(user: models.User = Depends(get_current_user)):
+    """Require any logged-in user and check feature flag"""
+    if not is_feature_enabled("timetable"):
+        raise HTTPException(status_code=403, detail="Timetable feature is disabled")
+
     """Require any logged-in user"""
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")

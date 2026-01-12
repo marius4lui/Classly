@@ -4,10 +4,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core.auth import get_current_user
+from app.core.config import is_feature_enabled
 
 router = APIRouter(prefix="/grades", tags=["grades"])
 
 def require_registered_user(user: models.User = Depends(get_current_user)):
+    """Require a registered user for grade management and check feature flag"""
+    if not is_feature_enabled("grades"):
+        raise HTTPException(status_code=403, detail="Grades feature is disabled")
+
     """Require a registered user for grade management"""
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core.auth import require_admin, require_class_admin, require_user
+from app.core.config import is_feature_enabled
 from app.core import security
 import datetime
 
@@ -124,6 +125,9 @@ def create_login_token(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
+    if not is_feature_enabled("user_invites"):
+         raise HTTPException(status_code=403, detail="User invites are disabled")
+
     # Must have either user_id OR user_name
     if not user_id and not user_name:
         raise HTTPException(status_code=400, detail="User ID or Name required")

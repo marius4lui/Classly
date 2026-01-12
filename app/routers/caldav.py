@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core.auth import require_user
+from app.core.config import is_feature_enabled
 from icalendar import Calendar, Event
 import datetime
 
@@ -15,6 +16,9 @@ def get_calendar(
     db: Session = Depends(get_db)
 ):
     """Get calendar as ICS file"""
+    if not is_feature_enabled("caldav"):
+        raise HTTPException(status_code=403, detail="CalDAV feature is disabled")
+
     user = crud.get_user_by_caldav_token(db, token)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid CalDAV token")
@@ -52,6 +56,8 @@ def enable_caldav(
     user: models.User = Depends(require_user),
     db: Session = Depends(get_db)
 ):
+    if not is_feature_enabled("caldav"):
+        raise HTTPException(status_code=403, detail="CalDAV feature is disabled")
     crud.enable_caldav(db, user.id, write=write)
     response.headers["HX-Redirect"] = "/"
     return {"status": "enabled"}

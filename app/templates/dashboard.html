@@ -30,23 +30,31 @@
                 <span>🔍</span> Filter
             </a>
 
+            {% if feature_flags.FEATURE_GRADES %}
             {% if user.is_registered %}
             <a href="#" class="sidebar-link sidebar-link-grades"
                 onclick="scrollToGrades(); setActiveSidebar(this); return false;">
                 <span>📊</span> Noten
-            </a>
-            <a href="/stundenplan" class="sidebar-link">
-                <span>🕒</span> Stundenplan
             </a>
             {% else %}
             <a href="#" class="sidebar-link" style="opacity: 0.6;"
                 onclick="showLoginRequiredModal('Noten'); return false;">
                 <span>📊</span> Noten <span class="text-xs">🔒</span>
             </a>
+            {% endif %}
+            {% endif %}
+
+            {% if feature_flags.FEATURE_TIMETABLE %}
+            {% if user.is_registered %}
+            <a href="/stundenplan" class="sidebar-link">
+                <span>🕒</span> Stundenplan
+            </a>
+            {% else %}
             <a href="#" class="sidebar-link" style="opacity: 0.6;"
                 onclick="showLoginRequiredModal('Stundenplan'); return false;">
                 <span>🕒</span> Stundenplan <span class="text-xs">🔒</span>
             </a>
+            {% endif %}
             {% endif %}
 
             {% if user.role.value in ["owner", "admin", "class_admin"] %}
@@ -55,13 +63,17 @@
             <div onclick="showTab('users'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
                 <span>👥</span> Benutzer
             </div>
+            {% if feature_flags.FEATURE_USER_INVITES %}
             <div onclick="showTab('links'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
                 <span>🔗</span> Links
             </div>
             {% endif %}
+            {% endif %}
+            {% if feature_flags.FEATURE_SUBJECTS %}
             <div onclick="showTab('subjects'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
                 <span>📚</span> Fächer
             </div>
+            {% endif %}
             <div onclick="showTab('advanced'); setActiveSidebar(this);" class="sidebar-link" style="cursor: pointer;">
                 <span>⚙️</span> Erweitert
             </div>
@@ -140,10 +152,14 @@
             <div class="tabs hide-on-lg">
                 {% if user.role.value in ['owner', 'admin'] %}
                 <button class="tab active" onclick="showTab('users')">Benutzer</button>
+                {% if feature_flags.FEATURE_USER_INVITES %}
                 <button class="tab" onclick="showTab('links')">Links</button>
                 {% endif %}
+                {% endif %}
+                {% if feature_flags.FEATURE_SUBJECTS %}
                 <button class="tab {% if user.role.value == 'class_admin' %}active{% endif %}"
                     onclick="showTab('subjects')">Fächer</button>
+                {% endif %}
                 <button class="tab" onclick="showTab('advanced')">Erweitert</button>
             </div>
 
@@ -193,6 +209,7 @@
             </div>
 
             <!-- TAB CONTENT: LINKS -->
+            {% if feature_flags.FEATURE_USER_INVITES %}
             <div id="tab-links" class="tab-content">
                 <h3 class="text-sm mb-2">Klassen-Link</h3>
                 <div class="invite-link-box">
@@ -264,8 +281,10 @@
                 {% endfor %}
             </div>
             {% endif %}
+            {% endif %}
 
             <!-- TAB CONTENT: SUBJECTS -->
+            {% if feature_flags.FEATURE_SUBJECTS %}
             <div id="tab-subjects" class="tab-content {% if user.role.value == 'class_admin' %}active{% endif %}">
                 <form hx-post="/subjects" hx-swap="none" class="flex gap-2 mb-4">
                     <input type="text" name="name" placeholder="Neues Fach" required style="flex: 1;">
@@ -280,9 +299,11 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
 
             <!-- TAB CONTENT: ADVANCED -->
             <div id="tab-advanced" class="tab-content">
+                {% if feature_flags.FEATURE_CALDAV %}
                 <h3 class="text-sm mb-2">Kalender abonnieren (Read-Only)</h3>
                 <p class="text-muted text-sm mb-4">Du kannst diesen Kalender in deiner Handy-App (Google Kalender, Apple
                     Kalender) abonnieren. Events werden automatisch aktualisiert.</p>
@@ -298,6 +319,7 @@
                         <button type="submit" class="btn btn-secondary btn-sm">Neuen Link erstellen</button>
                     </form>
                 </div>
+                {% endif %}
 
                 {% if not user.is_registered %}
                 <hr>
@@ -321,9 +343,13 @@
 
     <!-- Widgets -->
     <aside class="dashboard-widgets">
+        {% if feature_flags.FEATURE_TIMETABLE %}
         {% include 'partials/_next_lesson.html' %}
+        {% endif %}
         {% include 'partials/_upcoming.html' %}
+        {% if feature_flags.FEATURE_GRADES %}
         {% include 'partials/_grades_widget.html' %}
+        {% endif %}
         {% include 'partials/_info_feed.html' %}
     </aside>
 </div>
@@ -332,13 +358,17 @@
 {% if user.role.value in ["owner", "admin", "class_admin"] %}
 <div class="fab-container" id="fabContainer">
     <div class="fab-options" id="fabOptions">
+        {% if feature_flags.FEATURE_SUBJECTS %}
         <button class="fab-option" onclick="showTab('subjects'); closeFab();">
             <span>📚</span> Fach
         </button>
+        {% endif %}
         {% if user.role.value in ['owner', 'admin'] %}
+        {% if feature_flags.FEATURE_USER_INVITES %}
         <button class="fab-option" onclick="showTab('links'); closeFab();">
             <span>👤</span> User-Link
         </button>
+        {% endif %}
         {% endif %}
         <button class="fab-option" onclick="openModal(); closeFab();">
             <span>📅</span> Termin
