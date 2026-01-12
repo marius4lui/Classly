@@ -2,8 +2,13 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base, SQLALCHEMY_DATABASE_URL, SessionLocal
-from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable
+from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable, monitoring
+from app.core import monitoring as monitoring_core
 from app import fix_db_schema, crud, auto_migrate
+
+# Setup Monitoring
+monitoring_core.setup_logging()
+monitoring_core.setup_sentry()
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
 fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
@@ -23,6 +28,9 @@ def run_migrations():
 run_migrations()
 
 app = FastAPI(title="Classly")
+
+# Setup Prometheus Middleware
+monitoring_core.setup_prometheus(app)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -64,3 +72,4 @@ app.include_router(caldav.router)
 app.include_router(preferences.router)
 app.include_router(grades.router)
 app.include_router(timetable.router)
+app.include_router(monitoring.router)
