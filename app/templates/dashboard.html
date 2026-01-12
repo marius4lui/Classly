@@ -283,6 +283,12 @@
 
             <!-- TAB CONTENT: ADVANCED -->
             <div id="tab-advanced" class="tab-content">
+                <!-- Backup Management Section -->
+                {% if user.role.value in ['owner', 'admin'] %}
+                    {% include 'partials/_backup_admin.html' %}
+                    <hr>
+                {% endif %}
+
                 <h3 class="text-sm mb-2">Kalender abonnieren (Read-Only)</h3>
                 <p class="text-muted text-sm mb-4">Du kannst diesen Kalender in deiner Handy-App (Google Kalender, Apple
                     Kalender) abonnieren. Events werden automatisch aktualisiert.</p>

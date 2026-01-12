@@ -1,0 +1,104 @@
+<!-- Backup Management Partial -->
+<div id="backup-manager">
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>System Backups</h3>
+            <button hx-post="/backups" hx-swap="none" class="btn btn-primary btn-sm"
+                onclick="alert('Backup gestartet! Es läuft im Hintergrund.')">
+                Jetzt sichern
+            </button>
+        </div>
+        <div class="card-body">
+            <p class="text-muted text-sm mb-4">
+                Hier können vollständige System-Backups verwaltet werden.
+                <br>
+                <strong class="text-danger">WARNUNG:</strong> Ein Restore überschreibt die gesamte Datenbank aller Klassen!
+            </p>
+
+            <div class="backup-list" hx-get="/backups" hx-trigger="load" hx-target="#backup-list-content">
+                <div class="text-center p-4">Lade Backups...</div>
+            </div>
+
+            <table class="table table-sm mt-3">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Name</th>
+                        <th>Quelle</th>
+                        <th>Größe</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="backup-list-content">
+                    <!-- Loaded via HTMX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+        // Handle Backup List Rendering
+        if (evt.detail.elt.id === 'backup-manager' || (evt.detail.elt.classList && evt.detail.elt.classList.contains('backup-list'))) {
+            try {
+                const response = JSON.parse(evt.detail.xhr.response);
+                const tbody = document.getElementById('backup-list-content');
+                if (tbody) {
+                    tbody.innerHTML = '';
+
+                    if (response.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Keine Backups gefunden</td></tr>';
+                        return;
+                    }
+
+                    response.forEach(backup => {
+                        const date = new Date(backup.created_at).toLocaleString();
+                        const size = (backup.size / 1024 / 1024).toFixed(2) + ' MB';
+                        const sourceBadge = backup.source === 's3' ? '<span class="badge badge-info">S3</span>' : '<span class="badge badge-secondary">Lokal</span>';
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${date}</td>
+                            <td><span class="text-xs text-muted">${backup.name}</span></td>
+                            <td>${sourceBadge}</td>
+                            <td>${size}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm"
+                                    hx-post="/backups/${backup.name}/restore?source=${backup.source}"
+                                    hx-confirm="WARNUNG: Dies wird die gesamte Datenbank überschreiben! Fortfahren?"
+                                    hx-swap="none">
+                                    Restore
+                                </button>
+                            </td>
+                        `;
+                        htmx.process(tr);
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error("Failed to parse backup list", e);
+            }
+        }
+    });
+
+    // Handle Restore/Create Response
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.target && evt.detail.target.tagName === 'BUTTON') { // Heuristic
+             if (evt.detail.xhr.status === 200) {
+                 const url = evt.detail.requestConfig.path;
+                 if (url.includes('/restore')) {
+                     alert("Restore erfolgreich! Die Seite wird nun neu geladen.");
+                     window.location.reload();
+                 } else if (url === '/backups' && evt.detail.requestConfig.verb === 'post') {
+                     // Auto-reload list after a short delay
+                     setTimeout(() => {
+                         htmx.trigger(document.querySelector('.backup-list'), 'load');
+                     }, 2000);
+                 }
+             } else if (evt.detail.xhr.status >= 400) {
+                 alert("Fehler: " + evt.detail.xhr.responseText);
+             }
+        }
+    });
+</script>
