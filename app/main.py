@@ -4,6 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base, SQLALCHEMY_DATABASE_URL, SessionLocal
 from app.routers import auth, pages, events, admin, caldav, preferences, grades, timetable
 from app import fix_db_schema, crud, auto_migrate
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.limiter import limiter
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
 fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
@@ -23,6 +27,29 @@ def run_migrations():
 run_migrations()
 
 app = FastAPI(title="Classly")
+
+# Rate Limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# Max File Size Middleware
+from fastapi import Request
+from fastapi.responses import JSONResponse
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+MAX_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+
+@app.middleware("http")
+async def check_content_length(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            length = int(content_length)
+            if length > MAX_BYTES:
+                 return JSONResponse(status_code=413, content={"detail": f"Request entity too large. Max {MAX_FILE_SIZE_MB}MB."})
+        except ValueError:
+            pass
+    return await call_next(request)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

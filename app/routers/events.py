@@ -4,13 +4,17 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core.auth import get_current_user, require_user, require_class_admin
+from app.quotas import check_event_quota, check_subject_quota
+from app.limiter import limiter
 import datetime
 import json
 
 router = APIRouter()
 
 @router.post("/events")
+@limiter.limit("5/minute")
 def create_event(
+    request: Request,
     response: Response,
     type: str = Form(...),
     subject_id: str = Form(None),
@@ -41,6 +45,9 @@ def create_event(
         event_priority = models.Priority(priority)
     except ValueError:
         event_priority = models.Priority.MEDIUM
+
+    # Check Quota
+    check_event_quota(db, user)
 
     event = crud.create_event(
         db=db, 
@@ -247,13 +254,18 @@ def delete_link_endpoint(
 
 # --- Subject Endpoints ---
 @router.post("/subjects")
+@limiter.limit("10/minute")
 def create_subject(
+    request: Request,
     response: Response,
     name: str = Form(...),
     color: str = Form("#666666"),
     user: models.User = Depends(require_class_admin),
     db: Session = Depends(get_db)
 ):
+    # Check Quota
+    check_subject_quota(db, user)
+
     crud.create_subject(db, class_id=user.class_id, name=name, color=color)
     response.headers["HX-Redirect"] = "/"
     return {"status": "created"}
