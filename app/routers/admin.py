@@ -1,12 +1,48 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Response, BackgroundTasks
+from fastapi import APIRouter, Depends, Form, HTTPException, Response, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core.auth import require_admin, require_class_admin, require_user
 from app.core import security
 import datetime
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
+import os
+from app.quotas import MAX_EVENTS_PER_CLASS, MAX_SUBJECTS_PER_USER, MAX_CLASSES_PER_USER, MAX_TOTAL_STORAGE_MB
+
+@router.get("/admin/quotas")
+def admin_quotas_overview(
+    request: Request,
+    user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    # Calculate stats
+    total_classes = db.query(models.Class).count()
+    total_events = db.query(models.Event).count()
+    total_subjects = db.query(models.Subject).count()
+
+    db_size_mb = 0
+    if os.path.exists("app.db"):
+        db_size_mb = os.path.getsize("app.db") / (1024 * 1024)
+
+    return templates.TemplateResponse("admin_quotas.html", {
+        "request": request,
+        "user": user,
+        "stats": {
+            "classes": total_classes,
+            "events": total_events,
+            "subjects": total_subjects,
+            "db_size_mb": round(db_size_mb, 2)
+        },
+        "limits": {
+            "max_events": MAX_EVENTS_PER_CLASS,
+            "max_subjects": MAX_SUBJECTS_PER_USER,
+            "max_classes": MAX_CLASSES_PER_USER,
+            "max_storage_mb": MAX_TOTAL_STORAGE_MB
+        }
+    })
 
 @router.delete("/admin/members/{user_id}")
 def kick_member(

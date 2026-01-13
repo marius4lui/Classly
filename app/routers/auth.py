@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
 from app.core import security
+from app.limiter import limiter
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -24,7 +25,9 @@ def set_session_cookie(response: Response, session_token: str):
     )
 
 @router.post("/auth/create-class")
+@limiter.limit("2/hour") # strict limit for class creation
 def create_class(
+    request: Request,
     response: Response,
     class_name: str = Form(...),
     user_name: str = Form(...),
@@ -100,7 +103,9 @@ def register_admin(
     return {"status": "registered"}
 
 @router.post("/auth/login")
+@limiter.limit("10/minute")
 def login(
+    request: Request,
     response: Response,
     email: str = Form(...),
     password: str = Form(...),
@@ -177,7 +182,9 @@ def show_join_page(
     raise HTTPException(status_code=404, detail="Invalid or expired link")
 
 @router.post("/auth/join")
+@limiter.limit("10/minute")
 def join_class(
+    request: Request,
     response: Response,
     join_token: str = Form(None),
     login_token: str = Form(None),
