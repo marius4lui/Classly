@@ -53,4 +53,30 @@ Wir haben eine ausführliche Dokumentation für dich erstellt:
 
 ## 📜 Lizenz
 
-MIT License – Open Source & Free. 🎉
+Classly verwendet ein **Dual-Licensing-Modell**:
+
+### Community License (kostenlos)
+
+Für nicht-kommerzielle Nutzung – siehe [LICENSE](LICENSE).
+
+| Nutzung | Erlaubt? |
+|---------|----------|
+| Private Nutzung | ✅ Ja |
+| Self-Hosting (privat) | ✅ Ja |
+| Bildungseinrichtungen (Schulen, Unis) | ❌ Nein |
+| Non-Profit Organisationen | ✅ Ja |
+| Modifikation & Beiträge | ✅ Ja |
+| Code studieren & lernen | ✅ Ja |
+| Kommerzielle Nutzung | ❌ Nein |
+| For-Profit Unternehmen | ❌ Nein |
+| SaaS / Hosting für Dritte | ❌ Nein |
+| Weiterverkauf | ❌ Nein |
+| White-Labeling | ❌ Nein |
+
+### Commercial License
+
+Für Unternehmen und kommerzielle Nutzung – siehe [COMMERCIAL.md](COMMERCIAL.md).
+
+> **Hinweis:** Versionen vor diesem Lizenzwechsel (Commit `d29a12d` und früher)
+> unterlagen der MIT-Lizenz. Die neue Dual-Licensing-Regelung gilt nur für
+> Versionen nach dem Lizenzwechsel.

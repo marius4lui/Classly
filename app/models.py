@@ -64,6 +64,9 @@ class User(Base):
     password_hash = Column(String, nullable=True)
     is_registered = Column(Boolean, default=False)
     
+    # Preferences
+    language = Column(String, default="de")
+
     # CalDAV fields
     caldav_token = Column(String, default=generate_token)
     caldav_enabled = Column(Boolean, default=False)
