@@ -1,0 +1,31 @@
+{
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "back": "Back",
+        "settings": "Settings",
+        "logout": "Logout",
+        "login": "Login",
+        "home": "Home",
+        "profile": "Profile"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "upcoming_events": "Upcoming Events",
+        "no_events": "No upcoming events",
+        "infos": "Information",
+        "subjects": "Subjects"
+    },
+    "timetable": {
+        "title": "Timetable",
+        "add_event": "Add Event",
+        "settings": "Timetable Settings"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Language",
+        "select_language": "Select Language"
+    }
+}

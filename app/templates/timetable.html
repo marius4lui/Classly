@@ -6,11 +6,11 @@
 <div class="timetable-page">
     <header class="timetable-header">
         <div>
-            <a href="/" class="btn btn-ghost">← Zurück</a>
-            <h1>📅 Stundenplan</h1>
+            <a href="/" class="btn btn-ghost">← {{ request.state.t('common.back') }}</a>
+            <h1>📅 {{ request.state.t('timetable.title') }}</h1>
         </div>
         {% if user.role.value in ['owner', 'admin', 'class_admin'] %}
-        <button class="btn btn-primary" onclick="openTimetableSettingsModal()">⚙️ Bearbeiten</button>
+        <button class="btn btn-primary" onclick="openTimetableSettingsModal()">⚙️ {{ request.state.t('common.edit') }}</button>
         {% endif %}
     </header>
 
