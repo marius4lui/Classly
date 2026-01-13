@@ -64,6 +64,29 @@ def fix_schema(db_url):
             print("Adding 'pages' column to event_topics...")
             cursor.execute("ALTER TABLE event_topics ADD COLUMN pages VARCHAR")
 
+        # 5. Create 'integration_tokens' table if missing
+        try:
+            cursor.execute("SELECT * FROM integration_tokens LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Creating 'integration_tokens' table...")
+            cursor.execute("""
+                CREATE TABLE integration_tokens (
+                    id VARCHAR PRIMARY KEY,
+                    token VARCHAR UNIQUE,
+                    user_id VARCHAR NOT NULL,
+                    class_id VARCHAR NOT NULL,
+                    scopes VARCHAR DEFAULT 'read:events',
+                    expires_at DATETIME,
+                    created_at DATETIME,
+                    last_used_at DATETIME,
+                    revoked BOOLEAN DEFAULT 0,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (class_id) REFERENCES classes(id)
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS ix_integration_tokens_token ON integration_tokens(token)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS ix_integration_tokens_user_id ON integration_tokens(user_id)")
+
         conn.commit()
         conn.close()
         print("Schema fix executed.")

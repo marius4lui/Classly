@@ -45,6 +45,7 @@ class Class(Base):
     subjects = relationship("Subject", back_populates="clazz")
     login_tokens = relationship("LoginToken", back_populates="clazz")
     audit_logs = relationship("AuditLog", back_populates="clazz")
+    integration_tokens = relationship("IntegrationToken", back_populates="clazz")
 
 class User(Base):
     __tablename__ = "users"
@@ -70,6 +71,7 @@ class User(Base):
 
     clazz = relationship("Class", back_populates="users")
     events = relationship("Event", back_populates="author")
+    integration_tokens = relationship("IntegrationToken", back_populates="user")
 
 class Subject(Base):
     __tablename__ = "subjects"
@@ -110,6 +112,24 @@ class LoginToken(Base):
     clazz = relationship("Class", back_populates="login_tokens")
     user = relationship("User", foreign_keys=[user_id])
     creator = relationship("User", foreign_keys=[created_by])
+
+
+class IntegrationToken(Base):
+    """Personal Access Tokens for API integrations (read-only for now)"""
+    __tablename__ = "integration_tokens"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    token = Column(String, unique=True, index=True, default=generate_token)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    scopes = Column(String, default="read:events")  # Comma-separated scopes
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    revoked = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="integration_tokens")
+    clazz = relationship("Class", back_populates="integration_tokens")
 
 class Event(Base):
     __tablename__ = "events"

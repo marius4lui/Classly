@@ -107,6 +107,51 @@ def regenerate_session_token(db: Session, user_id: str):
         return user
     return None
 
+# --- Integration Tokens ---
+def create_integration_token(db: Session, user_id: str, class_id: str, scopes: str = "read:events", expires_at: datetime.datetime = None):
+    token = models.IntegrationToken(
+        user_id=user_id,
+        class_id=class_id,
+        scopes=scopes,
+        expires_at=expires_at
+    )
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+    return token
+
+def get_integration_token(db: Session, token_value: str):
+    return db.query(models.IntegrationToken).filter(models.IntegrationToken.token == token_value).first()
+
+def use_integration_token(db: Session, token_value: str):
+    token = get_integration_token(db, token_value)
+    if not token or token.revoked:
+        return None
+
+    # Check expiration
+    if token.expires_at and token.expires_at < datetime.datetime.utcnow():
+        return None
+
+    token.last_used_at = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(token)
+    return token
+
+def list_integration_tokens_for_user(db: Session, user_id: str):
+    return db.query(models.IntegrationToken).filter(models.IntegrationToken.user_id == user_id).order_by(models.IntegrationToken.created_at.desc()).all()
+
+def revoke_integration_token(db: Session, token_id: str, user_id: str = None):
+    query = db.query(models.IntegrationToken).filter(models.IntegrationToken.id == token_id)
+    if user_id:
+        query = query.filter(models.IntegrationToken.user_id == user_id)
+    token = query.first()
+    if token:
+        token.revoked = True
+        db.commit()
+        db.refresh(token)
+        return token
+    return None
+
 # --- Subject CRUD ---
 def create_subject(db: Session, class_id: str, name: str, color: str = "#666666"):
     db_subject = models.Subject(class_id=class_id, name=name, color=color)

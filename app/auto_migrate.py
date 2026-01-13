@@ -127,6 +127,29 @@ def run_auto_migrations():
                 cursor.execute("CREATE INDEX ix_user_timetable_selections_user_id ON user_timetable_selections(user_id)")
                 conn.commit()
 
+            # 8. Create integration_tokens table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='integration_tokens'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'integration_tokens' table.")
+                cursor.execute("""
+                    CREATE TABLE integration_tokens (
+                        id VARCHAR PRIMARY KEY,
+                        token VARCHAR UNIQUE,
+                        user_id VARCHAR NOT NULL,
+                        class_id VARCHAR NOT NULL,
+                        scopes VARCHAR DEFAULT 'read:events',
+                        expires_at DATETIME,
+                        created_at DATETIME,
+                        last_used_at DATETIME,
+                        revoked BOOLEAN DEFAULT 0,
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (class_id) REFERENCES classes(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_integration_tokens_token ON integration_tokens(token)")
+                cursor.execute("CREATE INDEX ix_integration_tokens_user_id ON integration_tokens(user_id)")
+                conn.commit()
+
             # Add other migrations here as needed
             
         except Exception as e:
