@@ -64,31 +64,84 @@ def fix_schema(db_url):
             print("Adding 'pages' column to event_topics...")
             cursor.execute("ALTER TABLE event_topics ADD COLUMN pages VARCHAR")
 
-        # 5. Add 'language' column to users if missing
+        # 5. Make date nullable (SQLite workaround)
+        # Check if events table exists and if date column is NOT NULL
+        cursor.execute("PRAGMA table_info(events)")
+        columns = cursor.fetchall()
+        # column structure: (cid, name, type, notnull, dflt_value, pk)
+        date_col = next((c for c in columns if c[1] == 'date'), None)
+
+        if date_col and date_col[3] == 1: # notnull == 1 means NOT NULL
+            print("Fixing 'events.date' column constraint (making it nullable)...")
+
+            # Commit any pending transaction to ensure PRAGMA works
+            conn.commit()
+
+            # Disable foreign keys
+            cursor.execute("PRAGMA foreign_keys=OFF")
+
+            # 1. Rename old table
+            cursor.execute("ALTER TABLE events RENAME TO events_old")
+
+            # 2. Create new table with nullable date
+            # We copy the schema from models.py but make date nullable
+            cursor.execute("""
+                CREATE TABLE events (
+                    id VARCHAR NOT NULL,
+                    class_id VARCHAR NOT NULL,
+                    type VARCHAR(4) NOT NULL,
+                    priority VARCHAR(6),
+                    subject_id VARCHAR,
+                    subject_name VARCHAR,
+                    title VARCHAR,
+                    date TIMESTAMP,
+                    author_id VARCHAR NOT NULL,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    PRIMARY KEY (id),
+                    FOREIGN KEY(class_id) REFERENCES classes (id),
+                    FOREIGN KEY(subject_id) REFERENCES subjects (id),
+                    FOREIGN KEY(author_id) REFERENCES users (id)
+                )
+            """)
+
+            # 3. Copy data
+            # Dynamically get columns from events_old to handle potential extra columns gracefully (though likely not needed)
+            # But here we strictly map known columns to ensure structure matches models.py
+            cursor.execute("""
+                INSERT INTO events (id, class_id, type, priority, subject_id, subject_name, title, date, author_id, created_at, updated_at)
+                SELECT id, class_id, type, priority, subject_id, subject_name, title, date, author_id, created_at, updated_at FROM events_old
+            """)
+
+            # 4. Drop old table
+            cursor.execute("DROP TABLE events_old")
+
+            # Re-enable foreign keys
+            cursor.execute("PRAGMA foreign_keys=ON")
+
+            # Check for indices (recreation if needed)
+            # Currently 'events' table only has implicit indices on PK and potentially FKs depending on DB config.
+            # models.py does not define explicit indices on events table columns except ID.
+            # Verify if any index was dropped.
+            # (In this specific case, we assume standard schema).
+
+            print("Fixed 'events.date' constraint.")
+        else:
+            # Check if it was because table didn't exist or column didn't exist
+            if not date_col:
+                # If table exists but no date column? Rare but possible.
+                # Or table doesn't exist.
+                pass
+            else:
+                 # It is already nullable (date_col[3] == 0)
+                 pass
+
+        # 6. Add 'language' column to users if missing
         try:
             cursor.execute("SELECT language FROM users LIMIT 1")
         except sqlite3.OperationalError:
             print("Adding 'language' column to users...")
             cursor.execute("ALTER TABLE users ADD COLUMN language VARCHAR DEFAULT 'de'")
-
-        conn.commit()
-        conn.close()
-        print("Schema fix executed.")
-        # 5. Make date nullable? SQLite doesn't support modifying column constraints easily.
-        # However, we can check if we want to run migration manually or just trust SQLAlchemy for new tables.
-        # Since we can't easily ALTER COLUMN in SQLite, we will skip this step in the fix script.
-        # New deployments will get it right. Existing ones might error if we try to insert NULL.
-        # Workaround: We will insert a dummy date '1970-01-01' if date is missing in application logic OR 
-        # we rely on the fact that we might not insert NULLs for old events.
-        # But wait, we want to insert NULL for undated infos. 
-        # If the DB enforces NOT NULL, we possess a problem.
-        # Let's try to disable NOT NULL constraint on `date` if possible.
-        # SQLite workaround: Create new table, copy, drop old. Too risky for this script.
-        # We will assume for now that the user works with a fresh DB or we accept the risk.
-        # Actually, for "Info" feed, if date is NOT NULL in DB, we can just store "today" or "creation date" 
-        # and display it as "undated" in UI if type is INFO.
-        # BUT I already updated models.py.
-        # Let's add a log message.
 
         conn.commit()
         conn.close()
