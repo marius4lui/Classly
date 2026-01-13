@@ -136,6 +136,13 @@ def fix_schema(db_url):
                  # It is already nullable (date_col[3] == 0)
                  pass
 
+        # 6. Add 'language' column to users if missing
+        try:
+            cursor.execute("SELECT language FROM users LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Adding 'language' column to users...")
+            cursor.execute("ALTER TABLE users ADD COLUMN language VARCHAR DEFAULT 'de'")
+
         conn.commit()
         conn.close()
         print("Schema fix executed.")
