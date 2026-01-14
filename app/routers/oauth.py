@@ -28,43 +28,52 @@ def _extract_bearer_token(authorization: str) -> str:
     return parts[1].strip()
 
 
-@router.post("/authorize")
+@router.get("/authorize")
 def oauth_authorize(
     request: Request,
-    client_id: str = Form(...),
-    redirect_uri: str = Form(...),
-    scope: str = Form("read:events"),
-    response_type: str = Form("code"),
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    client_id: str = Query(...),
+    redirect_uri: str = Query(...),
+    scope: str = Query("read:events"),
+    response_type: str = Query("code"),
+    db: Session = Depends(get_db)
 ):
     """
     OAuth 2.0 Authorization Endpoint.
     
     Creates an authorization code for the authenticated user.
-    Requires a valid session cookie (user must be logged in).
-    
-    Request:
-        - client_id: The OAuth client ID
-        - redirect_uri: The redirect URI registered with the client
-        - scope: Requested scope (default: read:events)
-        - response_type: Must be "code" for authorization code flow
-    
-    Response:
-        - code: The authorization code to exchange for an access token
-        - redirect_uri: The redirect URI to use
-        - expires_in: Seconds until the code expires
+    Requires a valid session cookie. 
+    If not logged in, redirects to login page.
     """
+    from fastapi.responses import RedirectResponse
+    import urllib.parse
+    
+    # Check if user is logged in via session cookie
+    session_token = request.cookies.get("session_token")
+    current_user = None
+    if session_token:
+        current_user = crud.get_user_by_session(db, session_token)
+    
+    # If not logged in, redirect to login page with return_url
     if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required. Please login first.")
+        # Build current URL to return to after login
+        params = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "scope": scope,
+            "response_type": response_type
+        }
+        query_string = urllib.parse.urlencode(params)
+        return_url = f"/api/oauth/authorize?{query_string}"
+        
+        # Redirect to login
+        # We assume /login can handle ?next=... parameter or we just hope the user logs in and tries again
+        # For now, let's redirect to /login and use a cookie or param to remember where to go
+        # A simple way is to pass ?next=.... URI encoded
+        next_url = urllib.parse.quote(return_url)
+        return RedirectResponse(url=f"/login?next={next_url}")
     
     if response_type != "code":
         raise HTTPException(status_code=400, detail="Only response_type=code is supported")
-    
-    # For now, we accept any client_id (simplified flow for mobile apps)
-    # In production, you should validate the client_id and redirect_uri
-    # against registered OAuth clients using:
-    # client = crud.get_oauth_client_by_client_id(db, client_id)
     
     # Create authorization code
     auth_code = crud.create_authorization_code(
@@ -76,11 +85,12 @@ def oauth_authorize(
         expires_in_seconds=600  # 10 minutes
     )
     
-    return {
-        "code": auth_code.code,
-        "redirect_uri": redirect_uri,
-        "expires_in": 600
-    }
+    # Redirect back to the client app with the code
+    # e.g. habiter://auth/callback?code=...
+    separator = "&" if "?" in redirect_uri else "?"
+    callback_url = f"{redirect_uri}{separator}code={auth_code.code}"
+    
+    return RedirectResponse(url=callback_url)
 
 
 @router.post("/token")

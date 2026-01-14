@@ -1,0 +1,19 @@
+/* Custom CSS for VitePress theme */
+
+/* Style the copy page button container in the aside */
+.VPDocAsideOutline .copy-page-btn {
+  margin-top: 16px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Add a subtle separator before the button */
+.VPDocAsideOutline .copy-page-btn::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--vp-c-divider);
+}
