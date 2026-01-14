@@ -560,3 +560,119 @@ def get_grade_statistics(db: Session, user_id: str, class_id: str):
         "count": len(all_grades_list),
         "grades": all_grades_list
     }
+
+
+# --- OAuth CRUD ---
+def create_oauth_client(db: Session, client_id: str, client_secret: str, name: str, redirect_uri: str):
+    """Create a new OAuth client application"""
+    db_client = models.OAuthClient(
+        client_id=client_id,
+        client_secret=client_secret,
+        name=name,
+        redirect_uri=redirect_uri
+    )
+    db.add(db_client)
+    db.commit()
+    db.refresh(db_client)
+    return db_client
+
+
+def get_oauth_client_by_client_id(db: Session, client_id: str):
+    """Get an OAuth client by its client_id"""
+    return db.query(models.OAuthClient).filter(models.OAuthClient.client_id == client_id).first()
+
+
+def create_authorization_code(db: Session, client_id: str, user_id: str, redirect_uri: str, scope: str = "read:events", expires_in_seconds: int = 600):
+    """Create a temporary authorization code for OAuth flow"""
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=expires_in_seconds)
+    db_code = models.OAuthAuthorizationCode(
+        client_id=client_id,
+        user_id=user_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        expires_at=expires_at
+    )
+    db.add(db_code)
+    db.commit()
+    db.refresh(db_code)
+    return db_code
+
+
+def use_authorization_code(db: Session, code: str, client_id: str, redirect_uri: str):
+    """
+    Use an authorization code to get access token.
+    Returns the code if valid, marks as used, returns None if invalid/expired/used.
+    """
+    auth_code = db.query(models.OAuthAuthorizationCode).filter(
+        models.OAuthAuthorizationCode.code == code,
+        models.OAuthAuthorizationCode.client_id == client_id,
+        models.OAuthAuthorizationCode.redirect_uri == redirect_uri
+    ).first()
+    
+    if not auth_code:
+        return None
+    
+    # Check if already used
+    if auth_code.used:
+        return None
+    
+    # Check expiration
+    if auth_code.expires_at < datetime.datetime.utcnow():
+        return None
+    
+    # Mark as used
+    auth_code.used = True
+    db.commit()
+    db.refresh(auth_code)
+    return auth_code
+
+
+# --- Device Token CRUD ---
+def create_or_update_device_token(db: Session, user_id: str, device_token: str, platform: str):
+    """
+    Create or update a device token for push notifications.
+    If the device_token already exists for this user, update it.
+    If the device_token exists for a different user, reassign it.
+    """
+    # Check if device token already exists
+    existing = db.query(models.DeviceToken).filter(
+        models.DeviceToken.device_token == device_token
+    ).first()
+    
+    if existing:
+        # Update existing token (reassign to new user if needed)
+        existing.user_id = user_id
+        existing.platform = platform
+        existing.updated_at = datetime.datetime.utcnow()
+        db.commit()
+        db.refresh(existing)
+        return existing
+    
+    # Create new device token
+    db_token = models.DeviceToken(
+        user_id=user_id,
+        device_token=device_token,
+        platform=platform
+    )
+    db.add(db_token)
+    db.commit()
+    db.refresh(db_token)
+    return db_token
+
+
+def get_device_tokens_for_user(db: Session, user_id: str):
+    """Get all device tokens for a user"""
+    return db.query(models.DeviceToken).filter(models.DeviceToken.user_id == user_id).all()
+
+
+def delete_device_token(db: Session, device_token: str, user_id: str = None):
+    """Delete a device token"""
+    query = db.query(models.DeviceToken).filter(models.DeviceToken.device_token == device_token)
+    if user_id:
+        query = query.filter(models.DeviceToken.user_id == user_id)
+    token = query.first()
+    if token:
+        db.delete(token)
+        db.commit()
+        return True
+    return False

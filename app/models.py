@@ -274,3 +274,49 @@ class UserTimetableSelection(Base):
     user = relationship("User", backref="timetable_selections")
     slot = relationship("TimetableSlot", backref="user_selections")
 
+
+# === OAuth Models ===
+
+class OAuthClient(Base):
+    """Registered OAuth clients (e.g., mobile apps)"""
+    __tablename__ = "oauth_clients"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    client_id = Column(String, unique=True, index=True, nullable=False)
+    client_secret = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    redirect_uri = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class OAuthAuthorizationCode(Base):
+    """Temporary authorization codes for OAuth flow"""
+    __tablename__ = "oauth_authorization_codes"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    code = Column(String, unique=True, index=True, default=generate_token)
+    client_id = Column(String, nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    redirect_uri = Column(String, nullable=False)
+    scope = Column(String, default="read:events")
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    user = relationship("User")
+
+
+# === Push Notification Models ===
+
+class DeviceToken(Base):
+    """FCM/APNs device tokens for push notifications"""
+    __tablename__ = "device_tokens"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    device_token = Column(String, nullable=False, index=True)
+    platform = Column(String, nullable=False)  # "fcm" or "apns"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    user = relationship("User", backref="device_tokens")

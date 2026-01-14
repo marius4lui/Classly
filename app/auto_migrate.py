@@ -150,6 +150,63 @@ def run_auto_migrations():
                 cursor.execute("CREATE INDEX ix_integration_tokens_user_id ON integration_tokens(user_id)")
                 conn.commit()
 
+            # 9. Create oauth_clients table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_clients'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'oauth_clients' table.")
+                cursor.execute("""
+                    CREATE TABLE oauth_clients (
+                        id VARCHAR PRIMARY KEY,
+                        client_id VARCHAR UNIQUE NOT NULL,
+                        client_secret VARCHAR NOT NULL,
+                        name VARCHAR NOT NULL,
+                        redirect_uri VARCHAR NOT NULL,
+                        created_at DATETIME
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_oauth_clients_client_id ON oauth_clients(client_id)")
+                conn.commit()
+
+            # 10. Create oauth_authorization_codes table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_authorization_codes'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'oauth_authorization_codes' table.")
+                cursor.execute("""
+                    CREATE TABLE oauth_authorization_codes (
+                        id VARCHAR PRIMARY KEY,
+                        code VARCHAR UNIQUE,
+                        client_id VARCHAR NOT NULL,
+                        user_id VARCHAR NOT NULL,
+                        redirect_uri VARCHAR NOT NULL,
+                        scope VARCHAR DEFAULT 'read:events',
+                        expires_at DATETIME NOT NULL,
+                        used BOOLEAN DEFAULT 0,
+                        created_at DATETIME,
+                        FOREIGN KEY (user_id) REFERENCES users(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_oauth_authorization_codes_code ON oauth_authorization_codes(code)")
+                conn.commit()
+
+            # 11. Create device_tokens table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='device_tokens'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'device_tokens' table.")
+                cursor.execute("""
+                    CREATE TABLE device_tokens (
+                        id VARCHAR PRIMARY KEY,
+                        user_id VARCHAR NOT NULL,
+                        device_token VARCHAR NOT NULL,
+                        platform VARCHAR NOT NULL,
+                        created_at DATETIME,
+                        updated_at DATETIME,
+                        FOREIGN KEY (user_id) REFERENCES users(id)
+                    )
+                """)
+                cursor.execute("CREATE INDEX ix_device_tokens_device_token ON device_tokens(device_token)")
+                cursor.execute("CREATE INDEX ix_device_tokens_user_id ON device_tokens(user_id)")
+                conn.commit()
+
             # Add other migrations here as needed
             
         except Exception as e:

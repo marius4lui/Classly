@@ -53,7 +53,8 @@ export default defineConfig({
                 {
                     text: 'Entwicklung',
                     items: [
-                        { text: 'Mitmachen', link: '/development/contributing' }
+                        { text: 'Mitmachen', link: '/development/contributing' },
+                        { text: '🔌 API Referenz', link: '/development/api' }
                     ]
                 }
             ]
