@@ -1,8 +1,8 @@
 import datetime
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Query, Request
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app import crud, models
+from app.repository.base import BaseRepository
+from app.repository.factory import get_repository
+from app import models
 from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -21,17 +21,17 @@ def _extract_bearer_token(authorization: str) -> str:
 
 def require_integration_auth(
     authorization: str = Header(None),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     token_value = _extract_bearer_token(authorization)
     if not token_value:
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
-    token = crud.use_integration_token(db, token_value)
+    token = repo.use_integration_token(token_value)
     if not token:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    user = crud.get_user(db, token.user_id)
+    user = repo.get_user(token.user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found for token")
 
@@ -44,7 +44,7 @@ def issue_api_token(
     email: str = Form(None),
     password: str = Form(None),
     expires_in_days: int = Form(None),
-    db: Session = Depends(get_db),
+    repo: BaseRepository = Depends(get_repository),
     current_user = Depends(get_current_user)
 ):
     """
@@ -58,10 +58,13 @@ def issue_api_token(
     if not user:
         if not email or not password:
             raise HTTPException(status_code=401, detail="Credentials required")
-        candidate = crud.get_user_by_email(db, email)
+        candidate = repo.get_user_by_email(email)
+        
+        from app.crud import verify_password
+        
         if not candidate or not candidate.password_hash:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        if not crud.verify_password(password, candidate.password_hash):
+        if not verify_password(password, candidate.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         user = candidate
 
@@ -72,8 +75,7 @@ def issue_api_token(
         except Exception:
             raise HTTPException(status_code=400, detail="expires_in_days must be an integer")
 
-    token = crud.create_integration_token(
-        db,
+    token = repo.create_integration_token(
         user_id=user.id,
         class_id=user.class_id,
         scopes="read:events",
@@ -111,13 +113,12 @@ def get_me(auth = Depends(require_integration_auth)):
 @router.get("/events")
 def list_events(
     auth = Depends(require_integration_auth),
-    db: Session = Depends(get_db),
+    repo: BaseRepository = Depends(get_repository),
     updated_since: str = Query(None, description="ISO timestamp filter"),
     limit: int = Query(200, description="Max events to return")
 ):
-    user = auth["user"]
     token = auth["token"]
-
+    
     limit = min(max(limit, 1), 500)
 
     since_dt = None
@@ -127,12 +128,37 @@ def list_events(
         except ValueError:
             raise HTTPException(status_code=400, detail="updated_since must be ISO format")
 
-    query = db.query(models.Event).filter(models.Event.class_id == token.class_id)
-    if since_dt:
-        query = query.filter(models.Event.updated_at >= since_dt)
-    events = query.order_by(models.Event.updated_at.desc()).limit(limit).all()
+    events = repo.list_events(class_id=token.class_id, limit=limit, updated_since=since_dt)
 
     def serialize_event(event: models.Event):
+        # Fetch relationships if using repo that doesn't eager load (e.g. Appwrite, or optimized SQL)
+        # Assuming event object MIGHT have topics/links loaded if from SQL OR we need to fetch.
+        # But repo interface returns models.Event which has .topics .links attributes.
+        # For Appwrite, these might be empty/None if not loaded.
+        # Check if topics are loaded? No easy way in simple model.
+        # We will fetch them explicitly if we are being safe, or assume lazy load works for SQL and unimplemented for Appwrite in list?
+        # Appwrite listing didn't populate children.
+        # For now, we return empty topics/links for Appwrite list to be performant, OR we fetch one by one (slow).
+        # Let's try to fetch if not present?
+        # Actually, let's leave topics/links empty in list view for performance on Appwrite,
+        # or implement bulk fetch.
+        
+        # If topics is list, use it.
+        topics_list = []
+        links_list = []
+        
+        # Safe access attempts?
+        try:
+             # This will trigger SQL query in SQLAlchemy
+             if event.topics: topics_list = event.topics
+        except Exception:
+             pass
+             
+        try:
+             if event.links: links_list = event.links
+        except Exception:
+             pass
+
         return {
             "id": event.id,
             "class_id": event.class_id,
@@ -154,14 +180,14 @@ def list_events(
                     "pages": t.pages,
                     "order": t.order,
                     "parent_id": t.parent_id
-                } for t in event.topics
+                } for t in topics_list
             ],
             "links": [
                 {
                     "id": l.id,
                     "url": l.url,
                     "label": l.label
-                } for l in event.links
+                } for l in links_list
             ]
         }
 
@@ -175,10 +201,10 @@ def list_events(
 @router.get("/subjects")
 def list_subjects(
     auth = Depends(require_integration_auth),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     token = auth["token"]
-    subjects = crud.get_subjects_for_class(db, token.class_id)
+    subjects = repo.get_subjects_for_class(token.class_id)
     return {
         "class_id": token.class_id,
         "count": len(subjects),

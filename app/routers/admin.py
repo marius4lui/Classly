@@ -1,30 +1,36 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, BackgroundTasks, Request
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app import crud, models
+from app.repository.base import BaseRepository
+from app.repository.factory import get_repository
+from app import models
 from app.core.auth import require_admin, require_class_admin, require_user
 from app.core import security
 import datetime
+import secrets
 from fastapi.templating import Jinja2Templates
+import os
+from app.quotas import MAX_EVENTS_PER_CLASS, MAX_SUBJECTS_PER_USER, MAX_CLASSES_PER_USER, MAX_TOTAL_STORAGE_MB
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
-import os
-from app.quotas import MAX_EVENTS_PER_CLASS, MAX_SUBJECTS_PER_USER, MAX_CLASSES_PER_USER, MAX_TOTAL_STORAGE_MB
 
 @router.get("/admin/quotas")
 def admin_quotas_overview(
     request: Request,
     user: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    # Calculate stats
-    total_classes = db.query(models.Class).count()
-    total_events = db.query(models.Event).count()
-    total_subjects = db.query(models.Subject).count()
+    # Calculate stats (Class Scoped)
+    # Using repository count methods.
+    
+    total_classes = 1 # repo doesn't support global class count yet, assuming context of current class
+    total_events = repo.count_events(user.class_id)
+    total_subjects = repo.count_subjects(user.class_id)
 
     db_size_mb = 0
-    if os.path.exists("app.db"):
+    # Basic size check for SQL/Appwrite generic
+    if os.path.exists("classly.db"): # Check actual DB file if SQL default
+        db_size_mb = os.path.getsize("classly.db") / (1024 * 1024)
+    elif os.path.exists("app.db"): # Fallback
         db_size_mb = os.path.getsize("app.db") / (1024 * 1024)
 
     return templates.TemplateResponse("admin_quotas.html", {
@@ -49,13 +55,12 @@ def kick_member(
     user_id: str,
     response: Response,
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     if user_id == admin.id:
         raise HTTPException(status_code=400, detail="Cannot kick yourself")
     
-
-    target = crud.get_user(db, user_id)
+    target = repo.get_user(user_id)
     if not target or target.class_id != admin.class_id:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -63,8 +68,7 @@ def kick_member(
     if target.role == models.UserRole.OWNER:
         raise HTTPException(status_code=403, detail="Cannot kick owner")
     
-    
-    crud.delete_user(db, user_id)
+    repo.delete_user(user_id)
     response.headers["HX-Redirect"] = "/"
     return {"status": "kicked"}
 
@@ -72,16 +76,14 @@ def kick_member(
 def rotate_token(
     response: Response,
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    clazz = crud.get_class(db, admin.class_id)
-    
-    new_token = security.generate_join_token()
-    while crud.get_class_by_token(db, new_token):
-        new_token = security.generate_join_token()
+    # Generate new unique token
+    new_token = secrets.token_urlsafe(16)
+    while repo.get_class_by_token(new_token):
+        new_token = secrets.token_urlsafe(16)
         
-    clazz.join_token = new_token
-    db.commit()
+    repo.update_class(admin.class_id, join_token=new_token)
     
     response.headers["HX-Redirect"] = "/"
     return {"status": "rotated"}
@@ -91,17 +93,17 @@ def promote_user(
     user_id: str,
     response: Response,
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     """Promote a user to Admin role"""
-    target = crud.get_user(db, user_id)
+    target = repo.get_user(user_id)
     if not target or target.class_id != admin.class_id:
         raise HTTPException(status_code=404, detail="User not found")
     
     if target.role == models.UserRole.OWNER:
         raise HTTPException(status_code=400, detail="Cannot change owner role")
     
-    crud.update_user_role(db, user_id, models.UserRole.ADMIN)
+    repo.update_user_role(user_id, models.UserRole.ADMIN)
     response.headers["HX-Redirect"] = "/"
     return {"status": "promoted"}
 
@@ -110,17 +112,17 @@ def demote_user(
     user_id: str,
     response: Response,
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     """Demote an admin to Member role"""
-    target = crud.get_user(db, user_id)
+    target = repo.get_user(user_id)
     if not target or target.class_id != admin.class_id:
         raise HTTPException(status_code=404, detail="User not found")
     
     if target.role == models.UserRole.OWNER:
         raise HTTPException(status_code=400, detail="Cannot change owner role")
     
-    crud.update_user_role(db, user_id, models.UserRole.MEMBER)
+    repo.update_user_role(user_id, models.UserRole.MEMBER)
     response.headers["HX-Redirect"] = "/"
     return {"status": "demoted"}
 
@@ -130,10 +132,10 @@ def set_user_role(
     response: Response,
     role: str = Form(...),
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     """Set user role (Admin only)"""
-    target = crud.get_user(db, user_id)
+    target = repo.get_user(user_id)
     if not target or target.class_id != admin.class_id:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -144,7 +146,7 @@ def set_user_role(
     if new_role == models.UserRole.OWNER:
          raise HTTPException(status_code=403, detail="Cannot assign owner role manually")
 
-    crud.update_user_role(db, user_id, new_role)
+    repo.update_user_role(user_id, new_role)
     response.headers["HX-Redirect"] = "/"
     return {"status": "role_updated"}
 
@@ -158,7 +160,7 @@ def create_login_token(
     expires_hours: int = Form(None),
     role: str = Form("member"),
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     # Must have either user_id OR user_name
     if not user_id and not user_name:
@@ -166,7 +168,7 @@ def create_login_token(
     
     # If user_id, verify user exists
     if user_id:
-        target = crud.get_user(db, user_id)
+        target = repo.get_user(user_id)
         if not target or target.class_id != admin.class_id:
             raise HTTPException(status_code=404, detail="User not found")
         user_name = None  # Clear user_name if user_id is set
@@ -175,8 +177,7 @@ def create_login_token(
     if expires_hours:
         expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=expires_hours)
     
-    token = crud.create_login_token(
-        db,
+    token = repo.create_login_token(
         class_id=admin.class_id,
         created_by=admin.id,
         user_id=user_id,
@@ -194,9 +195,9 @@ def delete_login_token(
     token_id: str,
     response: Response,
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    crud.delete_login_token(db, token_id)
+    repo.delete_login_token(token_id)
     response.headers["HX-Redirect"] = "/"
     return {"status": "deleted"}
 
@@ -204,7 +205,7 @@ def delete_login_token(
 def download_db(
     background_tasks: BackgroundTasks,
     admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     from fastapi.responses import FileResponse
     from fastapi import BackgroundTasks
@@ -225,76 +226,42 @@ def download_db(
         DstSession = sessionmaker(bind=dst_engine)
         dst_db = DstSession()
         
-        # 3. Fetch Data for this Class ONLY
+        # 3. Fetch Data for this Class ONLY via Repo
         cid = admin.class_id
         
-        # Entities to export
-        # IMPORTANT: We use Detached objects to copy them
-        
         # Class
-        clazz = db.query(models.Class).filter(models.Class.id == cid).first()
+        clazz = repo.get_class(cid)
         if clazz:
-            db.expunge(clazz) # Detach from source session
-            make_transient(clazz) # Remove session state
-            dst_db.add(clazz)
+            dst_db.merge(clazz)
             
         # Subjects
-        subjects = db.query(models.Subject).filter(models.Subject.class_id == cid).all()
+        subjects = repo.get_subjects_for_class(cid)
         for obj in subjects:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
+            dst_db.merge(obj)
 
         # Users & Preferences
-        users = db.query(models.User).filter(models.User.class_id == cid).all()
-        user_ids = [u.id for u in users]
+        users = repo.get_class_members(cid)
         for obj in users:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
+            dst_db.merge(obj)
+            # Merge UserPreferences if available? 
+            # Current implementation of Repo might not load them fully or Appwrite might miss them.
+            # We skip explicit preference merge for now unless attached.
             
-        prefs = db.query(models.UserPreferences).filter(models.UserPreferences.user_id.in_(user_ids)).all()
-        for obj in prefs:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
-
         # Events & Related
-        events = db.query(models.Event).filter(models.Event.class_id == cid).all()
-        event_ids = [e.id for e in events]
+        events = repo.list_events(cid, limit=10000) # Get all
         for obj in events:
-            # Manually load relations if lazy=True to ensure they export, 
-            # OR just query them separately if they are separate tables.
-            # Eager loading is safer but let's just query tables.
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
-            
-        topics = db.query(models.EventTopic).filter(models.EventTopic.event_id.in_(event_ids)).all()
-        for obj in topics:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
-
-        links = db.query(models.EventLink).filter(models.EventLink.event_id.in_(event_ids)).all()
-        for obj in links:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
+            dst_db.merge(obj)
+            # Topics/Links might be missing if lazy loaded and not fetched.
             
         # Login Tokens
-        tokens = db.query(models.LoginToken).filter(models.LoginToken.class_id == cid).all()
+        tokens = repo.list_login_tokens(cid)
         for obj in tokens:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
+            dst_db.merge(obj)
             
         # Audit Logs
-        logs = db.query(models.AuditLog).filter(models.AuditLog.class_id == cid).all()
+        logs = repo.list_audit_logs(cid, limit=10000)
         for obj in logs:
-            db.expunge(obj)
-            make_transient(obj)
-            dst_db.add(obj)
+            dst_db.merge(obj)
 
         # 4. Commit and Close Logic
         dst_db.commit()

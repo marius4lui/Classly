@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app import crud, models
+from app.repository.base import BaseRepository
+from app.repository.factory import get_repository
+from app import models
 from app.core.auth import get_current_user, require_user, require_class_admin
 from app.quotas import check_event_quota, check_subject_quota
 from app.limiter import limiter
@@ -24,7 +24,7 @@ def create_event(
     date: str = Form(None),
     title: str = Form(None),
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     event_date = None
     if date:
@@ -36,7 +36,7 @@ def create_event(
     # Get subject name if subject_id provided
     actual_subject_name = subject_name
     if subject_id:
-        subject = crud.get_subject(db, subject_id)
+        subject = repo.get_subject(subject_id)
         if subject:
             actual_subject_name = subject.name
     
@@ -47,10 +47,9 @@ def create_event(
         event_priority = models.Priority.MEDIUM
 
     # Check Quota
-    check_event_quota(db, user)
+    check_event_quota(repo, user)
 
-    event = crud.create_event(
-        db=db, 
+    event = repo.create_event(
         class_id=user.class_id, 
         author_id=user.id, 
         type=type, 
@@ -62,7 +61,7 @@ def create_event(
     )
     
     # Audit log (permanent)
-    crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.EVENT_CREATE,
+    repo.create_audit_log(user.class_id, user.id, models.AuditAction.EVENT_CREATE,
                           target_id=event.id, data=json.dumps({"type": type, "subject": actual_subject_name, "priority": priority}),
                           permanent=True)
     
@@ -73,13 +72,14 @@ def create_event(
 def get_event_details(
     event_id: str,
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    topics = crud.get_topics_for_event(db, event_id)
+    topics = repo.get_topics_for_event(event_id)
+    links = repo.get_links_for_event(event_id)
     
     return {
         "id": event.id,
@@ -88,10 +88,10 @@ def get_event_details(
         "subject_name": event.subject_name,
         "title": event.title,
         "date": event.date.strftime("%Y-%m-%d") if event.date else None,
-        "author": event.author.name if event.author else "Unbekannt",
+        "author": event.author.name if hasattr(event, 'author') and event.author else "Unbekannt", # Author lookup might need fetching if not eager loaded
         "created_at": event.created_at.isoformat() if event.created_at else None,
         "topics": [{"id": t.id, "type": t.topic_type, "content": t.content, "count": t.count, "parent_id": t.parent_id} for t in topics],
-        "links": [{"id": l.id, "url": l.url, "label": l.label} for l in event.links]
+        "links": [{"id": l.id, "url": l.url, "label": l.label} for l in links]
     }
 
 @router.put("/events/{event_id}")
@@ -104,9 +104,9 @@ def edit_event(
     date: str = Form(None),
     priority: str = Form(None),
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
@@ -131,11 +131,11 @@ def edit_event(
         except:
             pass
     
-    crud.update_event(db, event_id, type=event_type, subject_name=subject_name, 
+    repo.update_event(event_id, type=event_type, subject_name=subject_name, 
                       title=title, date=event_date, priority=event_priority)
     
     # Audit log (permanent)
-    crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.EVENT_EDIT,
+    repo.create_audit_log(user.class_id, user.id, models.AuditAction.EVENT_EDIT,
                           target_id=event_id, data=json.dumps({"edited_by": user.name}),
                           permanent=True)
     
@@ -147,18 +147,18 @@ def delete_event(
     event_id: str,
     response: Response,
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
     # Audit log before delete (permanent)
-    crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.EVENT_DELETE,
+    repo.create_audit_log(user.class_id, user.id, models.AuditAction.EVENT_DELETE,
                           target_id=event_id, data=json.dumps({"type": event.type.value, "subject": event.subject_name}),
                           permanent=True)
     
-    crud.delete_event(db, event_id)
+    repo.delete_event(event_id)
     response.headers["HX-Redirect"] = "/"
     return {"status": "deleted"}
 
@@ -172,9 +172,9 @@ def add_topic(
     count: int = Form(None),
     parent_id: str = Form(None),
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
@@ -182,23 +182,20 @@ def add_topic(
     if event.type not in [models.EventType.KA, models.EventType.TEST]:
         raise HTTPException(status_code=400, detail="Only KA/TEST can have topics")
     
-    existing_topics = crud.get_topics_for_event(db, event_id)
+    existing_topics = repo.get_topics_for_event(event_id)
     if len(existing_topics) >= 20:
         raise HTTPException(status_code=400, detail="Max 20 topics")
 
-    # Validate parent_id if provided
+    # Validate parent_id if provided - using generic get/list or assume fine logic?
+    # Simple check if parent exists in existing_topics
     if parent_id:
-        parent_topic = db.query(models.EventTopic).filter(
-            models.EventTopic.id == parent_id,
-            models.EventTopic.event_id == event_id
-        ).first()
-        if not parent_topic:
+        if parent_id not in [t.id for t in existing_topics]:
             raise HTTPException(status_code=400, detail="Parent topic not found")
 
-    topic = crud.create_event_topic(db, event_id, topic_type, content, count, order=len(existing_topics), parent_id=parent_id)
+    topic = repo.create_event_topic(event_id, topic_type, content, count, order=len(existing_topics), parent_id=parent_id)
     
     # Audit log (permanent)
-    crud.create_audit_log(db, user.class_id, user.id, models.AuditAction.TOPIC_ADD,
+    repo.create_audit_log(user.class_id, user.id, models.AuditAction.TOPIC_ADD,
                           target_id=event_id, data=json.dumps({"topic": topic_type}),
                           permanent=True)
     
@@ -209,13 +206,13 @@ def delete_topic_endpoint(
     event_id: str,
     topic_id: str,
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    crud.delete_topic(db, topic_id)
+    repo.delete_topic(topic_id)
     return {"status": "deleted"}
 
 # --- Link Endpoints ---
@@ -225,17 +222,18 @@ def add_link(
     url: str = Form(...),
     label: str = Form(...),
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
     # Check max links?
-    if len(event.links) >= 10:
+    existing_links = repo.get_links_for_event(event_id)
+    if len(existing_links) >= 10:
         raise HTTPException(status_code=400, detail="Max 10 links")
 
-    link = crud.create_event_link(db, event_id, url, label)
+    link = repo.create_event_link(event_id, url, label)
     return {"status": "created", "link_id": link.id}
 
 @router.delete("/events/{event_id}/links/{link_id}")
@@ -243,13 +241,13 @@ def delete_link_endpoint(
     event_id: str,
     link_id: str,
     user: models.User = Depends(require_user),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    event = crud.get_event(db, event_id)
+    event = repo.get_event(event_id)
     if not event or event.class_id != user.class_id:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    crud.delete_link(db, link_id)
+    repo.delete_link(link_id)
     return {"status": "deleted"}
 
 # --- Subject Endpoints ---
@@ -261,12 +259,12 @@ def create_subject(
     name: str = Form(...),
     color: str = Form("#666666"),
     user: models.User = Depends(require_class_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     # Check Quota
-    check_subject_quota(db, user)
+    check_subject_quota(repo, user)
 
-    crud.create_subject(db, class_id=user.class_id, name=name, color=color)
+    repo.create_subject(class_id=user.class_id, name=name, color=color)
     response.headers["HX-Redirect"] = "/"
     return {"status": "created"}
 
@@ -275,9 +273,9 @@ def delete_subject(
     subject_id: str,
     response: Response,
     user: models.User = Depends(require_class_admin),
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
-    deleted = crud.delete_subject(db, subject_id)
+    deleted = repo.delete_subject(subject_id)
     if deleted:
         response.headers["HX-Redirect"] = "/"
         return {"status": "deleted"}
@@ -290,16 +288,13 @@ def delete_subject(
 def get_rss_feed(
     request: Request,
     class_id: str = None,
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
     
     # Get INFO events
-    events = db.query(models.Event).filter(
-        models.Event.class_id == class_id,
-        models.Event.type == models.EventType.INFO
-    ).order_by(models.Event.created_at.desc()).limit(20).all()
+    events = repo.list_events(class_id=class_id, limit=20, type=models.EventType.INFO)
 
     base_url = str(request.base_url).rstrip("/")
     
@@ -340,15 +335,12 @@ def get_rss_feed(
 @router.get("/feed/xml")
 def get_xml_feed(
     class_id: str = None,
-    db: Session = Depends(get_db)
+    repo: BaseRepository = Depends(get_repository)
 ):
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
         
-    events = db.query(models.Event).filter(
-        models.Event.class_id == class_id,
-        models.Event.type == models.EventType.INFO
-    ).order_by(models.Event.created_at.desc()).limit(20).all()
+    events = repo.list_events(class_id=class_id, limit=20, type=models.EventType.INFO)
 
     xml_items = ""
     for e in events:

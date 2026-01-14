@@ -30,9 +30,15 @@ Classly nutzt folgende Umgebungsvariablen zur Konfiguration:
 | `DATABASE_URL` | `sqlite:////data/classly.db` | Pfad zur Datenbank (SQLAlchemy Format). |
 | `MIGRATE_FROM_DOMAIN` | - | Alte Domain für Umleitungen (z.B. `old.com`). Users werden automatisch migriert. |
 | `MIGRATE_TO_DOMAIN` | - | Neue Domain Ziel (z.B. `new.com`). |
+| `APPWRITE` | `false` | Setze auf `true` um Appwrite als Backend zu nutzen. |
+| `APPWRITE_ENDPOINT` | `https://cloud.appwrite.io/v1` | URL zum Appwrite Server. |
+| `APPWRITE_PROJECT_ID` | - | Appwrite Project ID. |
+| `APPWRITE_API_KEY` | - | Appwrite API Key (Secret). |
+| `APPWRITE_DATABASE_ID` | `classly_db` | Name der Appwrite Datenbank. |
+| `AUTOMIGRATE_TO` | - | Setze auf `appwrite` um beim Start Daten von SQLite automatisch zu migrieren. |
 
 > [!NOTE]
-> Aktuell ist Classly primär für **SQLite** optimiert. PostgreSQL support ist experimentell.
+> Classly ist für **SQLite** optimiert, unterstützt aber auch **Appwrite** als Backend für skalierbare Setups. PostgreSQL support ist experimentell.
 
 ---
 

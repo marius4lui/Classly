@@ -41,7 +41,14 @@ def run_migrations():
         db.close()
 
 
+
 run_migrations()
+
+# Check for Auto-Migration to Appwrite
+if os.getenv("AUTOMIGRATE_TO") == "appwrite":
+    from app.core.migration import migrate_to_appwrite
+    migrate_to_appwrite()
+
 
 app = FastAPI(title="Classly")
 
