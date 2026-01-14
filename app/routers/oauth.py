@@ -7,7 +7,7 @@ Endpoints:
 - GET /api/oauth/userinfo - Get current user info (requires Bearer token)
 """
 import datetime
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import crud, models
