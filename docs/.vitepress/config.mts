@@ -7,6 +7,21 @@ export default defineConfig({
     lang: 'de-DE',
     // base: '/Classly/', // Removed for custom domain docs.classly.site
 
+    markdown: {
+        // Enable copy button for code blocks
+        codeCopyButtonTitle: 'Code kopieren',
+        // Enable line numbers for code blocks (optional)
+        lineNumbers: false,
+        // Code block container settings
+        container: {
+            tipLabel: 'Tipp',
+            warningLabel: 'Warnung',
+            dangerLabel: 'Achtung',
+            infoLabel: 'Info',
+            detailsLabel: 'Details'
+        }
+    },
+
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         nav: [
