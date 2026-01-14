@@ -21,28 +21,23 @@ Für mobile Apps und Drittanbieter-Integrationen wird OAuth 2.0 Authorization Co
 
 ## OAuth 2.0 Endpoints
 
-### POST `/api/oauth/authorize`
+### GET `/api/oauth/authorize`
 
 Erstellt einen Authorization Code für den OAuth-Flow.
 
-**Voraussetzungen:** Benutzer muss eingeloggt sein (Session Cookie)
+**Voraussetzungen:** Benutzer muss eingeloggt sein. Wenn nicht, wird zur Login-Seite weitergeleitet.
 
-**Request (Form Data):**
+**Request (Query Parameters):**
 | Parameter | Typ | Erforderlich | Beschreibung |
 |-----------|-----|--------------|--------------|
-| `client_id` | string | ✅ | Die Client-ID der App |
-| `redirect_uri` | string | ✅ | Die Redirect-URI der App |
+| `client_id` | string | ✅ | Die Client-ID der App (z.B. `habiter-app`) |
+| `redirect_uri` | string | ✅ | Die Redirect-URI der App (z.B. `habiter://auth/callback`) |
 | `scope` | string | ❌ | Berechtigungen (Standard: `read:events`) |
 | `response_type` | string | ❌ | Muss `code` sein |
 
 **Response:**
-```json
-{
-  "code": "abc123...",
-  "redirect_uri": "https://app.example.com/callback",
-  "expires_in": 600
-}
-```
+Redirected zur `redirect_uri` mit dem Authorization Code als Parameter:
+`habiter://auth/callback?code=abc123...`
 
 ---
 
