@@ -12,6 +12,7 @@
         <div class="nav-container">
             <div class="logo">Classly</div>
             <div class="nav-links">
+                <a href="/demo" class="nav-link">Demo</a>
                 <a href="https://docs.classly.site" target="_blank" class="nav-link">Anleitung</a>
                 <a href="/login" class="btn btn-secondary btn-sm">Login</a>
                 <button onclick="document.getElementById('create-modal').classList.add('active')"
@@ -38,6 +39,9 @@
                 </button>
                 <a href="/login" class="btn btn-secondary btn-lg">
                     Zum Login
+                </a>
+                <a href="/demo" class="btn btn-secondary btn-lg" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(0,0,0,0.1);">
+                    Live Demo
                 </a>
             </div>
             <div class="hero-badge">
@@ -103,51 +107,7 @@
         </div>
     </section>
 
-    <!-- Create Class Modal -->
-    <div id="create-modal" class="modal-backdrop">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>Klasse erstellen</h2>
-                <button onclick="document.getElementById('create-modal').classList.remove('active')"
-                    class="btn-ghost">✕</button>
-            </div>
-            <div class="modal-body">
-                <form hx-post="/auth/create-class" hx-swap="none">
-                    <div class="form-group">
-                        <label>Klassenname</label>
-                        <input type="text" name="class_name" placeholder="z.B. 10B" required autofocus>
-                    </div>
-                    <div class="form-group">
-                        <label>Dein Name (als Admin)</label>
-                        <input type="text" name="user_name" placeholder="z.B. Max" required>
-                    </div>
-
-                    <hr>
-                    <p class="text-sm text-muted mb-4">Optional: Damit du dich später per Passwort einloggen kannst.</p>
-
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" placeholder="deine@email.de">
-                    </div>
-                    <div class="form-group">
-                        <label>Passwort</label>
-                        <input type="password" name="password" placeholder="Min. 8 Zeichen" minlength="8">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block">Klasse erstellen</button>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% include "partials/create_class_modal.html" %}
 
 </div>
-
-<script>
-    // Close modal on backdrop click
-    document.getElementById('create-modal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            this.classList.remove('active');
-        }
-    });
-</script>
 {% endblock %}
