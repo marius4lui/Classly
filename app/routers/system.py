@@ -43,16 +43,86 @@ def logout(response: Response):
 def dashboard(request: Request):
     jobs = job_manager.list_jobs(limit=20)
 
+    # Helper to parse .env file while preserving comments/structure would be complex.
+    # For now, we simply load current os.environ overlay or simple key-value pairs?
+    # Better: Read the .env file directly to show exactly what's configured.
+    
+    env_vars = []
+    try:
+        if os.path.exists(".env"):
+            with open(".env", "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" in line:
+                        key, val = line.split("=", 1)
+                        if key == "CLASSLY_ADMIN_SECRET":
+                             continue # Skip secret
+                        env_vars.append({"key": key, "value": val})
+    except Exception:
+        pass
+
     db_primary = os.getenv("CLASSLY_DB_PRIMARY", "sqlite")
 
     return templates.TemplateResponse("system/dashboard.html", {
         "request": request,
         "jobs": jobs,
+        "env_vars": env_vars,
         "config": {
             "db_primary": db_primary,
             "backup_target": os.getenv("CLASSLY_BACKUP_TARGET", "local")
         }
     })
+
+@router.post("/system/config/update", dependencies=[Depends(verify_system_admin)])
+def update_config(request: Request):
+    # This is tricky because we need to parse form data dynamically
+    # Fastapi doesn't support arbitrary dict form data easily without request.form()
+    pass # Will be implemented via async below
+
+@router.post("/system/config/save", dependencies=[Depends(verify_system_admin)])
+async def save_config(request: Request):
+    form = await request.form()
+    
+    # 1. Read existing .env to preserve comments if possible, or just rewrite? 
+    # Rewriting is safer for now to ensure we capture all keys.
+    
+    # However, to avoid deleting the Secret, we must read it first.
+    current_secret = os.getenv("CLASSLY_ADMIN_SECRET")
+    
+    new_lines = []
+    
+    # Preserve the Secret
+    if current_secret:
+        new_lines.append(f"CLASSLY_ADMIN_SECRET={current_secret}")
+        
+    for key, value in form.items():
+        if key == "CLASSLY_ADMIN_SECRET":
+            continue # Never update secret via this form for safety
+        
+        # Basic validation
+        key = key.upper().strip()
+        value = str(value).strip()
+        
+        if key and value:
+             new_lines.append(f"{key}={value}")
+    
+    # Write back to .env
+    try:
+        with open(".env", "w", encoding="utf-8") as f:
+            f.write("\n".join(new_lines))
+        
+        # Force reload env vars in process (partial)
+        # Note: This won't affect everything immediately without restart, but helps for some os.getenv calls
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+        
+    except Exception as e:
+         raise HTTPException(status_code=500, detail=f"Failed to save .env: {e}")
+
+    return RedirectResponse("/system/dashboard", status_code=303)
+
 
 @router.get("/system/jobs", dependencies=[Depends(verify_system_admin)])
 def list_jobs_partial(request: Request):

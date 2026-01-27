@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -44,6 +48,10 @@ def run_migrations():
 
 
 run_migrations()
+
+# Start Job Manager (Scheduler)
+from app.jobs.manager import job_manager
+job_manager.start()
 
 # Check for Auto-Migration to Appwrite
 if os.getenv("AUTOMIGRATE_TO") == "appwrite":

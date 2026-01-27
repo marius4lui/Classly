@@ -16,9 +16,15 @@ class JobManager:
         if cls._instance is None:
             cls._instance = super(JobManager, cls).__new__(cls)
             cls._instance.scheduler = BackgroundScheduler()
-            cls._instance.scheduler.start()
-            cls._instance._recover_jobs()
+            # cls._instance.scheduler.start() # Delayed start
+            # cls._instance._recover_jobs() # Delayed recovery
         return cls._instance
+
+    def start(self):
+        """Starts the scheduler and recovers jobs. Should be called after DB init."""
+        if not self.scheduler.running:
+            self.scheduler.start()
+            self._recover_jobs()
 
     def _recover_jobs(self):
         """Recover jobs after restart"""

@@ -6,7 +6,9 @@
     "scripts": {
         "docs:dev": "vitepress dev docs",
         "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs"
+        "docs:preview": "vitepress preview docs",
+        "dev": "python -m uvicorn app.main:app --reload",
+        "start": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
     },
     "keywords": [],
     "author": "",

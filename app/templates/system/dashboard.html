@@ -1,97 +1,201 @@
 {% extends "system/base.html" %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-    <!-- Status Card -->
-    <div class="bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">System Status</h2>
-        <div class="grid grid-cols-2 gap-4">
-            <div class="p-3 bg-gray-50 rounded">
-                <div class="text-xs text-gray-500 uppercase">Primary DB</div>
-                <div class="font-bold">{{ config.db_primary }}</div>
-            </div>
-            <div class="p-3 bg-gray-50 rounded">
-                <div class="text-xs text-gray-500 uppercase">Backup Target</div>
-                <div class="font-bold">{{ config.backup_target }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Actions Card -->
-    <div class="bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Actions</h2>
-
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">System Dashboard</h1>
         <div class="flex gap-2">
-            <!-- Backup Button -->
-            <form action="/system/backup" method="POST" class="inline">
-                <input type="hidden" name="target_type" value="{{ config.backup_target }}">
-                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    Run Backup ({{ config.backup_target }})
+            <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                System Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <dt class="text-sm font-medium text-gray-500 truncate">Primary Database</dt>
+                <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ config.db_primary }}</dd>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <dt class="text-sm font-medium text-gray-500 truncate">Backup Target</dt>
+                <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ config.backup_target }}</dd>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <dt class="text-sm font-medium text-gray-500 truncate">Active Jobs</dt>
+                <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ jobs|length }}</dd>
+            </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6 flex items-center h-full">
+                <form action="/system/backup" method="POST" class="w-full">
+                    <input type="hidden" name="target_type" value="{{ config.backup_target }}">
+                    <button type="submit"
+                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Run Quick Backup
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Environment Variables Editor -->
+        <div class="bg-white shadow rounded-lg lg:col-span-2">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Configuration (.env)</h3>
+                <span class="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded">Changes require restart to fully take
+                    effect</span>
+            </div>
+            <div class="px-4 py-5 sm:p-6">
+                <form action="/system/config/save" method="POST" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for var in env_vars %}
+                        <div class="col-span-1">
+                            <label for="{{ var.key }}" class="block text-sm font-medium text-gray-700">{{ var.key
+                                }}</label>
+                            <input type="text" name="{{ var.key }}" id="{{ var.key }}" value="{{ var.value }}"
+                                class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        {% endfor %}
+
+                        <!-- New Variable Input -->
+                        <div class="col-span-1 border-t pt-4 mt-2 md:col-span-2">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">Add New Variable</h4>
+                            <div class="flex gap-2">
+                                <input type="text" id="new_key" placeholder="KEY"
+                                    class="focus:ring-indigo-500 focus:border-indigo-500 block w-1/3 shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                <input type="text" id="new_val" placeholder="VALUE"
+                                    class="focus:ring-indigo-500 focus:border-indigo-500 block w-2/3 shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                <button type="button" onclick="addEnvField()"
+                                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Add</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-5 flex justify-end">
+                        <button type="submit"
+                            class="bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <script>
+                function addEnvField() {
+                    const key = document.getElementById('new_key').value.toUpperCase().trim();
+                    const val = document.getElementById('new_val').value.trim();
+                    if (!key) return;
+
+                    const container = document.querySelector('form .grid');
+                    // Find location before the "Add New" block
+                    const newBlock = document.createElement('div');
+                    newBlock.className = 'col-span-1 border-l-4 border-green-400 pl-3 bg-green-50 rounded pr-2 py-2';
+                    newBlock.innerHTML = `
+                        <label for="${key}" class="block text-sm font-medium text-gray-700">${key}</label>
+                        <input type="text" name="${key}" value="${val}" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    `;
+
+                    // Insert before the last child (which is the "Add New" block)
+                    const lastChild = container.lastElementChild;
+                    container.insertBefore(newBlock, lastChild);
+
+                    // Clear inputs
+                    document.getElementById('new_key').value = '';
+                    document.getElementById('new_val').value = '';
+                }
+            </script>
+        </div>
+
+        <!-- Task Management -->
+        <div class="space-y-8">
+            <!-- Migration -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Migration</h3>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    <form action="/system/migrate" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Source</label>
+                                <select name="source_type"
+                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="sqlite">Local SQLite</option>
+                                    <option value="supabase">Supabase</option>
+                                    <option value="appwrite">Appwrite</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Target</label>
+                                <select name="target_type"
+                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="supabase">Supabase</option>
+                                    <option value="sqlite">Local SQLite</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                            Start Migration Job
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Restore -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Data Restore</h3>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    <form action="/system/restore" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Source Type</label>
+                            <select name="source_type"
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="local">Local Path</option>
+                                <option value="s3">S3 Key</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Path / Key</label>
+                            <input type="text" name="backup_path"
+                                class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                placeholder="e.g. backups/2023-01-01_jobid.jsonl">
+                        </div>
+                        <button type="submit"
+                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            onclick="return confirm('WARNING: This will overwrite data. Continue?');">
+                            Restore Data
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Monitor -->
+        <div class="bg-white shadow rounded-lg lg:col-span-2">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">System Jobs</h3>
+                <button hx-get="/system/jobs" hx-target="#job-list"
+                    class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                    Refresh List
                 </button>
-            </form>
-        </div>
-    </div>
+            </div>
 
-    <!-- Migration Wizard -->
-    <div class="bg-white p-6 rounded shadow md:col-span-2">
-        <h2 class="text-xl font-bold mb-4">Migration</h2>
-        <form action="/system/migrate" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1">Source</label>
-                <select name="source_type" class="w-full border p-2 rounded">
-                    <option value="sqlite">Local SQLite</option>
-                    <option value="supabase">Supabase</option>
-                    <option value="appwrite">Appwrite</option>
-                </select>
+            <div hx-get="/system/jobs" hx-trigger="load, every 5s" id="job-list" class="overflow-x-auto">
+                {% include "system/_job_row.html" %}
             </div>
-            <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1">Target</label>
-                <select name="target_type" class="w-full border p-2 rounded">
-                    <option value="supabase">Supabase</option>
-                    <option value="sqlite">Local SQLite</option>
-                </select>
-            </div>
-            <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
-                Start Migration
-            </button>
-        </form>
-    </div>
-
-    <!-- Restore Wizard -->
-    <div class="bg-white p-6 rounded shadow md:col-span-2">
-        <h2 class="text-xl font-bold mb-4">Restore</h2>
-        <form action="/system/restore" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div>
-                 <label class="block text-sm font-bold text-gray-700 mb-1">Source Type</label>
-                 <select name="source_type" class="w-full border p-2 rounded">
-                     <option value="local">Local Path</option>
-                     <option value="s3">S3 Key</option>
-                 </select>
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1">Path / Key</label>
-                <input type="text" name="backup_path" class="w-full border p-2 rounded" placeholder="e.g. backups/2023-01-01_jobid.jsonl">
-            </div>
-            <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" onclick="return confirm('WARNING: This will overwrite data. Continue?');">
-                Restore
-            </button>
-        </form>
-    </div>
-
-    <!-- Job Monitor -->
-    <div class="bg-white rounded shadow md:col-span-2 overflow-hidden">
-        <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-            <h2 class="font-bold">Job Monitor</h2>
-            <button hx-get="/system/jobs" hx-target="#job-list" class="text-sm text-blue-600 hover:underline">
-                Refresh
-            </button>
         </div>
 
-        <div hx-get="/system/jobs" hx-trigger="load, every 5s">
-            {% include "system/_job_row.html" %}
-        </div>
     </div>
-
 </div>
 {% endblock %}

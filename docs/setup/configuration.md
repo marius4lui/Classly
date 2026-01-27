@@ -36,6 +36,14 @@ Classly nutzt folgende Umgebungsvariablen zur Konfiguration:
 | `APPWRITE_API_KEY` | - | Appwrite API Key (Secret). |
 | `APPWRITE_DATABASE_ID` | `classly_db` | Name der Appwrite Datenbank. |
 | `AUTOMIGRATE_TO` | - | Setze auf `appwrite` um beim Start Daten von SQLite automatisch zu migrieren. |
+| `CLASSLY_ADMIN_SECRET` | - | **Wichtig:** Setze ein sicheres Passwort, um das System-Dashboard unter `/system/login` zu aktivieren. Hier kannst du Backups und Migrationen steuern. |
+| `CLASSLY_DB_PRIMARY` | `sqlite` | Primäre Datenbank für das System-Dashboard (`sqlite`, `appwrite`, `supabase`). |
+| `CLASSLY_BACKUP_TARGET` | `local` | Standard-Ziel für Backups (`local`, `s3`, `supabase`, `appwrite`). |
+| `S3_ENDPOINT` | - | S3 Endpoint URL für Backups. |
+| `S3_ACCESS_KEY` | - | S3 Access Key. |
+| `S3_SECRET_KEY` | - | S3 Secret Key. |
+| `S3_BUCKET` | - | S3 Bucket Name. |
+| `SUPABASE_URL` | - | PostgreSQL Connection String für Supabase Integrationen. |
 
 > [!NOTE]
 > Classly ist für **SQLite** optimiert, unterstützt aber auch **Appwrite** als Backend für skalierbare Setups. PostgreSQL support ist experimentell.

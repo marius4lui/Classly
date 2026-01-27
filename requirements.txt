@@ -12,3 +12,4 @@ bcrypt
 slowapi
 APScheduler
 boto3
+python-dotenv
