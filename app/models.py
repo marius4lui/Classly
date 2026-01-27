@@ -320,3 +320,35 @@ class DeviceToken(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     user = relationship("User", backref="device_tokens")
+
+# === System Job Models ===
+
+class JobStatus(str, enum.Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+class SystemJob(Base):
+    """System-level jobs (Migration, Backup, etc.)"""
+    __tablename__ = "sys_jobs"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    type = Column(String, nullable=False) # migration, backup, restore
+    status = Column(Enum(JobStatus), default=JobStatus.PENDING)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
+
+    # Progress tracking
+    progress = Column(Integer, default=0) # 0-100
+    total_steps = Column(Integer, default=0)
+    current_step = Column(Integer, default=0)
+    message = Column(String, nullable=True) # Current status message
+
+    # Logs and Data
+    logs = Column(String, default="") # Text logs
+    meta_data = Column(String, default="{}") # JSON parameters
+
+    created_by = Column(String, nullable=True) # "system" or user_id

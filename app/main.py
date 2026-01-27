@@ -16,6 +16,7 @@ from app.routers import (
     i18n_router,
     oauth,
     push,
+    system,
 )
 from app import fix_db_schema, crud, auto_migrate
 from slowapi import _rate_limit_exceeded_handler
@@ -181,3 +182,4 @@ app.include_router(api.router)
 app.include_router(i18n_router.router)
 app.include_router(oauth.router)
 app.include_router(push.router)
+app.include_router(system.router)

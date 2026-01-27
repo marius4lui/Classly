@@ -10,3 +10,5 @@ argon2-cffi
 icalendar
 bcrypt
 slowapi
+APScheduler
+boto3

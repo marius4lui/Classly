@@ -1,0 +1,31 @@
+<div id="job-list">
+{% for job in jobs %}
+    <div class="border-b p-4 flex justify-between items-center hover:bg-gray-50">
+        <div>
+            <div class="font-bold uppercase text-xs text-gray-500 mb-1">{{ job.type }}</div>
+            <div class="text-sm text-gray-600">{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+        </div>
+        <div class="flex-1 mx-4">
+            <div class="flex justify-between text-xs mb-1">
+                <span>{{ job.status.value }}</span>
+                <span>{{ job.progress }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ job.progress }}%"></div>
+            </div>
+            <div class="text-xs text-gray-400 mt-1 truncate max-w-xs">{{ job.message or '' }}</div>
+        </div>
+        <div>
+            <span class="px-2 py-1 rounded text-xs font-bold
+                {% if job.status.value == 'completed' %}bg-green-100 text-green-800
+                {% elif job.status.value == 'failed' %}bg-red-100 text-red-800
+                {% elif job.status.value == 'running' %}bg-blue-100 text-blue-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ job.status.value }}
+            </span>
+        </div>
+    </div>
+{% else %}
+    <div class="p-4 text-gray-500 text-center">No jobs found.</div>
+{% endfor %}
+</div>
