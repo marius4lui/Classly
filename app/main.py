@@ -30,7 +30,9 @@ from app.limiter import limiter
 from app.i18n import i18n
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
-fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
+# Fix DB Schema (Add missing columns to old SQLite volumes)
+if not os.getenv("SUPABASE_URL"):
+    fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
 auto_migrate.run_auto_migrations()
 
 # Create Tables

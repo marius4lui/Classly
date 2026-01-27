@@ -1,8 +1,15 @@
 import sqlite3
 import os
 
+import urllib.parse
+
 def fix_schema(db_url):
-    # Only fix if using sqlite
+    # Determine DB type
+    if "postgres" in db_url:
+        fix_postgres_schema(db_url)
+        return
+
+    # Only fix if using sqlite (legacy check)
     if "sqlite" not in db_url:
         return
 
@@ -349,10 +356,209 @@ def fix_schema(db_url):
                     FOREIGN KEY (user_id) REFERENCES users(id)
                 )
             """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS ix_oauth_authorization_codes_code ON oauth_authorization_codes(code)")
+
+def fix_postgres_schema(db_url):
+    print("Fixing Postgres schema...")
+    try:
+        import psycopg2
+        from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+    except ImportError:
+        print("psycopg2 not installed. Skipping Postgres migration.")
+        return
+
+    try:
+        # Clean URL for psycopg2
+        if "postgresql+psycopg2://" in db_url:
+            db_url = db_url.replace("postgresql+psycopg2://", "postgresql://")
         
+        conn = psycopg2.connect(db_url)
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cursor = conn.cursor()
+
+        # Helper to simplify execution
+        def exec_sql(sql, params=None):
+            try:
+                cursor.execute(sql, params)
+            except Exception as e:
+                print(f"SQL Warning: {e}")
+
+        print("Checking tables and columns...")
+
+        # 1. Users Language
+        exec_sql("ALTER TABLE users ADD COLUMN IF NOT EXISTS language VARCHAR DEFAULT 'de'")
+
+        # 2. Login Tokens Role
+        exec_sql("ALTER TABLE login_tokens ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'member'")
+
+        # 3. Event Links
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS event_links (
+                id VARCHAR PRIMARY KEY,
+                event_id VARCHAR REFERENCES events(id) ON DELETE CASCADE,
+                url VARCHAR,
+                label VARCHAR
+            )
+        """)
+
+        # 4. Event Topics Columns
+        exec_sql("ALTER TABLE event_topics ADD COLUMN IF NOT EXISTS parent_id VARCHAR REFERENCES event_topics(id)")
+        exec_sql("ALTER TABLE event_topics ADD COLUMN IF NOT EXISTS pages VARCHAR")
+
+        # 5. Integration Tokens
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS integration_tokens (
+                id VARCHAR PRIMARY KEY,
+                token VARCHAR UNIQUE,
+                user_id VARCHAR NOT NULL REFERENCES users(id),
+                class_id VARCHAR NOT NULL REFERENCES classes(id),
+                scopes VARCHAR DEFAULT 'read:events',
+                expires_at TIMESTAMP,
+                created_at TIMESTAMP,
+                last_used_at TIMESTAMP,
+                revoked BOOLEAN DEFAULT FALSE
+            )
+        """)
+
+        # 6. Events Priority
+        exec_sql("ALTER TABLE events ADD COLUMN IF NOT EXISTS priority VARCHAR(6)")
+
+        # 7. Events Date Nullable
+        exec_sql("ALTER TABLE events ALTER COLUMN date DROP NOT NULL")
+
+        # 8. Sys Jobs (Dashboard)
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS sys_jobs (
+                id VARCHAR PRIMARY KEY,
+                type VARCHAR NOT NULL,
+                status VARCHAR DEFAULT 'pending',
+                created_at TIMESTAMP,
+                started_at TIMESTAMP,
+                finished_at TIMESTAMP,
+                progress INTEGER DEFAULT 0,
+                total_steps INTEGER DEFAULT 0,
+                current_step INTEGER DEFAULT 0,
+                message VARCHAR,
+                logs VARCHAR DEFAULT '',
+                meta_data VARCHAR DEFAULT '{}',
+                created_by VARCHAR
+            )
+        """)
+
+        # 9. Timetable Tables
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS timetable_settings (
+                id VARCHAR PRIMARY KEY,
+                class_id VARCHAR NOT NULL UNIQUE REFERENCES classes(id),
+                slot_duration INTEGER DEFAULT 45,
+                break_duration INTEGER DEFAULT 15,
+                day_start_hour INTEGER DEFAULT 8,
+                day_start_minute INTEGER DEFAULT 0,
+                day_end_hour INTEGER DEFAULT 16,
+                day_end_minute INTEGER DEFAULT 0
+            )
+        """)
+
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS timetable_slots (
+                id VARCHAR PRIMARY KEY,
+                class_id VARCHAR NOT NULL REFERENCES classes(id),
+                weekday INTEGER NOT NULL,
+                slot_number INTEGER NOT NULL,
+                subject_id VARCHAR REFERENCES subjects(id),
+                subject_name VARCHAR,
+                group_name VARCHAR,
+                room VARCHAR
+            )
+        """)
+
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS user_timetable_selections (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL REFERENCES users(id),
+                slot_id VARCHAR NOT NULL REFERENCES timetable_slots(id)
+            )
+        """)
+
+        # 10. Device Tokens
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS device_tokens (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL REFERENCES users(id),
+                device_token VARCHAR NOT NULL,
+                platform VARCHAR NOT NULL,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP
+            )
+        """)
+        exec_sql("CREATE INDEX IF NOT EXISTS ix_device_tokens_device_token ON device_tokens(device_token)")
+
+        # 11. Grades
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS grades (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL REFERENCES users(id),
+                event_id VARCHAR NOT NULL REFERENCES events(id),
+                grade FLOAT NOT NULL,
+                weight FLOAT DEFAULT 1.0,
+                created_at TIMESTAMP
+            )
+        """)
+
+        # 12. User Preferences
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id VARCHAR PRIMARY KEY REFERENCES users(id),
+                filter_subjects VARCHAR DEFAULT '[]',
+                filter_event_types VARCHAR DEFAULT '[]',
+                filter_priority VARCHAR DEFAULT '[]'
+            )
+        """)
+
+        # 13. Audit Logs
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id VARCHAR PRIMARY KEY,
+                class_id VARCHAR NOT NULL REFERENCES classes(id),
+                user_id VARCHAR REFERENCES users(id),
+                action VARCHAR NOT NULL,
+                target_id VARCHAR,
+                data VARCHAR,
+                permanent BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP
+            )
+        """)
+
+        # 14. OAuth
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS oauth_clients (
+                id VARCHAR PRIMARY KEY,
+                client_id VARCHAR NOT NULL UNIQUE,
+                client_secret VARCHAR NOT NULL,
+                name VARCHAR NOT NULL,
+                redirect_uri VARCHAR NOT NULL,
+                created_at TIMESTAMP
+            )
+        """)
+        exec_sql("CREATE INDEX IF NOT EXISTS ix_oauth_clients_client_id ON oauth_clients(client_id)")
+
+        exec_sql("""
+            CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
+                id VARCHAR PRIMARY KEY,
+                code VARCHAR NOT NULL UNIQUE,
+                client_id VARCHAR NOT NULL,
+                user_id VARCHAR NOT NULL REFERENCES users(id),
+                redirect_uri VARCHAR NOT NULL,
+                scope VARCHAR DEFAULT 'read:events',
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP
+            )
+        """)
+        exec_sql("CREATE INDEX IF NOT EXISTS ix_oauth_authorization_codes_code ON oauth_authorization_codes(code)")
+
         conn.commit()
         conn.close()
-        print("Schema fix executed.")
+        print("Postgres schema fix executed.")
+
     except Exception as e:
-        print(f"Schema fix failed: {e}")
+        print(f"Postgres schema fix failed: {e}")

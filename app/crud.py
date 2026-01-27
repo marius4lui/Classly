@@ -51,7 +51,22 @@ def create_user(db: Session, name: str, class_id: str, role: models.UserRole = m
     return db_user
 
 
+
+from app.database_supabase import get_supabase
+import os
+
+# ... (existing imports)
+
 def get_user(db: Session, user_id: str):
+    if os.getenv("SUPABASE_URL"):
+        supabase = get_supabase()
+        response = supabase.table("users").select("*").eq("id", user_id).single().execute()
+        if response.data:
+            # We need to return an object compatible with the rest of the app (dot notation)
+            # Simplest way: Convert dict to a generic object or Pydantic model
+            # For now, let's assume we can map it to models.User (but not attached to session)
+            return models.User(**response.data)
+        return None
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 def get_user_by_email(db: Session, email: str):
