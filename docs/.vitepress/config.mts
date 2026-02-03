@@ -28,9 +28,9 @@ export default defineConfig({
             { text: 'Home', link: '/' },
             { text: 'Funktionen', link: '/features/' },
             { text: 'Guide', link: '/user-guide/getting-started' },
+            { text: 'API Docs', link: '/development/api' },
             { text: 'Status', link: 'https://info.classly.site/status/classly-info' },
-            { text: 'Setup', link: '/setup/installation' },
-            { text: 'Entwicklung', link: '/development/contributing' }
+            { text: 'Setup', link: '/setup/installation' }
         ],
 
         sidebar: {
@@ -68,8 +68,17 @@ export default defineConfig({
                 {
                     text: 'Entwicklung',
                     items: [
-                        { text: 'Mitmachen', link: '/development/contributing' },
-                        { text: '🔌 API Referenz', link: '/development/api' }
+                        { text: 'Mitmachen', link: '/development/contributing' }
+                    ]
+                },
+                {
+                    text: 'API Dokumentation',
+                    items: [
+                        { text: '🔌 Übersicht', link: '/development/api' },
+                        { text: '🔑 API v1', link: '/development/api-v1' },
+                        { text: '📱 Legacy API', link: '/development/api-legacy' },
+                        { text: '🔐 OAuth 2.0', link: '/development/api-oauth' },
+                        { text: '🤖 AI-Integration', link: '/development/api-integration' }
                     ]
                 }
             ]

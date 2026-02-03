@@ -107,8 +107,130 @@ def regenerate_session_token(db: Session, user_id: str):
         return user
     return None
 
-# --- Integration Tokens ---
+# --- Integration Tokens / API Keys ---
+
+import hashlib
+
+def hash_api_token(token: str) -> str:
+    """SHA-256 Hash eines API-Tokens für sichere Speicherung."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def create_api_key(
+    db: Session,
+    name: str,
+    user_id: str,
+    class_id: str,
+    created_by: str,
+    scopes: str,
+    expires_at: datetime.datetime = None,
+    rate_limit: int = 60,
+    ip_allowlist: str = None
+) -> tuple:
+    """
+    Erstellt einen neuen API-Key mit Hash-Speicherung.
+    
+    Returns:
+        Tuple[IntegrationToken, str]: Das Model-Objekt und der Klartext-Token (nur einmal!)
+    """
+    raw_token = f"cl_live_{secrets.token_urlsafe(32)}"
+    token_hash = hash_api_token(raw_token)
+    token_prefix = raw_token[:12] + "..." + raw_token[-4:]
+    
+    api_key = models.IntegrationToken(
+        name=name,
+        token=None,  # Kein Klartext in DB
+        token_hash=token_hash,
+        token_prefix=token_prefix,
+        user_id=user_id,
+        class_id=class_id,
+        created_by=created_by,
+        scopes=scopes,
+        expires_at=expires_at,
+        rate_limit_per_minute=rate_limit,
+        ip_allowlist=ip_allowlist
+    )
+    db.add(api_key)
+    db.commit()
+    db.refresh(api_key)
+    
+    return api_key, raw_token  # raw_token wird NUR hier zurückgegeben!
+
+
+def get_api_key_by_token(db: Session, raw_token: str):
+    """
+    Findet einen API-Key anhand des Klartext-Tokens.
+    Unterstützt sowohl Hash-basierte (neue) als auch Klartext-basierte (Legacy) Tokens.
+    """
+    # Versuche erst Hash-Lookup (neue Keys)
+    token_hash = hash_api_token(raw_token)
+    key = db.query(models.IntegrationToken).filter(
+        models.IntegrationToken.token_hash == token_hash,
+        models.IntegrationToken.revoked == False
+    ).first()
+    
+    if key:
+        return key
+    
+    # Fallback: Legacy Klartext-Lookup
+    return db.query(models.IntegrationToken).filter(
+        models.IntegrationToken.token == raw_token,
+        models.IntegrationToken.revoked == False
+    ).first()
+
+
+def list_api_keys_for_class(db: Session, class_id: str):
+    """Listet alle API-Keys einer Klasse auf."""
+    return db.query(models.IntegrationToken).filter(
+        models.IntegrationToken.class_id == class_id
+    ).order_by(models.IntegrationToken.created_at.desc()).all()
+
+
+def revoke_api_key(db: Session, key_id: str, revoked_by: str = None) -> bool:
+    """Widerruft einen API-Key."""
+    key = db.query(models.IntegrationToken).filter_by(id=key_id).first()
+    if not key:
+        return False
+    key.revoked = True
+    key.revoked_at = datetime.datetime.utcnow()
+    db.commit()
+    return True
+
+
+def rotate_api_key(db: Session, key_id: str) -> tuple:
+    """
+    Rotiert einen API-Key: Erstellt neuen Token, alter bleibt 24h aktiv.
+    
+    Returns:
+        Tuple[IntegrationToken, str] oder None bei Fehler
+    """
+    old_key = db.query(models.IntegrationToken).filter_by(id=key_id).first()
+    if not old_key or old_key.revoked:
+        return None
+    
+    # Neuen Key erstellen
+    new_key, new_raw_token = create_api_key(
+        db,
+        name=old_key.name,
+        user_id=old_key.user_id,
+        class_id=old_key.class_id,
+        created_by=old_key.created_by,
+        scopes=old_key.scopes,
+        expires_at=old_key.expires_at,
+        rate_limit=old_key.rate_limit_per_minute,
+        ip_allowlist=old_key.ip_allowlist
+    )
+    
+    # Alten Key mit Ablaufdatum versehen (24h Grace Period)
+    old_key.expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    db.commit()
+    
+    return new_key, new_raw_token
+
+
+# Legacy-Funktionen für Rückwärtskompatibilität
 def create_integration_token(db: Session, user_id: str, class_id: str, scopes: str = "read:events", expires_at: datetime.datetime = None):
+    """Legacy: Erstellt einen Integration Token (Klartext-Speicherung)."""
     token = models.IntegrationToken(
         user_id=user_id,
         class_id=class_id,
@@ -120,11 +242,17 @@ def create_integration_token(db: Session, user_id: str, class_id: str, scopes: s
     db.refresh(token)
     return token
 
+
 def get_integration_token(db: Session, token_value: str):
+    """Legacy: Findet Token per Klartext."""
     return db.query(models.IntegrationToken).filter(models.IntegrationToken.token == token_value).first()
 
+
 def use_integration_token(db: Session, token_value: str):
-    token = get_integration_token(db, token_value)
+    """Validiert und verwendet einen Token (Legacy + neue Keys)."""
+    # Versuche beide Methoden
+    token = get_api_key_by_token(db, token_value)
+    
     if not token or token.revoked:
         return None
 
@@ -137,8 +265,10 @@ def use_integration_token(db: Session, token_value: str):
     db.refresh(token)
     return token
 
+
 def list_integration_tokens_for_user(db: Session, user_id: str):
     return db.query(models.IntegrationToken).filter(models.IntegrationToken.user_id == user_id).order_by(models.IntegrationToken.created_at.desc()).all()
+
 
 def revoke_integration_token(db: Session, token_id: str, user_id: str = None):
     query = db.query(models.IntegrationToken).filter(models.IntegrationToken.id == token_id)
@@ -147,6 +277,7 @@ def revoke_integration_token(db: Session, token_id: str, user_id: str = None):
     token = query.first()
     if token:
         token.revoked = True
+        token.revoked_at = datetime.datetime.utcnow()
         db.commit()
         db.refresh(token)
         return token

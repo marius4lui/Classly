@@ -17,6 +17,7 @@ from app.routers import (
     oauth,
     push,
 )
+from app.routers import api_v1
 from app import fix_db_schema, crud, auto_migrate
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -177,7 +178,8 @@ app.include_router(caldav.router)
 app.include_router(preferences.router)
 app.include_router(grades.router)
 app.include_router(timetable.router)
-app.include_router(api.router)
+app.include_router(api.router)  # Legacy API (/api/)
+app.include_router(api_v1.router)  # New API v1 (/api/v1/)
 app.include_router(i18n_router.router)
 app.include_router(oauth.router)
 app.include_router(push.router)

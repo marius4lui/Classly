@@ -74,7 +74,7 @@ class User(Base):
 
     clazz = relationship("Class", back_populates="users")
     events = relationship("Event", back_populates="author")
-    integration_tokens = relationship("IntegrationToken", back_populates="user")
+    integration_tokens = relationship("IntegrationToken", back_populates="user", foreign_keys="IntegrationToken.user_id")
 
 class Subject(Base):
     __tablename__ = "subjects"
@@ -118,20 +118,44 @@ class LoginToken(Base):
 
 
 class IntegrationToken(Base):
-    """Personal Access Tokens for API integrations (read-only for now)"""
+    """API Keys für externe Integrationen (Admin-generiert)"""
     __tablename__ = "integration_tokens"
 
     id = Column(String, primary_key=True, default=generate_uuid)
+    
+    # Menschenlesbarer Name für den Key
+    name = Column(String, nullable=True)
+    
+    # Legacy: Klartext-Token (für Rückwärtskompatibilität)
     token = Column(String, unique=True, index=True, default=generate_token)
+    
+    # NEU: Hash-basierte Speicherung (SHA-256)
+    token_hash = Column(String, unique=True, index=True, nullable=True)
+    token_prefix = Column(String, nullable=True)  # z.B. "cl_...abc" für Identifikation
+    
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    scopes = Column(String, default="read:events")  # Comma-separated scopes
+    
+    # Von welchem Admin erstellt (für Audit)
+    created_by = Column(String, ForeignKey("users.id"), nullable=True)
+    
+    # Granulare Scopes (z.B. "classes:read,events:read,events:write")
+    scopes = Column(String, default="read:events")
+    
+    # Rate-Limiting pro Key
+    rate_limit_per_minute = Column(Integer, default=60)
+    
+    # IP-Allowlist (JSON-Array als String, z.B. '["192.168.1.0/24"]')
+    ip_allowlist = Column(String, nullable=True)
+    
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_used_at = Column(DateTime, nullable=True)
     revoked = Column(Boolean, default=False)
+    revoked_at = Column(DateTime, nullable=True)
 
-    user = relationship("User", back_populates="integration_tokens")
+    user = relationship("User", foreign_keys=[user_id], back_populates="integration_tokens")
+    creator = relationship("User", foreign_keys=[created_by])
     clazz = relationship("Class", back_populates="integration_tokens")
 
 class Event(Base):
@@ -189,6 +213,12 @@ class AuditAction(str, enum.Enum):
     USER_JOIN = "user_join"
     USER_LEAVE = "user_leave"
     LOGIN = "login"
+    
+    # API-Key Actions
+    API_KEY_CREATE = "api_key_create"
+    API_KEY_REVOKE = "api_key_revoke"
+    API_KEY_ROTATE = "api_key_rotate"
+    API_ACCESS = "api_access"
 
 class AuditLog(Base):
     """Audit logs - auto-delete after 90 days except permanent ones"""

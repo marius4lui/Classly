@@ -207,6 +207,57 @@ def run_auto_migrations():
                 cursor.execute("CREATE INDEX ix_device_tokens_user_id ON device_tokens(user_id)")
                 conn.commit()
 
+            # 12. Add new columns to integration_tokens for API-Key system
+            cursor.execute("PRAGMA table_info(integration_tokens)")
+            token_columns = [info[1] for info in cursor.fetchall()]
+            
+            # Add 'name' column
+            if "name" not in token_columns:
+                logger.info("Migrating: Adding 'name' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN name VARCHAR")
+                conn.commit()
+            
+            # Add 'token_hash' column
+            if "token_hash" not in token_columns:
+                logger.info("Migrating: Adding 'token_hash' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN token_hash VARCHAR")
+                # Create index for token_hash lookups
+                try:
+                    cursor.execute("CREATE UNIQUE INDEX ix_integration_tokens_token_hash ON integration_tokens(token_hash)")
+                except Exception:
+                    pass  # Index might already exist
+                conn.commit()
+            
+            # Add 'token_prefix' column
+            if "token_prefix" not in token_columns:
+                logger.info("Migrating: Adding 'token_prefix' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN token_prefix VARCHAR")
+                conn.commit()
+            
+            # Add 'created_by' column
+            if "created_by" not in token_columns:
+                logger.info("Migrating: Adding 'created_by' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN created_by VARCHAR")
+                conn.commit()
+            
+            # Add 'rate_limit_per_minute' column
+            if "rate_limit_per_minute" not in token_columns:
+                logger.info("Migrating: Adding 'rate_limit_per_minute' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN rate_limit_per_minute INTEGER DEFAULT 60")
+                conn.commit()
+            
+            # Add 'ip_allowlist' column
+            if "ip_allowlist" not in token_columns:
+                logger.info("Migrating: Adding 'ip_allowlist' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN ip_allowlist VARCHAR")
+                conn.commit()
+            
+            # Add 'revoked_at' column
+            if "revoked_at" not in token_columns:
+                logger.info("Migrating: Adding 'revoked_at' column to integration_tokens table.")
+                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN revoked_at DATETIME")
+                conn.commit()
+
             # Add other migrations here as needed
             
         except Exception as e:

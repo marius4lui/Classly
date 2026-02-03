@@ -287,3 +287,195 @@ def download_db(
         if os.path.exists(temp_path):
             os.unlink(temp_path)
         raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
+
+
+# --- API-Key Management ---
+
+@router.get("/api-keys")
+def list_api_keys(
+    request: Request,
+    user: models.User = Depends(require_class_admin),
+    repo: BaseRepository = Depends(get_repository)
+):
+    """
+    Seite für API-Keys der eigenen Klasse.
+    Class-Admins und höher können Keys erstellen.
+    """
+    from app import crud
+    keys = crud.list_api_keys_for_class(repo.db, user.class_id)
+    
+    return templates.TemplateResponse("api_keys.html", {
+        "request": request,
+        "user": user,
+        "api_keys": keys,
+        "now": datetime.datetime.utcnow()
+    })
+
+
+@router.post("/api-keys")
+def create_api_key(
+    response: Response,
+    request: Request,
+    name: str = Form(...),
+    scopes: list = Form([]),
+    expires_days: str = Form(""),
+    user: models.User = Depends(require_class_admin),
+    repo: BaseRepository = Depends(get_repository)
+):
+    """
+    Erstellt einen neuen API-Key für die eigene Klasse.
+    Der Key kann nur für die Klasse verwendet werden, in der der Admin ist.
+    """
+    from app import crud
+    
+    # Name validieren
+    name = name.strip()
+    if not name or len(name) < 3:
+        raise HTTPException(status_code=400, detail="Name muss mindestens 3 Zeichen haben")
+    
+    if len(name) > 50:
+        raise HTTPException(status_code=400, detail="Name darf maximal 50 Zeichen haben")
+    
+    # Ablaufdatum berechnen
+    expires_at = None
+    if expires_days and expires_days.strip():
+        try:
+            days = int(expires_days)
+            if days > 0:
+                expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=days)
+        except ValueError:
+            pass  # Ignoriere ungültige Werte
+    
+    # Scopes als String zusammenfügen
+    if isinstance(scopes, list):
+        scopes_str = ",".join(scopes)
+    else:
+        scopes_str = scopes if scopes else "events:read"
+    
+    # Key erstellen (nur für eigene Klasse!)
+    key, raw_token = crud.create_api_key(
+        repo.db,
+        name=name,
+        user_id=user.id,
+        class_id=user.class_id,
+        created_by=user.id,
+        scopes=scopes_str,
+        expires_at=expires_at
+    )
+    
+    # Audit-Log
+    repo.create_audit_log(
+        class_id=user.class_id,
+        user_id=user.id,
+        action=models.AuditAction.API_KEY_CREATE,
+        target_id=key.id,
+        data=f'{{"name": "{name}", "scopes": "{scopes_str}"}}'
+    )
+    
+    # Return Token für einmalige Anzeige (JSON für JS-Modal)
+    return {"token": raw_token, "key_id": key.id, "name": name}
+
+
+@router.delete("/api-keys/{key_id}")
+def revoke_api_key(
+    key_id: str,
+    response: Response,
+    user: models.User = Depends(require_class_admin),
+    repo: BaseRepository = Depends(get_repository)
+):
+    """
+    Widerruft einen API-Key der eigenen Klasse.
+    """
+    from app import crud
+    
+    # Prüfen ob Key zur Klasse gehört
+    key = repo.db.query(models.IntegrationToken).filter_by(id=key_id).first()
+    if not key:
+        raise HTTPException(status_code=404, detail="API-Key nicht gefunden")
+    
+    if key.class_id != user.class_id:
+        raise HTTPException(status_code=403, detail="Kein Zugriff auf diesen Key")
+    
+    success = crud.revoke_api_key(repo.db, key_id, user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Key nicht gefunden")
+    
+    # Audit-Log
+    repo.create_audit_log(
+        class_id=user.class_id,
+        user_id=user.id,
+        action=models.AuditAction.API_KEY_REVOKE,
+        target_id=key_id
+    )
+    
+    response.headers["HX-Redirect"] = "/api-keys"
+    return {"revoked": True}
+
+
+@router.post("/api-keys/{key_id}/rotate")
+def rotate_api_key(
+    key_id: str,
+    user: models.User = Depends(require_class_admin),
+    repo: BaseRepository = Depends(get_repository)
+):
+    """
+    Rotiert einen API-Key der eigenen Klasse.
+    Der alte Key bleibt noch 24h aktiv.
+    """
+    from app import crud
+    
+    # Prüfen ob Key zur Klasse gehört
+    key = repo.db.query(models.IntegrationToken).filter_by(id=key_id).first()
+    if not key:
+        raise HTTPException(status_code=404, detail="API-Key nicht gefunden")
+    
+    if key.class_id != user.class_id:
+        raise HTTPException(status_code=403, detail="Kein Zugriff auf diesen Key")
+    
+    result = crud.rotate_api_key(repo.db, key_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Key nicht gefunden oder bereits widerrufen")
+    
+    new_key, raw_token = result
+    
+    # Audit-Log
+    repo.create_audit_log(
+        class_id=user.class_id,
+        user_id=user.id,
+        action=models.AuditAction.API_KEY_ROTATE,
+        target_id=key_id,
+        data=f'{{"new_key_id": "{new_key.id}"}}'
+    )
+    
+    return {"token": raw_token, "key_id": new_key.id, "old_key_expires": "24 Stunden"}
+
+
+@router.get("/api-keys/json")
+def list_api_keys_json(
+    user: models.User = Depends(require_class_admin),
+    repo: BaseRepository = Depends(get_repository)
+):
+    """
+    API-Keys als JSON für HTMX/JS.
+    """
+    from app import crud
+    keys = crud.list_api_keys_for_class(repo.db, user.class_id)
+    
+    return {
+        "class_id": user.class_id,
+        "count": len(keys),
+        "keys": [
+            {
+                "id": k.id,
+                "name": k.name or "Unbenannt",
+                "token_prefix": k.token_prefix or (k.token[:12] + "..." if k.token else "N/A"),
+                "scopes": k.scopes,
+                "created_at": k.created_at.isoformat() if k.created_at else None,
+                "last_used_at": k.last_used_at.isoformat() if k.last_used_at else None,
+                "expires_at": k.expires_at.isoformat() if k.expires_at else None,
+                "revoked": k.revoked,
+                "revoked_at": k.revoked_at.isoformat() if k.revoked_at else None
+            }
+            for k in keys
+        ]
+    }

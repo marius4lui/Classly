@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h1>🔑 API-Keys</h1>
+    <button class="btn btn-primary btn-sm" onclick="showCreateModal()">
+        + Neuer Key
+    </button>
+</div>
+
+<!-- Info-Box -->
+<div class="card mb-4" style="background: var(--gray-50);">
+    <h3 style="margin-bottom: 0.5rem;">ℹ️ API-Zugriff</h3>
+    <p class="text-sm text-muted">
+        API-Keys ermöglichen externen Systemen den Zugriff auf deine Klasse.
+        Jeder Key ist <strong>nur für diese Klasse gültig</strong> und kann mit spezifischen Berechtigungen versehen
+        werden.
+    </p>
+    <p class="text-sm mt-2" style="display: flex; align-items: center; gap: 0.5rem;">
+        <span>📖</span>
+        <a href="https://docs.classly.site/development/api" target="_blank" style="color: var(--fg); font-weight: 600;">
+            API-Dokumentation →
+        </a>
+    </p>
+</div>
+
+<!-- Key-Liste -->
+{% if api_keys %}
+<div class="admin-section">
+    <h3>Deine API-Keys</h3>
+    <div class="token-list">
+        {% for key in api_keys %}
+        <div class="token-item" {% if key.revoked %}style="opacity: 0.5;" {% endif %}>
+            <div>
+                <div style="font-weight: 600;">{{ key.name or 'Unbenannt' }}</div>
+                <div class="font-mono text-xs text-muted">{{ key.token_prefix or (key.token[:12] ~ '...' if key.token
+                    else 'N/A') }}</div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem;">
+                {% for scope in (key.scopes or '').split(',') %}
+                {% if scope %}
+                <span class="badge {% if 'write' in scope %}badge-primary{% endif %}">{{ scope }}</span>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <div class="text-xs text-muted" style="margin-top: 0.5rem;">
+                {% if key.created_at %}
+                Erstellt: {{ key.created_at.strftime('%d.%m.%Y') }}
+                {% endif %}
+                {% if key.last_used_at %}
+                • Letzte Nutzung: {{ key.last_used_at.strftime('%d.%m.%Y %H:%M') }}
+                {% else %}
+                • Noch nie verwendet
+                {% endif %}
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                {% if key.revoked %}
+                <span class="badge" style="background: var(--error); color: white;">Widerrufen</span>
+                {% elif key.expires_at and key.expires_at < now %} <span class="badge"
+                    style="background: #f97316; color: white;">Abgelaufen</span>
+                    {% else %}
+                    <span class="badge badge-success">Aktiv</span>
+                    {% endif %}
+
+                    {% if not key.revoked %}
+                    <div class="actions" style="margin-left: auto;">
+                        <button class="btn btn-sm btn-secondary" onclick="rotateKey('{{ key.id }}')"
+                            title="Rotieren">🔄</button>
+                        <button class="btn btn-sm btn-danger"
+                            onclick="revokeKey('{{ key.id }}', '{{ key.name or 'Unbenannt' }}')"
+                            title="Widerrufen">🗑️</button>
+                    </div>
+                    {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card text-center" style="padding: 3rem 1rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
+    <h2 style="margin-bottom: 0.5rem;">Noch keine API-Keys</h2>
+    <p class="text-muted mb-4">Erstelle einen API-Key, um externen Systemen Zugriff zu gewähren.</p>
+    <button class="btn btn-primary" onclick="showCreateModal()">
+        Ersten Key erstellen
+    </button>
+</div>
+{% endif %}
+
+<!-- Create Modal -->
+<div id="createModal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>🔑 Neuen API-Key erstellen</h2>
+            <button class="btn btn-ghost" onclick="closeCreateModal()">✕</button>
+        </div>
+        <form id="createForm" onsubmit="createKey(event)">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="keyName">Name *</label>
+                    <input type="text" id="keyName" name="name" required minlength="3" maxlength="50"
+                        placeholder="z.B. Moodle-Integration">
+                </div>
+
+                <div class="form-group">
+                    <label>Berechtigungen</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.75rem; font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="scopes" value="events:read" checked
+                                style="width: 20px; min-height: 20px; appearance: checkbox; -webkit-appearance: checkbox;">
+                            <span>Events lesen</span>
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.75rem; font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="scopes" value="events:write"
+                                style="width: 20px; min-height: 20px; appearance: checkbox; -webkit-appearance: checkbox;">
+                            <span>Events schreiben <span class="text-xs"
+                                    style="color: var(--error);">(Vorsicht!)</span></span>
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.75rem; font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="scopes" value="classes:read" checked
+                                style="width: 20px; min-height: 20px; appearance: checkbox; -webkit-appearance: checkbox;">
+                            <span>Klassen-Info lesen</span>
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.75rem; font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="scopes" value="users:read"
+                                style="width: 20px; min-height: 20px; appearance: checkbox; -webkit-appearance: checkbox;">
+                            <span>Benutzer lesen</span>
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.75rem; font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="scopes" value="subjects:read" checked
+                                style="width: 20px; min-height: 20px; appearance: checkbox; -webkit-appearance: checkbox;">
+                            <span>Fächer lesen</span>
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 0.75rem; font-weight: normal; cursor: pointer;">
+                            <input type="checkbox" name="scopes" value="timetable:read"
+                                style="width: 20px; min-height: 20px; appearance: checkbox; -webkit-appearance: checkbox;">
+                            <span>Stundenplan lesen</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="expiresDays">Ablauf (optional)</label>
+                    <select id="expiresDays" name="expires_days">
+                        <option value="">Kein Ablaufdatum</option>
+                        <option value="30">30 Tage</option>
+                        <option value="90">90 Tage</option>
+                        <option value="180">180 Tage</option>
+                        <option value="365">1 Jahr</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">
+                    Abbrechen
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Erstellen
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Token Display Modal -->
+<div id="tokenModal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>⚠️ API-Key erstellt!</h2>
+            <button class="btn btn-ghost" onclick="closeTokenModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="card" style="background: #fef3c7; border-color: #f59e0b; margin-bottom: 1rem;">
+                <p class="text-sm" style="color: #92400e;">
+                    <strong>Wichtig:</strong> Kopiere diesen Key jetzt! Er wird nur <strong>einmal</strong> angezeigt
+                    und kann nicht wiederhergestellt werden.
+                </p>
+            </div>
+
+            <div style="position: relative;">
+                <input type="text" id="tokenDisplay" readonly class="font-mono" style="padding-right: 3rem;">
+                <button onclick="copyToken()" class="btn btn-ghost"
+                    style="position: absolute; right: 0.25rem; top: 50%; transform: translateY(-50%);" title="Kopieren">
+                    📋
+                </button>
+            </div>
+
+            <div id="copySuccess" class="text-center text-sm"
+                style="color: var(--success); margin-top: 0.5rem; display: none;">
+                ✅ In Zwischenablage kopiert!
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary btn-block" onclick="closeTokenModal()">
+                Verstanden
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showCreateModal() {
+        document.getElementById('createModal').classList.add('active');
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.remove('active');
+        document.getElementById('createForm').reset();
+    }
+
+    function showTokenModal(token) {
+        document.getElementById('tokenDisplay').value = token;
+        document.getElementById('tokenModal').classList.add('active');
+        document.getElementById('copySuccess').style.display = 'none';
+    }
+
+    function closeTokenModal() {
+        document.getElementById('tokenModal').classList.remove('active');
+        location.reload();
+    }
+
+    function copyToken() {
+        const input = document.getElementById('tokenDisplay');
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+            document.getElementById('copySuccess').style.display = 'block';
+        });
+    }
+
+    async function createKey(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/api-keys', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                alert('Fehler: ' + (error.detail || 'Unbekannter Fehler'));
+                return;
+            }
+
+            const data = await response.json();
+            closeCreateModal();
+            showTokenModal(data.token);
+        } catch (err) {
+            alert('Fehler beim Erstellen: ' + err.message);
+        }
+    }
+
+    async function revokeKey(keyId, keyName) {
+        if (!confirm('API-Key "' + keyName + '" wirklich widerrufen?\n\nDiese Aktion kann nicht rückgängig gemacht werden.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api-keys/' + keyId, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Fehler: ' + (error.detail || 'Unbekannter Fehler'));
+            }
+        } catch (err) {
+            alert('Fehler: ' + err.message);
+        }
+    }
+
+    async function rotateKey(keyId) {
+        if (!confirm('Neuen Key generieren?\n\nDer alte Key bleibt noch 24 Stunden aktiv.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api-keys/' + keyId + '/rotate', {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                alert('Fehler: ' + (error.detail || 'Unbekannter Fehler'));
+                return;
+            }
+
+            const data = await response.json();
+            showTokenModal(data.token);
+        } catch (err) {
+            alert('Fehler: ' + err.message);
+        }
+    }
+
+    // Close modals on escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeCreateModal();
+            closeTokenModal();
+        }
+    });
+
+    // Close modals on backdrop click
+    document.getElementById('createModal').addEventListener('click', function (e) {
+        if (e.target === this) closeCreateModal();
+    });
+    document.getElementById('tokenModal').addEventListener('click', function (e) {
+        if (e.target === this) closeTokenModal();
+    });
+</script>
+{% endblock %}
