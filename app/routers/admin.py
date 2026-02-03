@@ -304,10 +304,33 @@ def list_api_keys(
     from app import crud
     keys = crud.list_api_keys_for_class(repo.db, user.class_id)
     
+    # Sicherstellen, dass keine Secrets im Template laden (Security Fix)
+    safe_keys = []
+    for k in keys:
+        # Display-Token berechnen (Prefix oder Legacy-Teil)
+        if k.token_prefix:
+            display = k.token_prefix
+        elif k.token: # Legacy
+            display = f"{k.token[:12]}..."
+        else:
+            display = "N/A"
+            
+        safe_keys.append({
+            "id": k.id,
+            "name": k.name,
+            "scopes": k.scopes,
+            "created_at": k.created_at,
+            "last_used_at": k.last_used_at,
+            "expires_at": k.expires_at,
+            "revoked": k.revoked,
+            "revoked_at": k.revoked_at,
+            "token_display": display
+        })
+    
     return templates.TemplateResponse("api_keys.html", {
         "request": request,
         "user": user,
-        "api_keys": keys,
+        "api_keys": safe_keys,
         "now": datetime.datetime.utcnow()
     })
 

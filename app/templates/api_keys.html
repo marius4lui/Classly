@@ -33,8 +33,7 @@
         <div class="token-item" {% if key.revoked %}style="opacity: 0.5;" {% endif %}>
             <div>
                 <div style="font-weight: 600;">{{ key.name or 'Unbenannt' }}</div>
-                <div class="font-mono text-xs text-muted">{{ key.token_prefix or (key.token[:12] ~ '...' if key.token
-                    else 'N/A') }}</div>
+                <div class="font-mono text-xs text-muted">{{ key.token_display }}</div>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem;">
                 {% for scope in (key.scopes or '').split(',') %}
