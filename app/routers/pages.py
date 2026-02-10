@@ -12,6 +12,11 @@ import os
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["gtm_id"] = os.getenv("GTM_ID")
+templates.env.globals["demo_mode"] = os.getenv("DEMO", "false").lower() == "true"
+
+@router.get("/demo")
+def demo_page(request: Request):
+    return templates.TemplateResponse("demo.html", {"request": request})
 
 @router.get("/sitemap.xml")
 def sitemap():
