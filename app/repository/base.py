@@ -41,7 +41,15 @@ class BaseRepository(ABC):
         pass
 
     @abstractmethod
-    def update_class(self, class_id: str, owner_id: str = None, join_token: str = None, join_enabled: bool = None) -> Optional[models.Class]:
+    def update_class(
+        self,
+        class_id: str,
+        owner_id: str = None,
+        join_token: str = None,
+        join_enabled: bool = None,
+        timetable_public_enabled: bool = None,
+        timetable_public_token: str = None,
+    ) -> Optional[models.Class]:
         pass
 
     @abstractmethod

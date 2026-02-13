@@ -48,9 +48,62 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="/static/brand/classly-logo.png">
+    <link rel="apple-touch-icon" href="/static/brand/classly-logo.png">
     <title>{% block title %}Classly{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <link rel="stylesheet" href="/static/styles.css?v=4">
+    <script>
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return '';
+        }
+
+        function attachCsrfToForms() {
+            const csrf = getCookie('csrf_token');
+            if (!csrf) return;
+            document.querySelectorAll('form').forEach((form) => {
+                let existing = form.querySelector('input[name="csrf_token"]');
+                if (!existing) {
+                    existing = document.createElement('input');
+                    existing.type = 'hidden';
+                    existing.name = 'csrf_token';
+                    form.appendChild(existing);
+                }
+                existing.value = csrf;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            attachCsrfToForms();
+            document.body.addEventListener('htmx:configRequest', (evt) => {
+                const csrf = getCookie('csrf_token');
+                if (csrf) {
+                    evt.detail.headers['x-csrf-token'] = csrf;
+                }
+            });
+            const originalFetch = window.fetch;
+            window.fetch = function (input, init = {}) {
+                const method = ((init && init.method) || 'GET').toUpperCase();
+                if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                    const csrf = getCookie('csrf_token');
+                    if (csrf) {
+                        init.headers = init.headers || {};
+                        if (init.headers instanceof Headers) {
+                            init.headers.set('x-csrf-token', csrf);
+                        } else if (Array.isArray(init.headers)) {
+                            init.headers.push(['x-csrf-token', csrf]);
+                        } else {
+                            init.headers['x-csrf-token'] = csrf;
+                        }
+                    }
+                }
+                return originalFetch(input, init);
+            };
+        });
+    </script>
 </head>
 
 <body>

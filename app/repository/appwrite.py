@@ -45,6 +45,8 @@ class AppwriteRepository(BaseRepository):
         c.join_token = doc.get('join_token')
         c.owner_id = doc.get('owner_id')
         c.join_enabled = doc.get('join_enabled')
+        c.timetable_public_enabled = doc.get('timetable_public_enabled', False)
+        c.timetable_public_token = doc.get('timetable_public_token')
         c.created_at = datetime.fromisoformat(doc.get('$createdAt').replace('Z', '+00:00')) if doc.get('$createdAt') else datetime.now()
         return c
 
@@ -173,12 +175,22 @@ class AppwriteRepository(BaseRepository):
         except AppwriteException:
             return None
 
-    def update_class(self, class_id: str, owner_id: str = None, join_token: str = None, join_enabled: bool = None) -> Optional[models.Class]:
+    def update_class(
+        self,
+        class_id: str,
+        owner_id: str = None,
+        join_token: str = None,
+        join_enabled: bool = None,
+        timetable_public_enabled: bool = None,
+        timetable_public_token: str = None,
+    ) -> Optional[models.Class]:
         data = {}
         if owner_id is not None: data['owner_id'] = owner_id
         if join_token is not None: data['join_token'] = join_token
         if join_enabled is not None: data['join_enabled'] = join_enabled
-        
+        if timetable_public_enabled is not None: data['timetable_public_enabled'] = timetable_public_enabled
+        if timetable_public_token is not None: data['timetable_public_token'] = timetable_public_token
+         
         try:
             doc = self.db.update_document(self.database_id, 'classes', class_id, data)
             return self._map_doc_to_class(doc)

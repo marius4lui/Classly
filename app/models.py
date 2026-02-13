@@ -38,6 +38,9 @@ class Class(Base):
     join_token = Column(String, unique=True, index=True, nullable=False)
     owner_id = Column(String, nullable=True)
     join_enabled = Column(Boolean, default=True)
+    # Public share link for timetable (read-only). Token should be non-guessable.
+    timetable_public_enabled = Column(Boolean, default=False)
+    timetable_public_token = Column(String, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     users = relationship("User", back_populates="clazz")

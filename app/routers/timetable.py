@@ -5,6 +5,7 @@ from sqlalchemy import and_
 from app.database import get_db
 from app import crud, models
 from app.core.auth import get_current_user
+from app.core import security
 from datetime import datetime, time, timedelta
 from typing import Optional
 
@@ -19,11 +20,14 @@ def require_user(user: models.User = Depends(get_current_user)):
     return user
 
 def require_registered_user(user: models.User = Depends(get_current_user)):
-    """Require a registered user for personalized features"""
+    """
+    Backwards-compat helper.
+
+    Timetable should be usable for any logged-in class member, not only users
+    with email/password registration.
+    """
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if not user.is_registered:
-        raise HTTPException(status_code=403, detail="Registration required")
     return user
 
 def require_admin(user: models.User = Depends(get_current_user)):
@@ -178,6 +182,96 @@ def create_slot(
     db.refresh(slot)
     
     return {"status": "created", "id": slot.id}
+
+@router.post("/slots/bulk")
+def create_slots_bulk(
+    weekday: int = Form(...),
+    slot_numbers: list[int] = Form(...),
+    subject_name: str = Form(...),
+    subject_id: Optional[str] = Form(None),
+    group_name: Optional[str] = Form(None),
+    room: Optional[str] = Form(None),
+    user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Create multiple timetable slots at once (admin only)."""
+    if weekday < 0 or weekday > 4:
+        raise HTTPException(status_code=400, detail="Weekday must be 0-4")
+
+    created_ids: list[str] = []
+    for slot_number in slot_numbers:
+        if slot_number < 1 or slot_number > 12:
+            raise HTTPException(status_code=400, detail="Slot number must be 1-12")
+
+        slot = models.TimetableSlot(
+            class_id=user.class_id,
+            weekday=weekday,
+            slot_number=slot_number,
+            subject_id=subject_id if subject_id else None,
+            subject_name=subject_name,
+            group_name=group_name if group_name else None,
+            room=room if room else None,
+        )
+        db.add(slot)
+        db.flush()
+        created_ids.append(slot.id)
+
+    db.commit()
+    return {"status": "created", "ids": created_ids, "count": len(created_ids)}
+
+
+# === Public Share (Admin) ===
+
+@router.get("/public/status")
+def get_public_status(
+    user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Get current public-share status for this class (admin only)."""
+    clazz = db.query(models.Class).filter(models.Class.id == user.class_id).first()
+    if not clazz:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    return {
+        "enabled": bool(getattr(clazz, "timetable_public_enabled", False)),
+        "code": getattr(clazz, "timetable_public_token", None),
+    }
+
+
+@router.post("/public/rotate")
+def rotate_public_code(
+    user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Enable + rotate public share code for timetable (admin only)."""
+    clazz = db.query(models.Class).filter(models.Class.id == user.class_id).first()
+    if not clazz:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    # Avoid collisions with other classes.
+    code = security.generate_public_share_code()
+    while db.query(models.Class).filter(models.Class.timetable_public_token == code).first():
+        code = security.generate_public_share_code()
+
+    clazz.timetable_public_enabled = True
+    clazz.timetable_public_token = code
+    db.commit()
+    return {"enabled": True, "code": code}
+
+
+@router.post("/public/disable")
+def disable_public_code(
+    user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Disable public share link (admin only)."""
+    clazz = db.query(models.Class).filter(models.Class.id == user.class_id).first()
+    if not clazz:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    clazz.timetable_public_enabled = False
+    db.commit()
+    return {"enabled": False}
 
 @router.put("/slots/{slot_id}")
 def update_slot(

@@ -9,9 +9,11 @@ import secrets
 from fastapi.templating import Jinja2Templates
 import os
 from app.quotas import MAX_EVENTS_PER_CLASS, MAX_SUBJECTS_PER_USER, MAX_CLASSES_PER_USER, MAX_TOTAL_STORAGE_MB
+import logging
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 @router.get("/admin/quotas")
 def admin_quotas_overview(
@@ -286,7 +288,8 @@ def download_db(
         # Cleanup on error
         if os.path.exists(temp_path):
             os.unlink(temp_path)
-        raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
+        logger.exception("Backup failed for class %s", admin.class_id)
+        raise HTTPException(status_code=500, detail="Backup failed")
 
 
 # --- API-Key Management ---

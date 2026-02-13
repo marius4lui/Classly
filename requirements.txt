@@ -10,3 +10,6 @@ argon2-cffi
 icalendar
 bcrypt
 slowapi
+questionary
+ruamel.yaml
+rich

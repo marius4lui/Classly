@@ -5,6 +5,7 @@ from app.repository.base import BaseRepository
 from app.repository.factory import get_repository
 from app import models
 from app.core import security
+from app.core.cookies import cookie_secure
 from app.limiter import limiter
 
 router = APIRouter()
@@ -13,7 +14,7 @@ templates = Jinja2Templates(directory="app/templates")
 # Cookie settings - 30 days persistent login
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days in seconds
 
-def set_session_cookie(response: Response, session_token: str):
+def set_session_cookie(response: Response, session_token: str, request: Request | None = None):
     """Set session cookie with proper security settings"""
     response.set_cookie(
         key="session_token",
@@ -21,7 +22,7 @@ def set_session_cookie(response: Response, session_token: str):
         httponly=True,
         max_age=COOKIE_MAX_AGE,
         samesite="lax",
-        secure=False  # Set to True in production with HTTPS
+        secure=cookie_secure(request),
     )
 
 @router.post("/auth/create-class")
@@ -68,7 +69,7 @@ def create_class(
     repo.update_class(new_class.id, owner_id=new_user.id)
     
     # Set Cookie with proper settings
-    set_session_cookie(response, new_user.session_token)
+    set_session_cookie(response, new_user.session_token, request)
     
     response.headers["HX-Redirect"] = "/"
     return {"status": "success"}
@@ -122,7 +123,7 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Set cookie with proper settings
-    set_session_cookie(response, user.session_token)
+    set_session_cookie(response, user.session_token, request)
     
     response.headers["HX-Redirect"] = "/"
     return {"status": "logged in"}
@@ -181,7 +182,7 @@ def show_join_page(
             httponly=True,
             max_age=COOKIE_MAX_AGE,
             samesite="lax",
-            secure=False
+            secure=cookie_secure(request)
         )
         return redirect
     
@@ -231,12 +232,13 @@ def join_class(
         raise HTTPException(status_code=400, detail="No token provided")
     
     # Set cookie with proper settings
-    set_session_cookie(response, new_user.session_token)
+    set_session_cookie(response, new_user.session_token, request)
     response.headers["HX-Redirect"] = "/"
     return {"status": "success"}
 
 @router.post("/auth/login-class")
 def login_class(
+    request: Request,
     response: Response,
     class_id: str = Form(...),
     email: str = Form(...),
@@ -257,12 +259,21 @@ def login_class(
         raise HTTPException(status_code=401, detail="Du bist nicht Mitglied dieser Klasse")
     
     # Set cookie with proper settings
-    set_session_cookie(response, user.session_token)
+    set_session_cookie(response, user.session_token, request)
     response.headers["HX-Redirect"] = "/"
     return {"status": "logged in"}
 
-@router.get("/auth/logout")
+@router.post("/auth/logout")
 def logout():
+    from fastapi.responses import RedirectResponse
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie("session_token")
+    return response
+
+@router.get("/auth/logout")
+def logout_get():
+    if os.getenv("ALLOW_GET_LOGOUT", "false").lower() != "true":
+        raise HTTPException(status_code=405, detail="Use POST /auth/logout")
     from fastapi.responses import RedirectResponse
     response = RedirectResponse(url="/", status_code=303)
     response.delete_cookie("session_token")
@@ -270,8 +281,8 @@ def logout():
 
 @router.get("/auth/migrate-session")
 def migrate_session(
-    token: str,
-    response: Response,
+    request: Request,
+    token: str = None,
     repo: BaseRepository = Depends(get_repository)
 ):
     """
@@ -280,6 +291,9 @@ def migrate_session(
     """
     from fastapi.responses import RedirectResponse
     
+    if not token:
+        return RedirectResponse(url="/")
+
     # Validate token exists
     user = repo.get_user_by_session(token)
     if not user:
@@ -294,6 +308,6 @@ def migrate_session(
         httponly=True,
         max_age=COOKIE_MAX_AGE,
         samesite="lax",
-        secure=False # Should be true in prod
+        secure=cookie_secure(request)
     )
     return redirect

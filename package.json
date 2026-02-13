@@ -5,8 +5,14 @@
     "main": "index.js",
     "scripts": {
         "docs:dev": "vitepress dev docs",
-        "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs"
+        "sync:versions": "node scripts/sync-versions.js",
+        "docs:build": "node scripts/sync-versions.js && vitepress build docs",
+        "docs:preview": "vitepress preview docs",
+        "setup:cli": "python scripts/classly_setup_cli.py",
+        "setup:quick": "python scripts/classly_setup_cli.py quick",
+        "setup:advanced": "python scripts/classly_setup_cli.py advanced",
+        "setup:preview": "python scripts/classly_setup_cli.py preview",
+        "setup:validate": "python scripts/classly_setup_cli.py validate"
     },
     "keywords": [],
     "author": "",

@@ -9,7 +9,8 @@
         "logout": "Abmelden",
         "login": "Anmelden",
         "home": "Startseite",
-        "profile": "Profil"
+        "profile": "Profil",
+        "copy": "Kopieren"
     },
     "dashboard": {
         "title": "Übersicht",
@@ -21,7 +22,97 @@
     "timetable": {
         "title": "Stundenplan",
         "add_event": "Ereignis hinzufügen",
-        "settings": "Stundenplan-Einstellungen"
+        "settings": "Stundenplan-Einstellungen",
+        "share_button": "Teilen",
+        "loading": "Lädt Stundenplan...",
+        "legend_hint": "Tipp: Klicke auf eine Stunde, um sie zu deinem Plan hinzuzufügen.",
+        "table": {
+            "time": "Zeit"
+        },
+        "tabs": {
+            "slots": "Stunden",
+            "settings": "Einstellungen",
+            "share": "Teilen"
+        },
+        "weekdays": {
+            "short": {
+                "mo": "Mo",
+                "di": "Di",
+                "mi": "Mi",
+                "do": "Do",
+                "fr": "Fr"
+            },
+            "long": {
+                "mo": "Montag",
+                "di": "Dienstag",
+                "mi": "Mittwoch",
+                "do": "Donnerstag",
+                "fr": "Freitag"
+            }
+        },
+        "modal": {
+            "edit_title": "Stundenplan bearbeiten",
+            "quick_edit_title": "Stunde bearbeiten",
+            "add_slot_title": "Neue Stunde hinzufügen"
+        },
+        "labels": {
+            "day": "Tag",
+            "slots": "Stunden",
+            "subject": "Fach",
+            "group": "Gruppe",
+            "room": "Raum",
+            "duration_minutes": "Dauer (Min)",
+            "break_minutes": "Pause (Min)",
+            "start": "Start",
+            "end": "Ende",
+            "link": "Link",
+            "public_link_title": "Public Link"
+        },
+        "buttons": {
+            "add": "Hinzufügen",
+            "all": "Alle",
+            "none": "Keine",
+            "save_settings": "Einstellungen speichern",
+            "enable_rotate": "Aktivieren / Neu generieren",
+            "disable": "Deaktivieren"
+        },
+        "placeholders": {
+            "subject_example": "z.B. Mathe",
+            "group_example": "z.B. GK1",
+            "room_example": "z.B. R102"
+        },
+        "hints": {
+            "multi_select": "Mehrfachauswahl möglich",
+            "public_description": "Mit diesem Link kann jeder den Stundenplan ohne Login ansehen (read-only)."
+        },
+        "status": {
+            "loading": "Lade Status...",
+            "active": "Aktiv",
+            "disabled": "Deaktiviert",
+            "load_failed": "Konnte Status nicht laden."
+        },
+        "messages": {
+            "load_failed": "Fehler beim Laden",
+            "settings_saved": "Einstellungen gespeichert!",
+            "no_slots": "Noch keine Stunden angelegt",
+            "select_at_least_one_slot": "Bitte mindestens eine Stunde auswählen.",
+            "delete_slot_confirm": "Stunde löschen?",
+            "subject_required": "Fach darf nicht leer sein.",
+            "save_failed": "Konnte nicht speichern.",
+            "delete_failed": "Konnte nicht löschen.",
+            "copy_success": "Link kopiert!",
+            "link_generate_failed": "Konnte Link nicht generieren.",
+            "link_disable_failed": "Konnte Link nicht deaktivieren."
+        },
+        "slot_unit": "Stunde"
+    },
+    "timetable_public": {
+        "title": "Stundenplan",
+        "public_badge": "Public",
+        "loading": "Lädt Stundenplan...",
+        "readonly_note": "Read-only Ansicht. Für Änderungen bitte über Classly einloggen.",
+        "class_prefix": "Klasse",
+        "invalid_or_disabled_link": "Link ungültig oder deaktiviert"
     },
     "settings": {
         "title": "Einstellungen",

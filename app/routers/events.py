@@ -8,6 +8,7 @@ from app.quotas import check_event_quota, check_subject_quota
 from app.limiter import limiter
 import datetime
 import json
+import os
 
 router = APIRouter()
 
@@ -288,10 +289,17 @@ def delete_subject(
 def get_rss_feed(
     request: Request,
     class_id: str = None,
+    token: str = None,
     repo: BaseRepository = Depends(get_repository)
 ):
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
+    if os.getenv("PUBLIC_FEED_TOKEN_REQUIRED", "true").lower() == "true":
+        clazz = repo.get_class(class_id)
+        if not clazz or not clazz.timetable_public_enabled or not clazz.timetable_public_token:
+            return Response(content="Feed not available", status_code=403)
+        if token != clazz.timetable_public_token:
+            return Response(content="Invalid token", status_code=403)
     
     # Get INFO events
     events = repo.list_events(class_id=class_id, limit=20, type=models.EventType.INFO)
@@ -335,10 +343,17 @@ def get_rss_feed(
 @router.get("/feed/xml")
 def get_xml_feed(
     class_id: str = None,
+    token: str = None,
     repo: BaseRepository = Depends(get_repository)
 ):
     if not class_id:
         return Response(content="Missing class_id", status_code=400)
+    if os.getenv("PUBLIC_FEED_TOKEN_REQUIRED", "true").lower() == "true":
+        clazz = repo.get_class(class_id)
+        if not clazz or not clazz.timetable_public_enabled or not clazz.timetable_public_token:
+            return Response(content="Feed not available", status_code=403)
+        if token != clazz.timetable_public_token:
+            return Response(content="Invalid token", status_code=403)
         
     events = repo.list_events(class_id=class_id, limit=20, type=models.EventType.INFO)
 

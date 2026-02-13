@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{{ request.state.t('timetable_public.title') }} ({{ request.state.t('timetable_public.public_badge') }}) - Classly{% endblock %}
+
+{% block content %}
+<div class="timetable-page">
+    <header class="timetable-header">
+        <div>
+            <a href="/" class="btn btn-ghost">← {{ request.state.t('common.back') }}</a>
+            <h1>📅 {{ request.state.t('timetable_public.title') }} <span class="badge badge-ghost ml-2">{{ request.state.t('timetable_public.public_badge') }}</span></h1>
+            <div class="text-xs text-muted" id="publicClassName"></div>
+        </div>
+    </header>
+
+    <!-- Mobile Day Tabs -->
+    <div class="timetable-tabs" id="dayTabs">
+        <button class="tab active" onclick="showDay(0)">{{ request.state.t('timetable.weekdays.short.mo') }}</button>
+        <button class="tab" onclick="showDay(1)">{{ request.state.t('timetable.weekdays.short.di') }}</button>
+        <button class="tab" onclick="showDay(2)">{{ request.state.t('timetable.weekdays.short.mi') }}</button>
+        <button class="tab" onclick="showDay(3)">{{ request.state.t('timetable.weekdays.short.do') }}</button>
+        <button class="tab" onclick="showDay(4)">{{ request.state.t('timetable.weekdays.short.fr') }}</button>
+    </div>
+
+    <div class="timetable-container card bg-base-100 shadow-xl overflow-hidden">
+        <table class="timetable-table" id="timetableTable">
+            <thead>
+                <tr>
+                    <th class="time-col">{{ request.state.t('timetable.table.time') }}</th>
+                    <th class="day-col" data-day="0">{{ request.state.t('timetable.weekdays.long.mo') }}</th>
+                    <th class="day-col" data-day="1">{{ request.state.t('timetable.weekdays.long.di') }}</th>
+                    <th class="day-col" data-day="2">{{ request.state.t('timetable.weekdays.long.mi') }}</th>
+                    <th class="day-col" data-day="3">{{ request.state.t('timetable.weekdays.long.do') }}</th>
+                    <th class="day-col" data-day="4">{{ request.state.t('timetable.weekdays.long.fr') }}</th>
+                </tr>
+            </thead>
+            <tbody id="timetableBody"></tbody>
+        </table>
+
+        <div id="loadingTimetable" class="text-center text-muted py-8">
+            <span class="loading loading-spinner loading-lg"></span>
+            <p class="mt-2">{{ request.state.t('timetable_public.loading') }}</p>
+        </div>
+    </div>
+
+    <div class="mt-4 text-xs text-muted text-center">
+        {{ request.state.t('timetable_public.readonly_note') }}
+    </div>
+</div>
+
+<script>
+    const CODE = "{{ code }}";
+    const I18N = {{ {
+        "weekdays_long": [
+            request.state.t('timetable.weekdays.long.mo'),
+            request.state.t('timetable.weekdays.long.di'),
+            request.state.t('timetable.weekdays.long.mi'),
+            request.state.t('timetable.weekdays.long.do'),
+            request.state.t('timetable.weekdays.long.fr')
+        ],
+        "class_prefix": request.state.t('timetable_public.class_prefix'),
+        "invalid_or_disabled_link": request.state.t('timetable_public.invalid_or_disabled_link')
+    } | tojson }};
+    const WEEKDAYS = I18N.weekdays_long;
+    let timetableData = { slots: [] };
+
+    async function loadPublicTimetable() {
+        try {
+            const res = await fetch(`/public/stundenplan/${CODE}/data`);
+            if (!res.ok) throw new Error('not ok');
+            const data = await res.json();
+            timetableData.slots = data.slots || [];
+            document.getElementById('publicClassName').textContent = data.class_name ? `${I18N.class_prefix}: ${data.class_name}` : '';
+            renderTimetable();
+            document.getElementById('loadingTimetable').style.display = 'none';
+        } catch (e) {
+            const loader = document.getElementById('loadingTimetable');
+            loader.innerHTML = `<span class="text-error">${I18N.invalid_or_disabled_link}</span>`;
+        }
+    }
+
+    function renderTimetable() {
+        const tbody = document.getElementById('timetableBody');
+        tbody.innerHTML = '';
+
+        let maxSlot = 8;
+        if (timetableData.slots.length > 0) {
+            maxSlot = Math.max(...timetableData.slots.map(s => s.slot_number), 8);
+        }
+
+        for (let slotNum = 1; slotNum <= maxSlot; slotNum++) {
+            const row = document.createElement('tr');
+
+            const timeCell = document.createElement('td');
+            timeCell.className = 'time-cell';
+
+            const anySlot = timetableData.slots.find(s => s.slot_number === slotNum);
+            const startTime = anySlot ? anySlot.start_time : '';
+            const endTime = anySlot ? anySlot.end_time : '';
+
+            timeCell.innerHTML = `
+                <div class="slot-number">${slotNum}.</div>
+                <div class="slot-time">${startTime}</div>
+                <div class="slot-time text-xs opacity-50">${endTime}</div>
+            `;
+            row.appendChild(timeCell);
+
+            for (let day = 0; day < 5; day++) {
+                const daySlots = timetableData.slots.filter(s => s.weekday === day && s.slot_number === slotNum);
+                const cell = document.createElement('td');
+                cell.className = 'day-cell';
+                cell.dataset.day = day;
+
+                if (daySlots.length === 1) {
+                    cell.innerHTML = renderSlotContent(daySlots[0]);
+                } else if (daySlots.length > 1) {
+                    const container = document.createElement('div');
+                    container.className = 'multi-slot-container';
+                    daySlots.forEach(s => {
+                        const div = document.createElement('div');
+                        div.className = 'slot-item';
+                        div.innerHTML = renderSlotContent(s, true);
+                        container.appendChild(div);
+                    });
+                    cell.appendChild(container);
+                }
+
+                row.appendChild(cell);
+            }
+
+            tbody.appendChild(row);
+        }
+
+        const today = new Date().getDay();
+        if (window.innerWidth < 768 && today >= 1 && today <= 5) {
+            showDay(today - 1);
+        } else if (window.innerWidth < 768) {
+            showDay(0);
+        }
+    }
+
+    function renderSlotContent(slot, compact = false) {
+        if (compact) {
+            return `
+                <div class="font-bold text-sm">${slot.subject_name || ''}</div>
+                <div class="text-xs flex justify-between">
+                    <span>${slot.group_name || ''}</span>
+                    <span>${slot.room || ''}</span>
+                </div>
+            `;
+        }
+        return `
+            <div class="slot-subject">${slot.subject_name || ''}</div>
+            ${slot.group_name ? `<div class="badge badge-sm badge-ghost my-1">${slot.group_name}</div>` : ''}
+            ${slot.room ? `<div class="slot-room">📍 ${slot.room}</div>` : ''}
+        `;
+    }
+
+    function showDay(dayIndex) {
+        document.querySelectorAll('#dayTabs .tab').forEach((t, i) => {
+            t.classList.toggle('tab-active', i === dayIndex);
+        });
+
+        document.querySelectorAll('.day-col').forEach((th, i) => {
+            th.style.display = (i === dayIndex) ? 'table-cell' : 'none';
+        });
+
+        document.querySelectorAll('.day-cell').forEach(td => {
+            const day = parseInt(td.dataset.day);
+            td.style.display = (day === dayIndex) ? 'table-cell' : 'none';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPublicTimetable);
+</script>
+{% endblock %}

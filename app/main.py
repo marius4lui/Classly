@@ -24,6 +24,17 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.limiter import limiter
 from app.i18n import i18n
+from app.core.csrf import (
+    CSRF_COOKIE_NAME,
+    CSRF_FORM_FIELD,
+    CSRF_HEADER_NAME,
+    csrf_enabled,
+    get_csrf_token,
+    is_path_exempt,
+    is_state_changing,
+    same_token,
+)
+from app.core.cookies import cookie_secure
 
 # Fix DB Schema (Add missing columns to old SQLite volumes)
 fix_db_schema.fix_schema(SQLALCHEMY_DATABASE_URL)
@@ -55,9 +66,18 @@ app = FastAPI(title="Classly")
 
 # CORS Middleware
 from fastapi.middleware.cors import CORSMiddleware
+
+
+def _cors_allow_origins() -> list[str]:
+    raw = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+    if not raw:
+        return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for mobile apps/dev
+    allow_origins=_cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,6 +105,66 @@ async def check_content_length(request: Request, call_next):
         except ValueError:
             pass
     return await call_next(request)
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://www.googletagmanager.com; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; "
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    )
+    if os.getenv("COOKIE_SECURE", "true").lower() == "true":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
+@app.middleware("http")
+async def csrf_middleware(request: Request, call_next):
+    exempt_paths = [
+        "/api/",
+        "/api/v1/",
+        "/api/oauth/token",
+        "/api/oauth/userinfo",
+        "/docs",
+        "/openapi.json",
+    ]
+
+    if csrf_enabled() and is_state_changing(request) and not is_path_exempt(request.url.path, exempt_paths):
+        cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
+        header_token = request.headers.get(CSRF_HEADER_NAME)
+        submitted = header_token
+        # Avoid reading/parsing form bodies when header token is present (e.g. HTMX),
+        # because consuming form data in middleware can break downstream Form parsing.
+        if not submitted:
+            form_token = None
+            ctype = request.headers.get("content-type", "")
+            if "application/x-www-form-urlencoded" in ctype or "multipart/form-data" in ctype:
+                try:
+                    form = await request.form()
+                    form_token = form.get(CSRF_FORM_FIELD)
+                except Exception:
+                    form_token = None
+            submitted = form_token
+        if not same_token(cookie_token, submitted):
+            return JSONResponse(status_code=403, content={"detail": "Invalid CSRF token"})
+
+    response = await call_next(request)
+    if csrf_enabled() and not request.cookies.get(CSRF_COOKIE_NAME):
+        response.set_cookie(
+            key=CSRF_COOKIE_NAME,
+            value=get_csrf_token(request),
+            httponly=False,
+            samesite="lax",
+            secure=cookie_secure(request),
+            max_age=60 * 60 * 24 * 30,
+        )
+    return response
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -157,14 +237,10 @@ async def domain_migration_middleware(request: Request, call_next):
             session_token = request.cookies.get("session_token")
 
             if session_token:
-                # Redirect with token for migration
-                # Ensure we use https if likely (or respect scheme)
-                return RedirectResponse(
-                    f"https://{new_domain}/auth/migrate-session?token={session_token}"
-                )
-            else:
-                # Just redirect guests
+                # Avoid leaking session tokens via query strings.
                 return RedirectResponse(f"https://{new_domain}")
+            # Just redirect guests
+            return RedirectResponse(f"https://{new_domain}")
 
     return await call_next(request)
 

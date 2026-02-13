@@ -7,6 +7,7 @@ Endpoints:
 - GET /api/oauth/userinfo - Get current user info (requires Bearer token)
 """
 import datetime
+import os
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -14,6 +15,11 @@ from app import crud, models
 from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/api/oauth", tags=["oauth"])
+SUPPORTED_OAUTH_SCOPES = {"read:events", "events:read", "events:write", "classes:read", "subjects:read", "users:read", "timetable:read"}
+
+
+def _strict_client_validation() -> bool:
+    return os.getenv("OAUTH_STRICT_CLIENT_VALIDATION", "true").lower() == "true"
 
 
 def _extract_bearer_token(authorization: str) -> str:
@@ -47,6 +53,13 @@ def oauth_authorize(
     from fastapi.responses import RedirectResponse
     import urllib.parse
     
+    if _strict_client_validation():
+        client = crud.get_oauth_client_by_client_id(db, client_id)
+        if not client:
+            raise HTTPException(status_code=400, detail="Invalid OAuth client")
+        if client.redirect_uri != redirect_uri:
+            raise HTTPException(status_code=400, detail="Invalid redirect_uri")
+
     # Check if user is logged in via session cookie
     session_token = request.cookies.get("session_token")
     current_user = None
@@ -74,6 +87,8 @@ def oauth_authorize(
     
     if response_type != "code":
         raise HTTPException(status_code=400, detail="Only response_type=code is supported")
+    if scope and scope not in SUPPORTED_OAUTH_SCOPES:
+        raise HTTPException(status_code=400, detail="Unsupported scope")
     
     # Create authorization code
     auth_code = crud.create_authorization_code(
@@ -126,6 +141,19 @@ def oauth_token(
     if not code:
         raise HTTPException(status_code=400, detail="Authorization code is required")
     
+    client = None
+    if _strict_client_validation():
+        client = crud.get_oauth_client_by_client_id(db, client_id)
+        if not client:
+            raise HTTPException(status_code=400, detail="Invalid OAuth client")
+        if client.redirect_uri != redirect_uri:
+            raise HTTPException(status_code=400, detail="Invalid redirect_uri")
+    if os.getenv("OAUTH_REQUIRE_CLIENT_SECRET", "true").lower() == "true":
+        if not client:
+            client = crud.get_oauth_client_by_client_id(db, client_id)
+        if not client or not client_secret or client_secret != client.client_secret:
+            raise HTTPException(status_code=401, detail="Invalid client credentials")
+
     # Use the authorization code
     auth_code = crud.use_authorization_code(db, code, client_id, redirect_uri)
     if not auth_code:

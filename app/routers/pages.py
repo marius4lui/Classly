@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, Depends, Query, Response
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import APIRouter, Request, Depends, Query, Response, HTTPException
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.core.auth import get_current_user
 from app import crud, models
@@ -13,6 +13,11 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["gtm_id"] = os.getenv("GTM_ID")
 
+
+def _render_landing(request: Request):
+    # Public marketing page, independent from auth/dashboard routing.
+    return templates.TemplateResponse("landing.html", {"request": request})
+
 @router.get("/sitemap.xml")
 def sitemap():
     return FileResponse("app/static/sitemap.xml")
@@ -20,6 +25,11 @@ def sitemap():
 @router.get("/robots.txt")
 def robots():
     return FileResponse("app/static/robots.txt")
+
+
+@router.get("/favicon.ico")
+def favicon():
+    return FileResponse("app/static/brand/classly-logo.png")
 
 @router.get("/impressum")
 def impressum(request: Request):
@@ -48,8 +58,12 @@ def index(
     db: Session = Depends(get_db),
     year: int = Query(default=None),
     month: int = Query(default=None, ge=1, le=12),
-    welcome_back: int = Query(default=None)
+    welcome_back: int = Query(default=None),
+    landing: int = Query(default=0)
 ):
+    if landing == 1:
+        return _render_landing(request)
+
     if user:
         clazz = crud.get_class(db, user.class_id)
         
@@ -135,7 +149,9 @@ def index(
             "grade_stats": grade_stats
         })
     else:
-        return templates.TemplateResponse("landing.html", {"request": request})
+        return _render_landing(request)
+
+
 
 @router.get("/stundenplan")
 def stundenplan(
@@ -143,13 +159,98 @@ def stundenplan(
     user: models.User | None = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Timetable page - requires registered user"""
+    """Timetable page - requires logged-in user (any class member)."""
     if not user:
-        return RedirectResponse("/", status_code=302)
-    if not user.is_registered:
         return RedirectResponse("/", status_code=302)
     
     return templates.TemplateResponse("timetable.html", {
         "request": request,
         "user": user
     })
+
+
+WEEKDAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
+
+def _calculate_slot_time(settings: models.TimetableSettings, slot_number: int):
+    start_minutes = settings.day_start_hour * 60 + settings.day_start_minute
+    slot_start = start_minutes + (slot_number - 1) * (settings.slot_duration + settings.break_duration)
+    slot_end = slot_start + settings.slot_duration
+    start_h, start_m = divmod(slot_start, 60)
+    end_h, end_m = divmod(slot_end, 60)
+    return f"{start_h:02d}:{start_m:02d}", f"{end_h:02d}:{end_m:02d}"
+
+
+@router.get("/public/stundenplan/{code}")
+def public_stundenplan(request: Request, code: str, db: Session = Depends(get_db)):
+    """
+    Public, read-only timetable share view.
+    The code is a non-guessable token stored on the class.
+    """
+    # We render the page regardless of validity to avoid leaking which codes exist.
+    return templates.TemplateResponse("timetable_public.html", {"request": request, "code": code})
+
+
+@router.get("/public/stundenplan/{code}/data")
+def public_stundenplan_data(code: str, db: Session = Depends(get_db)):
+    clazz = (
+        db.query(models.Class)
+        .filter(
+            models.Class.timetable_public_enabled == True,  # noqa: E712
+            models.Class.timetable_public_token == code,
+        )
+        .first()
+    )
+    if not clazz:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    settings = (
+        db.query(models.TimetableSettings)
+        .filter(models.TimetableSettings.class_id == clazz.id)
+        .first()
+    )
+
+    slots = (
+        db.query(models.TimetableSlot)
+        .filter(models.TimetableSlot.class_id == clazz.id)
+        .order_by(models.TimetableSlot.weekday, models.TimetableSlot.slot_number)
+        .all()
+    )
+
+    settings_payload = None
+    if settings:
+        settings_payload = {
+            "slot_duration": settings.slot_duration,
+            "break_duration": settings.break_duration,
+            "day_start_hour": settings.day_start_hour,
+            "day_start_minute": settings.day_start_minute,
+            "day_end_hour": settings.day_end_hour,
+            "day_end_minute": settings.day_end_minute,
+        }
+
+    result = []
+    for slot in slots:
+        start_time, end_time = ("", "")
+        if settings:
+            start_time, end_time = _calculate_slot_time(settings, slot.slot_number)
+
+        result.append(
+            {
+                "id": slot.id,
+                "weekday": slot.weekday,
+                "weekday_name": WEEKDAY_NAMES[slot.weekday] if 0 <= slot.weekday < 5 else "?",
+                "slot_number": slot.slot_number,
+                "subject_name": slot.subject_name,
+                "group_name": slot.group_name,
+                "room": slot.room,
+                "start_time": start_time,
+                "end_time": end_time,
+            }
+        )
+
+    return JSONResponse(
+        {
+            "class_name": clazz.name,
+            "settings": settings_payload,
+            "slots": result,
+        }
+    )

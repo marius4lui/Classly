@@ -9,7 +9,8 @@
         "logout": "Logout",
         "login": "Login",
         "home": "Home",
-        "profile": "Profile"
+        "profile": "Profile",
+        "copy": "Copy"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -21,11 +22,101 @@
     "timetable": {
         "title": "Timetable",
         "add_event": "Add Event",
-        "settings": "Timetable Settings"
+        "settings": "Timetable Settings",
+        "share_button": "Share",
+        "loading": "Loading timetable...",
+        "legend_hint": "Tip: click a lesson to add it to your personal timetable.",
+        "table": {
+            "time": "Time"
+        },
+        "tabs": {
+            "slots": "Lessons",
+            "settings": "Settings",
+            "share": "Share"
+        },
+        "weekdays": {
+            "short": {
+                "mo": "Mon",
+                "di": "Tue",
+                "mi": "Wed",
+                "do": "Thu",
+                "fr": "Fri"
+            },
+            "long": {
+                "mo": "Monday",
+                "di": "Tuesday",
+                "mi": "Wednesday",
+                "do": "Thursday",
+                "fr": "Friday"
+            }
+        },
+        "modal": {
+            "edit_title": "Edit timetable",
+            "quick_edit_title": "Edit lesson",
+            "add_slot_title": "Add new lesson"
+        },
+        "labels": {
+            "day": "Day",
+            "slots": "Lessons",
+            "subject": "Subject",
+            "group": "Group",
+            "room": "Room",
+            "duration_minutes": "Duration (min)",
+            "break_minutes": "Break (min)",
+            "start": "Start",
+            "end": "End",
+            "link": "Link",
+            "public_link_title": "Public link"
+        },
+        "buttons": {
+            "add": "Add",
+            "all": "All",
+            "none": "None",
+            "save_settings": "Save settings",
+            "enable_rotate": "Enable / regenerate",
+            "disable": "Disable"
+        },
+        "placeholders": {
+            "subject_example": "e.g. Math",
+            "group_example": "e.g. Group A",
+            "room_example": "e.g. R102"
+        },
+        "hints": {
+            "multi_select": "Multiple selection possible",
+            "public_description": "Anyone can view the timetable with this link without login (read-only)."
+        },
+        "status": {
+            "loading": "Loading status...",
+            "active": "Active",
+            "disabled": "Disabled",
+            "load_failed": "Could not load status."
+        },
+        "messages": {
+            "load_failed": "Failed to load",
+            "settings_saved": "Settings saved!",
+            "no_slots": "No lessons created yet",
+            "select_at_least_one_slot": "Please select at least one lesson.",
+            "delete_slot_confirm": "Delete lesson?",
+            "subject_required": "Subject must not be empty.",
+            "save_failed": "Could not save.",
+            "delete_failed": "Could not delete.",
+            "copy_success": "Link copied!",
+            "link_generate_failed": "Could not generate link.",
+            "link_disable_failed": "Could not disable link."
+        },
+        "slot_unit": "lesson"
+    },
+    "timetable_public": {
+        "title": "Timetable",
+        "public_badge": "Public",
+        "loading": "Loading timetable...",
+        "readonly_note": "Read-only view. Please log in to make changes.",
+        "class_prefix": "Class",
+        "invalid_or_disabled_link": "Link invalid or disabled"
     },
     "settings": {
         "title": "Settings",
         "language": "Language",
-        "select_language": "Select Language"
+        "select_language": "Select language"
     }
 }

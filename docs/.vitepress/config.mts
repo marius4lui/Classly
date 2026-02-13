@@ -30,7 +30,14 @@ export default defineConfig({
             { text: 'Guide', link: '/user-guide/getting-started' },
             { text: 'API Docs', link: '/development/api' },
             { text: 'Status', link: 'https://info.classly.site/status/classly-info' },
-            { text: 'Setup', link: '/setup/installation' }
+            { text: 'Setup', link: '/setup/installation' },
+            {
+                text: 'Versionen',
+                items: [
+                    { text: 'v1.0.1', link: '/versions/v1.0.1/' },
+                    { text: 'v1', link: '/versions/v1/' }
+                ]
+            }
         ],
 
         sidebar: {
@@ -51,7 +58,8 @@ export default defineConfig({
                     text: 'Einrichtung & Hosting',
                     items: [
                         { text: 'Installation', link: '/setup/installation' },
-                        { text: 'Konfiguration', link: '/setup/configuration' }
+                        { text: 'Konfiguration', link: '/setup/configuration' },
+                        { text: 'Setup Mini CLI', link: '/setup/mini-cli' }
                     ]
                 }
             ],

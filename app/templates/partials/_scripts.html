@@ -1,11 +1,26 @@
 <script>
     const USER_ROLE = "{{ user.role.value }}";
+    function esc(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    function safeUrl(raw) {
+        try {
+            const url = new URL(String(raw || ''), window.location.origin);
+            if (url.protocol === 'http:' || url.protocol === 'https:') return url.href;
+        } catch (_) { }
+        return '#';
+    }
     // Toast Function
     function showToast(message, type = 'info') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<div class="toast-message">${message}</div>`;
+        toast.innerHTML = `<div class="toast-message">${esc(message)}</div>`;
         container.appendChild(toast);
         setTimeout(() => {
             toast.style.animation = 'fadeOut 0.3s forwards';
@@ -159,10 +174,14 @@
         // 3. Recursive render function
         function renderNode(node, level = 0) {
             const padding = level * 20;
+            const topicType = esc(node.type);
+            const topicContent = esc(node.content || '');
+            const topicPages = esc(node.pages || '');
+            const topicCount = esc(node.count || '');
             let html = `
                 <div class="topic-item" style="margin-left: ${padding}px">
                     <span>
-                        ${level > 0 ? '↳ ' : ''}<strong>${node.type}</strong> ${node.content || ''} ${node.pages ? `(${node.pages})` : (node.count ? `(${node.count})` : '')}
+                        ${level > 0 ? '↳ ' : ''}<strong>${topicType}</strong> ${topicContent} ${topicPages ? `(${topicPages})` : (topicCount ? `(${topicCount})` : '')}
                     </span>
                     ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="deleteTopic('${eventId}', '${node.id}')">×</button>` : ''}
                 </div>
@@ -184,7 +203,7 @@
         const pagesText = pages ? `(${pages})` : '';
 
         document.getElementById('topicPreview').innerHTML = `
-            <span><strong>${type}</strong> ${content} ${pagesText}</span>
+            <span><strong>${esc(type)}</strong> ${esc(content)} ${esc(pagesText)}</span>
         `;
         document.getElementById('topicPreview').classList.remove('opacity-50');
     }
@@ -192,7 +211,7 @@
     function updateLinkPreview() {
         const label = document.getElementById('inputLinkLabel').value || 'Link Name';
         document.getElementById('linkPreview').innerHTML = `
-            <a href="#" style="text-decoration: underline; color: var(--primary);">${label} ↗</a>
+            <a href="#" style="text-decoration: underline; color: var(--primary);">${esc(label)} ↗</a>
             `;
         document.getElementById('linkPreview').classList.remove('opacity-50');
     }
@@ -223,7 +242,7 @@
                 <div id="linksList">
                     ${event.links.map(l => `
                         <div class="topic-item">
-                            <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                            <a href="${safeUrl(l.url)}" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; color: var(--primary);">${esc(l.label)} ↗</a>
                         </div>
                     `).join('')}
                 </div>
@@ -273,9 +292,9 @@
                 </div>
                 <span class="text-muted text-sm">${event.date || 'Info'}</span>
             </div>
-            <h2 class="mt-2">${event.subject_name || 'Allgemein'}</h2>
-            ${event.title ? `<p class="text-muted">${event.title}</p>` : ''}
-            <p class="text-xs text-muted mt-2">Erstellt von ${event.author}</p>
+            <h2 class="mt-2">${esc(event.subject_name || 'Allgemein')}</h2>
+            ${event.title ? `<p class="text-muted">${esc(event.title)}</p>` : ''}
+            <p class="text-xs text-muted mt-2">Erstellt von ${esc(event.author)}</p>
 
             ${topicsHtml}
             ${linksHtml}
@@ -392,7 +411,7 @@
             <div id="linksList">
                 ${(event.links || []).map(l => `
                     <div class="topic-item" style="justify-content: space-between;">
-                        <a href="${l.url}" target="_blank" style="text-decoration: underline; color: var(--primary);">${l.label} ↗</a>
+                        <a href="${safeUrl(l.url)}" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; color: var(--primary);">${esc(l.label)} ↗</a>
                         <button class="btn btn-ghost btn-sm text-danger" onclick="deleteLink('${event.id}', '${l.id}')">×</button>
                     </div>
                 `).join('')}
@@ -451,7 +470,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Fach</label>
-                        <input type="text" name="subject_name" value="${event.subject_name || ''}">
+                        <input type="text" name="subject_name" value="${esc(event.subject_name || '')}">
                     </div>
                     <div class="form-group">
                         <label>Datum</label>
@@ -460,7 +479,7 @@
                 </div>
                 <div class="form-group">
                     <label>Details</label>
-                    <input type="text" name="title" value="${event.title || ''}">
+                    <input type="text" name="title" value="${esc(event.title || '')}">
                 </div>
                 <div class="form-group">
                     <label>Priorität</label>
@@ -908,3 +927,4 @@
         return null;
     }
 </script>
+

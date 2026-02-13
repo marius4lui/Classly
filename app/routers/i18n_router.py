@@ -6,6 +6,7 @@ from app.database import get_db
 from sqlalchemy.orm import Session
 from app.i18n import i18n
 from urllib.parse import urlparse
+from app.core.cookies import cookie_secure
 
 router = APIRouter(prefix="/i18n", tags=["i18n"])
 
@@ -32,7 +33,8 @@ def set_language(
     parsed_url = urlparse(redirect_url)
     if parsed_url.scheme or parsed_url.netloc:
         # It's an absolute URL
-        if parsed_url.netloc != request.url.hostname:
+        request_host = request.headers.get("host", "")
+        if parsed_url.netloc != request_host:
             # Different host -> potentially unsafe
             redirect_url = "/"
     else:
@@ -50,6 +52,7 @@ def set_language(
         max_age=365 * 24 * 60 * 60,
         httponly=False,  # Allow JS to read if needed
         samesite="lax",
+        secure=cookie_secure(request),
     )
     # Also set 'lang' for compatibility
     response.set_cookie(
@@ -58,6 +61,7 @@ def set_language(
         max_age=365 * 24 * 60 * 60,
         httponly=False,
         samesite="lax",
+        secure=cookie_secure(request),
     )
 
     return response

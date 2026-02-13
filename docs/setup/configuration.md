@@ -2,6 +2,8 @@
 
 Hier erfährst du, wie du Classly an deine Bedürfnisse anpasst. Die meiste Konfiguration geschieht über die `docker-compose.yml` oder Umgebungsvariablen.
 
+Tipp: Für interaktive Konfiguration mit Quick/Advanced-Modus nutze die [Setup Mini CLI](./mini-cli.md).
+
 ---
 
 ## 🔧 Grundeinstellungen (`docker-compose.yml`)

@@ -63,7 +63,7 @@ Der Parameter `-d` bedeutet "detached", also im Hintergrund.
 
 Du solltest nun die Classly Startseite sehen! 🎉
 
-### 4. Setup Wizard (Optional)
+### 4. Setup Wizard (Recommended)
 
 Wenn du Classly auf einem öffentlichen Server hostest und nicht willst, dass sich Fremde registrieren, kannst du:
 1.  Ein Limit für Klassen setzen (siehe unten).
@@ -73,8 +73,10 @@ Wenn du Classly auf einem öffentlichen Server hostest und nicht willst, dass si
 # Lade das Setup-Script und starte es
 curl -sL https://scripts.classly.site/setup.sh | bash
 ```
-Das Skript fragt dich nach Klassenname, Lehrername, etc. und generiert dir direkt die Links.
+Das Skript startet die interaktive Setup Mini CLI (quick/advanced), zeigt eine Vorschau und erstellt vor dem Schreiben Backups.
 Hinweis: Auf dem Server muss Python installiert sein.
+
+Mehr Details: [Setup Mini CLI](./mini-cli.md)
 
 ---
 

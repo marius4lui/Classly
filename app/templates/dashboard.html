@@ -4,7 +4,11 @@
 <div class="dashboard-layout">
     <!-- Header -->
     <header class="header">
-        <div>
+        <div class="header-left">
+            <a href="/?landing=1" class="header-brand-link">
+                <img src="/static/brand/classly-logo.png" alt="Classly Logo" class="header-brand-icon">
+                <span>Classly - zurück zur Startseite</span>
+            </a>
             <h1>{{ clazz.name }}</h1>
             <p class="text-sm text-muted">{{ user.name }}</p>
         </div>
@@ -14,7 +18,9 @@
                 🔒 Account verbinden
             </button>
             {% endif %}
-            <a href="/auth/logout" class="btn btn-ghost btn-sm">Logout</a>
+            <form action="/auth/logout" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+            </form>
         </div>
     </header>
 

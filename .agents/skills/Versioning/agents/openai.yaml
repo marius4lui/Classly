@@ -1,0 +1,6 @@
+display_name: Versioning
+short_description: Enforce Classly version artifacts under versions/ (plans, Commit.md, Readme.md)
+default_prompt: >
+  Follow AGENTS.md versioning rules. Keep all versioned plans/notes/changelogs under versions/.
+  When the user says "-p", create a markdown plan under versions/plan/<version>/ (or versions/Plans/<version>/ if that convention exists).
+  Maintain versions/<version>/Commit.md for commit messages and versions/<version>/Readme.md for changelog content.

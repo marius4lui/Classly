@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Stundenplan - Classly{% endblock %}
+{% block title %}{{ request.state.t('timetable.title') }} - Classly{% endblock %}
 
 {% block content %}
 <div class="timetable-page">
@@ -10,17 +10,21 @@
             <h1>📅 {{ request.state.t('timetable.title') }}</h1>
         </div>
         {% if user.role.value in ['owner', 'admin', 'class_admin'] %}
-        <button class="btn btn-primary" onclick="openTimetableSettingsModal()">⚙️ {{ request.state.t('common.edit') }}</button>
+        <div class="flex gap-2">
+            <button class="btn btn-ghost" onclick="openTimetableSettingsModal('share')">🔗 {{ request.state.t('timetable.share_button') }}</button>
+            <button class="btn btn-primary" onclick="openTimetableSettingsModal('slots')">⚙️ {{
+                request.state.t('common.edit') }}</button>
+        </div>
         {% endif %}
     </header>
 
     <!-- Mobile Day Tabs -->
     <div class="timetable-tabs" id="dayTabs">
-        <button class="tab active" onclick="showDay(0)">Mo</button>
-        <button class="tab" onclick="showDay(1)">Di</button>
-        <button class="tab" onclick="showDay(2)">Mi</button>
-        <button class="tab" onclick="showDay(3)">Do</button>
-        <button class="tab" onclick="showDay(4)">Fr</button>
+        <button class="tab active" onclick="showDay(0)">{{ request.state.t('timetable.weekdays.short.mo') }}</button>
+        <button class="tab" onclick="showDay(1)">{{ request.state.t('timetable.weekdays.short.di') }}</button>
+        <button class="tab" onclick="showDay(2)">{{ request.state.t('timetable.weekdays.short.mi') }}</button>
+        <button class="tab" onclick="showDay(3)">{{ request.state.t('timetable.weekdays.short.do') }}</button>
+        <button class="tab" onclick="showDay(4)">{{ request.state.t('timetable.weekdays.short.fr') }}</button>
     </div>
 
     <!-- Timetable Grid -->
@@ -28,12 +32,12 @@
         <table class="timetable-table" id="timetableTable">
             <thead>
                 <tr>
-                    <th class="time-col">Zeit</th>
-                    <th class="day-col" data-day="0">Montag</th>
-                    <th class="day-col" data-day="1">Dienstag</th>
-                    <th class="day-col" data-day="2">Mittwoch</th>
-                    <th class="day-col" data-day="3">Donnerstag</th>
-                    <th class="day-col" data-day="4">Freitag</th>
+                    <th class="time-col">{{ request.state.t('timetable.table.time') }}</th>
+                    <th class="day-col" data-day="0">{{ request.state.t('timetable.weekdays.long.mo') }}</th>
+                    <th class="day-col" data-day="1">{{ request.state.t('timetable.weekdays.long.di') }}</th>
+                    <th class="day-col" data-day="2">{{ request.state.t('timetable.weekdays.long.mi') }}</th>
+                    <th class="day-col" data-day="3">{{ request.state.t('timetable.weekdays.long.do') }}</th>
+                    <th class="day-col" data-day="4">{{ request.state.t('timetable.weekdays.long.fr') }}</th>
                 </tr>
             </thead>
             <tbody id="timetableBody">
@@ -43,13 +47,13 @@
 
         <div id="loadingTimetable" class="text-center text-muted py-8">
             <span class="loading loading-spinner loading-lg"></span>
-            <p class="mt-2">Lädt Stundenplan...</p>
+            <p class="mt-2">{{ request.state.t('timetable.loading') }}</p>
         </div>
     </div>
 
     <!-- Legend -->
     <div class="mt-4 text-xs text-muted text-center" id="timetableLegend">
-        Tipp: Klicke auf eine Stunde, um sie zu deinem Plan hinzuzufügen.
+        {{ request.state.t('timetable.legend_hint') }}
     </div>
 </div>
 
@@ -57,14 +61,15 @@
 <div class="modal-backdrop" id="timetableSettingsModal">
     <div class="modal" style="max-width: 600px;">
         <div class="modal-header">
-            <h2>⚙️ Stundenplan bearbeiten</h2>
+            <h2>⚙️ {{ request.state.t('timetable.modal.edit_title') }}</h2>
             <button class="btn btn-ghost" onclick="closeTimetableSettingsModal()">✕</button>
         </div>
         <div class="modal-body">
             <!-- Tabs -->
-            <div class="tabs tabs-boxed mb-4">
-                <a class="tab tab-active" onclick="showSettingsTab('slots', this)">Stunden</a>
-                <a class="tab" onclick="showSettingsTab('settings', this)">Einstellungen</a>
+            <div class="tabs tabs-boxed mb-4" role="tablist" aria-label="{{ request.state.t('timetable.modal.edit_title') }}">
+                <button type="button" class="tab tab-active" onclick="showSettingsTab('slots', this)">{{ request.state.t('timetable.tabs.slots') }}</button>
+                <button type="button" class="tab" onclick="showSettingsTab('settings', this)">{{ request.state.t('timetable.tabs.settings') }}</button>
+                <button type="button" class="tab" onclick="showSettingsTab('share', this)">{{ request.state.t('timetable.tabs.share') }}</button>
             </div>
 
             <!-- Slots Tab -->
@@ -77,45 +82,54 @@
 
                 <div
                     style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius);">
-                    <h3 class="text-sm font-bold mb-3">Neue Stunde hinzufügen</h3>
+                    <h3 class="text-sm font-bold mb-3">{{ request.state.t('timetable.modal.add_slot_title') }}</h3>
                     <form id="addSlotForm" onsubmit="addSlot(event)">
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="label-text text-xs mb-1 block font-bold">Tag</label>
+                                <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.day') }}</label>
                                 <select id="newSlotDay" class="select w-full" required>
-                                    <option value="0">Montag</option>
-                                    <option value="1">Dienstag</option>
-                                    <option value="2">Mittwoch</option>
-                                    <option value="3">Donnerstag</option>
-                                    <option value="4">Freitag</option>
+                                    <option value="0">{{ request.state.t('timetable.weekdays.long.mo') }}</option>
+                                    <option value="1">{{ request.state.t('timetable.weekdays.long.di') }}</option>
+                                    <option value="2">{{ request.state.t('timetable.weekdays.long.mi') }}</option>
+                                    <option value="3">{{ request.state.t('timetable.weekdays.long.do') }}</option>
+                                    <option value="4">{{ request.state.t('timetable.weekdays.long.fr') }}</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="label-text text-xs mb-1 block font-bold">Stunde Nr.</label>
-                                <select id="newSlotNumber" class="select w-full" required>
-                                    {% for i in range(1, 11) %}
-                                    <option value="{{ i }}">{{ i }}. Stunde</option>
+                                <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.slots') }}</label>
+                                <div id="newSlotNumbers" class="slot-number-picker">
+                                    {% for i in range(1, 13) %}
+                                    <input class="slot-number-input" type="checkbox" id="slotNum{{ i }}" value="{{ i }}"
+                                        {% if i==1 %}checked{% endif %}>
+                                    <label class="slot-number-toggle" for="slotNum{{ i }}">{{ i }}</label>
                                     {% endfor %}
-                                </select>
+                                </div>
+                                <div class="slot-number-actions">
+                                    <button type="button" class="btn btn-ghost btn-sm"
+                                        onclick="selectAllSlotNumbers(true)">{{ request.state.t('timetable.buttons.all') }}</button>
+                                    <button type="button" class="btn btn-ghost btn-sm"
+                                        onclick="selectAllSlotNumbers(false)">{{ request.state.t('timetable.buttons.none') }}</button>
+                                </div>
+                                <div class="text-xs text-muted mt-1">{{ request.state.t('timetable.hints.multi_select') }}</div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group" style="flex: 2">
-                                <label class="label-text text-xs mb-1 block font-bold">Fach</label>
-                                <input type="text" id="newSlotSubject" class="input w-full" placeholder="z.B. Mathe"
+                                <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.subject') }}</label>
+                                <input type="text" id="newSlotSubject" class="input w-full" placeholder="{{ request.state.t('timetable.placeholders.subject_example') }}"
                                     required>
                             </div>
                             <div class="form-group" style="flex: 1">
-                                <label class="label-text text-xs mb-1 block font-bold">Gruppe</label>
-                                <input type="text" id="newSlotGroup" class="input w-full" placeholder="z.B. GK1">
+                                <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.group') }}</label>
+                                <input type="text" id="newSlotGroup" class="input w-full" placeholder="{{ request.state.t('timetable.placeholders.group_example') }}">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="label-text text-xs mb-1 block font-bold">Raum</label>
-                            <input type="text" id="newSlotRoom" class="input w-full" placeholder="z.B. R102">
+                            <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.room') }}</label>
+                            <input type="text" id="newSlotRoom" class="input w-full" placeholder="{{ request.state.t('timetable.placeholders.room_example') }}">
                         </div>
                         <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">+
-                            Hinzufügen</button>
+                            {{ request.state.t('timetable.buttons.add') }}</button>
                     </form>
                 </div>
             </div>
@@ -125,28 +139,83 @@
                 <form id="settingsForm" onsubmit="saveSettings(event)">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="label-text text-xs mb-1 block font-bold">Dauer (Min)</label>
+                            <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.duration_minutes') }}</label>
                             <input type="number" id="slotDuration" name="slot_duration" class="input w-full" value="45">
                         </div>
                         <div class="form-group">
-                            <label class="label-text text-xs mb-1 block font-bold">Pause (Min)</label>
+                            <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.break_minutes') }}</label>
                             <input type="number" id="breakDuration" name="break_duration" class="input w-full"
                                 value="15">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="label-text text-xs mb-1 block font-bold">Start</label>
+                            <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.start') }}</label>
                             <input type="time" id="dayStart" class="input w-full">
                         </div>
                         <div class="form-group">
-                            <label class="label-text text-xs mb-1 block font-bold">Ende</label>
+                            <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.end') }}</label>
                             <input type="time" id="dayEnd" class="input w-full">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-success btn-block" style="margin-top: 1rem;">Einstellungen
-                        speichern</button>
+                    <button type="submit" class="btn btn-success btn-block" style="margin-top: 1rem;">{{ request.state.t('timetable.buttons.save_settings') }}</button>
                 </form>
+            </div>
+
+            <!-- Share Tab -->
+            <div id="shareTab" style="display: none;">
+                <div
+                    style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius);">
+                    <h3 class="text-sm font-bold mb-2">{{ request.state.t('timetable.labels.public_link_title') }}</h3>
+                    <p class="text-xs text-muted mb-3">
+                        {{ request.state.t('timetable.hints.public_description') }}
+                    </p>
+
+                    <div class="form-group mb-3">
+                        <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.link') }}</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="publicTimetableLink" class="input w-full" readonly value="">
+                            <button class="btn btn-ghost" type="button" onclick="copyPublicLink()">{{ request.state.t('common.copy') }}</button>
+                        </div>
+                        <div class="text-xs text-muted mt-1" id="publicTimetableStatus"></div>
+                    </div>
+
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="btn btn-primary" type="button" onclick="enableOrRotatePublicLink()">{{ request.state.t('timetable.buttons.enable_rotate') }}</button>
+                        <button class="btn btn-ghost" type="button" onclick="disablePublicLink()">{{ request.state.t('timetable.buttons.disable') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Edit Modal (Admin) -->
+<div class="modal-backdrop" id="quickEditModal">
+    <div class="modal" style="max-width: 520px;">
+        <div class="modal-header">
+            <h2>✏️ <span id="qeTitle">{{ request.state.t('timetable.modal.quick_edit_title') }}</span></h2>
+            <button class="btn btn-ghost" onclick="closeQuickEditModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.subject') }}</label>
+                <input type="text" id="qeSubject" class="input w-full" placeholder="{{ request.state.t('timetable.placeholders.subject_example') }}" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex: 1">
+                    <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.group') }}</label>
+                    <input type="text" id="qeGroup" class="input w-full" placeholder="{{ request.state.t('timetable.placeholders.group_example') }}">
+                </div>
+                <div class="form-group" style="flex: 1">
+                    <label class="label-text text-xs mb-1 block font-bold">{{ request.state.t('timetable.labels.room') }}</label>
+                    <input type="text" id="qeRoom" class="input w-full" placeholder="{{ request.state.t('timetable.placeholders.room_example') }}">
+                </div>
+            </div>
+
+            <div class="flex gap-2 flex-wrap" style="margin-top: 1rem;">
+                <button class="btn btn-primary" type="button" onclick="saveQuickEdit()">{{ request.state.t('common.save') }}</button>
+                <button class="btn btn-ghost text-error" type="button" onclick="deleteQuickEdit()">{{ request.state.t('common.delete') }}</button>
             </div>
         </div>
     </div>
@@ -154,8 +223,47 @@
 
 <script>
     const IS_ADMIN = {{ 'true' if user.role.value in ['owner', 'admin', 'class_admin']else 'false' }};
-    const IS_REGISTERED = {{ 'true' if user.is_registered else 'false' }};
-    const WEEKDAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+    // The timetable is available to any logged-in class member, not only users
+    // that registered with email/password.
+    const CAN_SELECT = true;
+    const I18N = {{ {
+        "weekdays_long": [
+            request.state.t('timetable.weekdays.long.mo'),
+            request.state.t('timetable.weekdays.long.di'),
+            request.state.t('timetable.weekdays.long.mi'),
+            request.state.t('timetable.weekdays.long.do'),
+            request.state.t('timetable.weekdays.long.fr')
+        ],
+        "slot_unit": request.state.t('timetable.slot_unit'),
+        "messages": {
+            "load_failed": request.state.t('timetable.messages.load_failed'),
+            "settings_saved": request.state.t('timetable.messages.settings_saved'),
+            "no_slots": request.state.t('timetable.messages.no_slots'),
+            "select_at_least_one_slot": request.state.t('timetable.messages.select_at_least_one_slot'),
+            "delete_slot_confirm": request.state.t('timetable.messages.delete_slot_confirm'),
+            "subject_required": request.state.t('timetable.messages.subject_required'),
+            "save_failed": request.state.t('timetable.messages.save_failed'),
+            "delete_failed": request.state.t('timetable.messages.delete_failed'),
+            "copy_success": request.state.t('timetable.messages.copy_success'),
+            "link_generate_failed": request.state.t('timetable.messages.link_generate_failed'),
+            "link_disable_failed": request.state.t('timetable.messages.link_disable_failed')
+        },
+        "status": {
+            "loading": request.state.t('timetable.status.loading'),
+            "active": request.state.t('timetable.status.active'),
+            "disabled": request.state.t('timetable.status.disabled'),
+            "load_failed": request.state.t('timetable.status.load_failed')
+        },
+        "labels": {
+            "subject": request.state.t('timetable.labels.subject'),
+            "group": request.state.t('timetable.labels.group'),
+            "room": request.state.t('timetable.labels.room')
+        },
+        "buttons": {
+            "save": request.state.t('common.save')
+        }
+    } | tojson }};
+    const WEEKDAYS = I18N.weekdays_long;
 
     let timetableData = { slots: [] };
     let settingsData = {};
@@ -175,7 +283,7 @@
         } catch (e) {
             console.error(e);
             const loader = document.getElementById('loadingTimetable');
-            loader.innerHTML = '<span class="text-error">Fehler beim Laden</span>';
+            loader.innerHTML = `<span class="text-error">${I18N.messages.load_failed}</span>`;
         }
     }
 
@@ -223,7 +331,7 @@
                     const s = daySlots[0];
                     cell.innerHTML = renderSlotContent(s);
                     if (s.selected) cell.classList.add('selected');
-                    cell.onclick = () => toggleSlotSelection(s.id, s.selected);
+                    cell.onclick = () => handleSlotClick(s);
                 } else {
                     // Multiple groups
                     const container = document.createElement('div');
@@ -232,7 +340,7 @@
                         const div = document.createElement('div');
                         div.className = `slot-item ${s.selected ? 'selected' : ''}`;
                         div.innerHTML = renderSlotContent(s, true);
-                        div.onclick = (e) => { e.stopPropagation(); toggleSlotSelection(s.id, s.selected); };
+                        div.onclick = (e) => { e.stopPropagation(); handleSlotClick(s); };
                         container.appendChild(div);
                     });
                     cell.appendChild(container);
@@ -244,13 +352,8 @@
             tbody.appendChild(row);
         }
 
-        // Apply mobile visibility
-        const today = new Date().getDay();
-        if (window.innerWidth < 768 && today >= 1 && today <= 5) {
-            showDay(today - 1);
-        } else if (window.innerWidth < 768) {
-            showDay(0); // Default to Monday
-        }
+        // Apply responsive visibility: mobile shows one day, desktop shows all days.
+        applyResponsiveDayVisibility();
     }
 
     function renderSlotContent(slot, compact = false) {
@@ -270,8 +373,16 @@
     `;
     }
 
+    function handleSlotClick(slot) {
+        if (IS_ADMIN) {
+            openQuickEditSlot(slot.id);
+            return;
+        }
+        toggleSlotSelection(slot.id, slot.selected);
+    }
+
     async function toggleSlotSelection(slotId, currentlySelected) {
-        if (!IS_REGISTERED) return;
+        if (!CAN_SELECT) return;
 
         const method = currentlySelected ? 'DELETE' : 'POST';
         await fetch(`/timetable/select/${slotId}`, { method });
@@ -284,8 +395,23 @@
         loadTimetable();
     }
 
+    function showAllDays() {
+        document.querySelectorAll('.day-col').forEach(th => {
+            th.style.display = 'table-cell';
+        });
+        document.querySelectorAll('.day-cell').forEach(td => {
+            td.style.display = 'table-cell';
+        });
+    }
+
     function showDay(dayIndex) {
-        // Mobile only function to hide/show columns
+        // Mobile-only view: hide/show columns.
+        // If we're on desktop, ensure everything is visible.
+        if (window.innerWidth >= 768) {
+            showAllDays();
+            return;
+        }
+
         document.querySelectorAll('#dayTabs .tab').forEach((t, i) => {
             t.classList.toggle('tab-active', i === dayIndex);
         });
@@ -301,13 +427,30 @@
         });
     }
 
+    function applyResponsiveDayVisibility() {
+        const isMobile = window.innerWidth < 768;
+        if (!isMobile) {
+            showAllDays();
+            return;
+        }
+
+        const today = new Date().getDay();
+        if (today >= 1 && today <= 5) {
+            showDay(today - 1);
+        } else {
+            showDay(0); // Default to Monday
+        }
+    }
+
     // Settings Modal
-    function openTimetableSettingsModal() {
+    function openTimetableSettingsModal(initialTab = 'slots') {
         document.getElementById('timetableSettingsModal').classList.add('active');
         loadSettingsForm();
         loadSlotsEditor();
-        // Ensure the 'slots' tab is active by default when opening the modal
-        showSettingsTab('slots', document.querySelector('.tabs .tab:first-child'));
+        loadPublicLinkStatus();
+        const tabEls = Array.from(document.querySelectorAll('.tabs .tab'));
+        const idx = initialTab === 'settings' ? 1 : initialTab === 'share' ? 2 : 0;
+        showSettingsTab(initialTab, tabEls[idx]);
     }
 
     function closeTimetableSettingsModal() {
@@ -317,6 +460,7 @@
     function showSettingsTab(tabName, tabElement) {
         document.getElementById('settingsTab').style.display = tabName === 'settings' ? 'block' : 'none';
         document.getElementById('slotsTab').style.display = tabName === 'slots' ? 'block' : 'none';
+        document.getElementById('shareTab').style.display = tabName === 'share' ? 'block' : 'none';
 
         // Update active tab visual
         if (tabElement) {
@@ -351,7 +495,7 @@
 
         await fetch('/timetable/settings', { method: 'PUT', body: formData });
         await loadTimetable();
-        alert('Einstellungen gespeichert!');
+        alert(I18N.messages.settings_saved);
     }
 
     async function loadSlotsEditor() {
@@ -362,18 +506,26 @@
         const grid = document.getElementById('slotEditorGrid');
 
         if (data.slots.length === 0) {
-            grid.innerHTML = '<p class="text-muted text-center py-4">Noch keine Stunden angelegt</p>';
+            grid.innerHTML = `<p class="text-muted text-center py-4">${I18N.messages.no_slots}</p>`;
             return;
         }
 
         grid.innerHTML = data.slots.map(s => `
         <div class="slot-editor-item">
-            <div>
-                <strong>${WEEKDAYS[s.weekday]}, ${s.slot_number}. Stunde</strong><br>
-                ${s.subject_name}${s.group_name ? ` (${s.group_name})` : ''}
-                ${s.room ? ` - ${s.room}` : ''}
+            <div class="slot-editor-main">
+                <div class="slot-editor-title">
+                    <strong>${WEEKDAYS[s.weekday]}, ${s.slot_number}. ${I18N.slot_unit}</strong>
+                </div>
+                <div class="slot-editor-fields">
+                    <input class="input" id="editSubject_${s.id}" value="${escapeHtml(s.subject_name || '')}" placeholder="${escapeHtml(I18N.labels.subject)}" />
+                    <input class="input" id="editGroup_${s.id}" value="${escapeHtml(s.group_name || '')}" placeholder="${escapeHtml(I18N.labels.group)}" />
+                    <input class="input" id="editRoom_${s.id}" value="${escapeHtml(s.room || '')}" placeholder="${escapeHtml(I18N.labels.room)}" />
+                </div>
+                <div class="slot-editor-actions">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="saveSlotEdit('${s.id}')">${I18N.buttons.save}</button>
+                    <button type="button" class="btn btn-ghost btn-sm text-error" onclick="deleteSlot('${s.id}')">🗑️</button>
+                </div>
             </div>
-            <button class="btn btn-ghost btn-sm text-error" onclick="deleteSlot('${s.id}')">🗑️</button>
         </div>
     `).join('');
     }
@@ -381,14 +533,22 @@
     async function addSlot(e) {
         e.preventDefault();
 
+        const slotNums = Array.from(document.querySelectorAll('#newSlotNumbers input[type=\"checkbox\"]:checked'))
+            .map(el => parseInt(el.value, 10))
+            .filter(n => !Number.isNaN(n));
+        if (slotNums.length === 0) {
+            alert(I18N.messages.select_at_least_one_slot);
+            return;
+        }
+
         const formData = new FormData();
         formData.append('weekday', document.getElementById('newSlotDay').value);
-        formData.append('slot_number', document.getElementById('newSlotNumber').value);
+        slotNums.forEach(n => formData.append('slot_numbers', String(n)));
         formData.append('subject_name', document.getElementById('newSlotSubject').value);
         formData.append('group_name', document.getElementById('newSlotGroup').value);
         formData.append('room', document.getElementById('newSlotRoom').value);
 
-        const res = await fetch('/timetable/slots', { method: 'POST', body: formData });
+        const res = await fetch('/timetable/slots/bulk', { method: 'POST', body: formData });
         if (res.ok) {
             document.getElementById('newSlotSubject').value = '';
             document.getElementById('newSlotGroup').value = '';
@@ -398,18 +558,179 @@
         }
     }
 
+    function selectAllSlotNumbers(enabled) {
+        document.querySelectorAll('#newSlotNumbers input[type=\"checkbox\"]').forEach(el => {
+            el.checked = !!enabled;
+        });
+    }
+
     async function deleteSlot(slotId) {
-        if (!confirm('Stunde löschen?')) return;
+        if (!confirm(I18N.messages.delete_slot_confirm)) return;
         await fetch(`/timetable/slots/${slotId}`, { method: 'DELETE' });
         await loadSlotsEditor();
         await loadTimetable();
     }
 
+    function escapeHtml(s) {
+        return String(s)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    async function saveSlotEdit(slotId) {
+        const subject = document.getElementById(`editSubject_${slotId}`)?.value?.trim();
+        const group = document.getElementById(`editGroup_${slotId}`)?.value?.trim();
+        const room = document.getElementById(`editRoom_${slotId}`)?.value?.trim();
+        if (!subject) {
+            alert(I18N.messages.subject_required);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('subject_name', subject);
+        formData.append('group_name', group || '');
+        formData.append('room', room || '');
+
+        const res = await fetch(`/timetable/slots/${slotId}`, { method: 'PUT', body: formData });
+        if (!res.ok) {
+            alert(I18N.messages.save_failed);
+            return;
+        }
+
+        await loadTimetable();
+    }
+
+    // Public share helpers (admin only)
+    function publicLinkFromCode(code) {
+        if (!code) return '';
+        return `${window.location.origin}/public/stundenplan/${code}`;
+    }
+
+    async function loadPublicLinkStatus() {
+        if (!IS_ADMIN) return;
+        const statusEl = document.getElementById('publicTimetableStatus');
+        const linkEl = document.getElementById('publicTimetableLink');
+        if (!statusEl || !linkEl) return;
+
+        statusEl.textContent = I18N.status.loading;
+        linkEl.value = '';
+
+        const res = await fetch('/timetable/public/status');
+        if (!res.ok) {
+            statusEl.textContent = I18N.status.load_failed;
+            return;
+        }
+
+        const data = await res.json();
+        if (data.enabled && data.code) {
+            statusEl.textContent = I18N.status.active;
+            linkEl.value = publicLinkFromCode(data.code);
+        } else {
+            statusEl.textContent = I18N.status.disabled;
+            linkEl.value = '';
+        }
+    }
+
+    async function enableOrRotatePublicLink() {
+        const res = await fetch('/timetable/public/rotate', { method: 'POST' });
+        if (res.ok) {
+            await loadPublicLinkStatus();
+        } else {
+            alert(I18N.messages.link_generate_failed);
+        }
+    }
+
+    async function disablePublicLink() {
+        const res = await fetch('/timetable/public/disable', { method: 'POST' });
+        if (res.ok) {
+            await loadPublicLinkStatus();
+        } else {
+            alert(I18N.messages.link_disable_failed);
+        }
+    }
+
+    async function copyPublicLink() {
+        const link = document.getElementById('publicTimetableLink')?.value || '';
+        if (!link) return;
+        try {
+            await navigator.clipboard.writeText(link);
+            alert(I18N.messages.copy_success);
+        } catch (e) {
+            const el = document.getElementById('publicTimetableLink');
+            el.focus();
+            el.select();
+            document.execCommand('copy');
+            alert(I18N.messages.copy_success);
+        }
+    }
+
+    // Quick edit modal for admins (click-to-edit in grid)
+    let activeEditSlotId = null;
+
+    function openQuickEditSlot(slotId) {
+        const slot = timetableData.slots.find(s => s.id === slotId);
+        if (!slot) return;
+
+        activeEditSlotId = slotId;
+        document.getElementById('qeTitle').textContent = `${WEEKDAYS[slot.weekday] || ''}, ${slot.slot_number}. ${I18N.slot_unit}`;
+        document.getElementById('qeSubject').value = slot.subject_name || '';
+        document.getElementById('qeGroup').value = slot.group_name || '';
+        document.getElementById('qeRoom').value = slot.room || '';
+        document.getElementById('quickEditModal').classList.add('active');
+    }
+
+    function closeQuickEditModal() {
+        document.getElementById('quickEditModal').classList.remove('active');
+        activeEditSlotId = null;
+    }
+
+    async function saveQuickEdit() {
+        if (!activeEditSlotId) return;
+        const subject = document.getElementById('qeSubject').value.trim();
+        const group = document.getElementById('qeGroup').value.trim();
+        const room = document.getElementById('qeRoom').value.trim();
+        if (!subject) {
+            alert(I18N.messages.subject_required);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('subject_name', subject);
+        formData.append('group_name', group || '');
+        formData.append('room', room || '');
+
+        const res = await fetch(`/timetable/slots/${activeEditSlotId}`, { method: 'PUT', body: formData });
+        if (!res.ok) {
+            alert(I18N.messages.save_failed);
+            return;
+        }
+
+        closeQuickEditModal();
+        await loadTimetable();
+        await loadSlotsEditor();
+    }
+
+    async function deleteQuickEdit() {
+        if (!activeEditSlotId) return;
+        if (!confirm(I18N.messages.delete_slot_confirm)) return;
+        const res = await fetch(`/timetable/slots/${activeEditSlotId}`, { method: 'DELETE' });
+        if (!res.ok) {
+            alert(I18N.messages.delete_failed);
+            return;
+        }
+
+        closeQuickEditModal();
+        await loadTimetable();
+        await loadSlotsEditor();
+    }
+
     // Init
     document.addEventListener('DOMContentLoaded', loadTimetable);
 
-    // Mobile: show current day
-    const today = new Date().getDay();
-    if (today >= 1 && today <= 5) showDay(today - 1);
+    // Keep day visibility correct when resizing between mobile/desktop.
+    window.addEventListener('resize', applyResponsiveDayVisibility);
 </script>
 {% endblock %}

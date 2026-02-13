@@ -1,5 +1,5 @@
 #!/bin/bash
-# Classly Setup Wrapper
+# Classly Setup Wrapper (Docker config wizard + legacy class bootstrap)
 
 # Colors
 GREEN='\033[0;32m'
@@ -17,73 +17,53 @@ else
     echo "Warning: Not a standard Classly directory structure."
 fi
 
-# Check if arguments provided, otherwise interactive
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+WIZARD_PATH="$SCRIPT_DIR/classly_setup_cli.py"
+LEGACY_PATH="$SCRIPT_DIR/setup_class.py"
+
+run_python_script() {
+    local script="$1"
+    shift
+    if command -v python3 &>/dev/null; then
+        python3 "$script" "$@"
+    elif command -v python &>/dev/null; then
+        python "$script" "$@"
+    else
+        echo -e "${RED}Error: Python not found.${NC}"
+        exit 1
+    fi
+}
+
+# Backwards compatibility:
+# If legacy class bootstrap args are used, keep old behavior.
+for arg in "$@"; do
+    if [[ "$arg" == "--class-name" ]] || [[ "$arg" == "--user-name" ]]; then
+        if [ ! -f "$LEGACY_PATH" ]; then
+            echo "Downloading legacy helper script..."
+            curl -sL https://scripts.classly.site/setup_class.py -o setup_class_temp.py
+            LEGACY_PATH="setup_class_temp.py"
+        fi
+        run_python_script "$LEGACY_PATH" "$@"
+        if [ "$LEGACY_PATH" == "setup_class_temp.py" ]; then
+            rm setup_class_temp.py
+        fi
+        exit 0
+    fi
+done
+
+# New Docker setup wizard.
+if [ ! -f "$WIZARD_PATH" ]; then
+    echo "Downloading setup CLI..."
+    curl -sL https://scripts.classly.site/classly_setup_cli.py -o classly_setup_cli_temp.py
+    WIZARD_PATH="classly_setup_cli_temp.py"
+fi
+
 if [ $# -eq 0 ]; then
-    echo "No arguments provided. Starting interactive mode..."
-    echo ""
-    read -p "Class Name (e.g. 10B): " CLASS_NAME
-    read -p "Owner Name (e.g. Mr. Smith): " OWNER_NAME
-    read -p "Email (Optional): " EMAIL
-    read -p "Password (Optional): " PASSWORD
-
-    ARGS="--class-name \"$CLASS_NAME\" --user-name \"$OWNER_NAME\""
-    
-    if [ ! -z "$EMAIL" ]; then
-        ARGS="$ARGS --email \"$EMAIL\""
-    fi
-    if [ ! -z "$PASSWORD" ]; then
-        ARGS="$ARGS --password \"$PASSWORD\""
-    fi
-    
-    # Run python script
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-    SCRIPT_PATH="$SCRIPT_DIR/setup_class.py"
-    
-    # Check if setup_class.py exists. If not (e.g. piped via curl), download it.
-    if [ ! -f "$SCRIPT_PATH" ]; then
-        echo "Downloading helper script..."
-        curl -sL https://scripts.classly.site/setup_class.py -o setup_class_temp.py
-        SCRIPT_PATH="setup_class_temp.py"
-    fi
-    
-    if command -v python3 &>/dev/null; then
-        eval python3 "$SCRIPT_PATH" $ARGS
-    elif command -v python &>/dev/null; then
-        eval python "$SCRIPT_PATH" $ARGS
-    else
-        echo -e "${RED}Error: Python not found.${NC}"
-        exit 1
-    fi
-    
-    # Cleanup temp file
-    if [ "$SCRIPT_PATH" == "setup_class_temp.py" ]; then
-        rm setup_class_temp.py
-    fi
+    run_python_script "$WIZARD_PATH" wizard
 else
-    # Arguments provided, pass through
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-    SCRIPT_PATH="$SCRIPT_DIR/setup_class.py"
-    
-    if [ ! -f "$SCRIPT_PATH" ]; then
-         # Try current directory or download
-         if [ -f "setup_class.py" ]; then
-             SCRIPT_PATH="setup_class.py"
-         else
-             curl -sL https://docs.classly.site/scripts/setup_class.py -o setup_class_temp.py
-             SCRIPT_PATH="setup_class_temp.py"
-         fi
-    fi
+    run_python_script "$WIZARD_PATH" "$@"
+fi
 
-    if command -v python3 &>/dev/null; then
-        python3 "$SCRIPT_PATH" "$@"
-    elif command -v python &>/dev/null; then
-        python "$SCRIPT_PATH" "$@"
-    else
-        echo -e "${RED}Error: Python not found.${NC}"
-        exit 1
-    fi
-    
-    if [ "$SCRIPT_PATH" == "setup_class_temp.py" ]; then
-        rm setup_class_temp.py
-    fi
+if [ "$WIZARD_PATH" == "classly_setup_cli_temp.py" ]; then
+    rm classly_setup_cli_temp.py
 fi

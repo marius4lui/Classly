@@ -24,9 +24,28 @@ def run_auto_migrations():
         try:
             # 1. Check Priority Column in Events
             logger.info("Checking schema migrations...")
+
+            # 0. Add timetable public-share columns to classes (if missing)
+            cursor.execute("PRAGMA table_info(classes)")
+            class_columns = [info[1] for info in cursor.fetchall()]
+
+            if "timetable_public_enabled" not in class_columns:
+                logger.info("Migrating: Adding 'timetable_public_enabled' column to classes table.")
+                cursor.execute("ALTER TABLE classes ADD COLUMN timetable_public_enabled BOOLEAN DEFAULT 0")
+                conn.commit()
+
+            if "timetable_public_token" not in class_columns:
+                logger.info("Migrating: Adding 'timetable_public_token' column to classes table.")
+                cursor.execute("ALTER TABLE classes ADD COLUMN timetable_public_token VARCHAR")
+                try:
+                    cursor.execute("CREATE INDEX ix_classes_timetable_public_token ON classes(timetable_public_token)")
+                except Exception:
+                    pass
+                conn.commit()
+
             cursor.execute("PRAGMA table_info(events)")
             columns = [info[1] for info in cursor.fetchall()]
-            
+             
             if "priority" not in columns:
                 logger.info("Migrating: Adding 'priority' column to events table.")
                 cursor.execute("ALTER TABLE events ADD COLUMN priority VARCHAR DEFAULT 'MEDIUM'")

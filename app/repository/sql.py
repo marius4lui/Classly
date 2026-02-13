@@ -35,12 +35,22 @@ class SqlAlchemyRepository(BaseRepository):
     def get_class(self, class_id: str) -> Optional[models.Class]:
         return crud.get_class(self.db, class_id)
 
-    def update_class(self, class_id: str, owner_id: str = None, join_token: str = None, join_enabled: bool = None) -> Optional[models.Class]:
+    def update_class(
+        self,
+        class_id: str,
+        owner_id: str = None,
+        join_token: str = None,
+        join_enabled: bool = None,
+        timetable_public_enabled: bool = None,
+        timetable_public_token: str = None,
+    ) -> Optional[models.Class]:
         c = crud.get_class(self.db, class_id)
         if c:
             if owner_id is not None: c.owner_id = owner_id
             if join_token is not None: c.join_token = join_token
             if join_enabled is not None: c.join_enabled = join_enabled
+            if timetable_public_enabled is not None: c.timetable_public_enabled = timetable_public_enabled
+            if timetable_public_token is not None: c.timetable_public_token = timetable_public_token
             self.db.commit()
             self.db.refresh(c)
         return c

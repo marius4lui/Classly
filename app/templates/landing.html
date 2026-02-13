@@ -1,115 +1,114 @@
 {% extends "base.html" %}
 
-{% block title %}Classly - Organize Your Class without Stress{% endblock %}
+{% block title %}Classly - Klassenorganisation klar und modern{% endblock %}
 
 {% block main_class %}{% endblock %}
 
 {% block content %}
-<div class="landing-page">
-
-    <!-- Navigation -->
-    <nav class="landing-nav">
-        <div class="nav-container">
-            <div class="logo">Classly</div>
-            <div class="nav-links">
-                <a href="https://docs.classly.site" target="_blank" class="nav-link">Anleitung</a>
+<div class="landing-v2">
+    <nav class="landing-v2-nav">
+        <div class="landing-v2-nav-inner">
+            <a href="/" class="landing-v2-brand">
+                <img src="/static/brand/classly-logo.png" alt="Classly Logo" class="brand-icon">
+                <span>Classly</span>
+            </a>
+            <div class="landing-v2-nav-actions">
+                <a href="https://docs.classly.site" target="_blank" rel="noopener noreferrer"
+                    class="btn btn-ghost btn-sm">Docs</a>
                 <a href="/login" class="btn btn-secondary btn-sm">Login</a>
-                <button onclick="document.getElementById('create-modal').classList.add('active')"
-                    class="btn btn-primary btn-sm">Get Started</button>
+                <a href="#create-modal" class="btn btn-primary btn-sm">Klasse erstellen</a>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1 class="hero-title">
-                Klassen-Orga <br>
-                <span class="text-gradient">einfach gemacht.</span>
-            </h1>
-            <p class="hero-subtitle">
-                Kein Chaos mehr im Klassenchat. Hausaufgaben, Termine und Prüfungen an einem Ort.
-                Kostenlos, ohne Anmeldung für Schüler.
+    <section class="landing-v2-hero">
+        <div class="landing-v2-hero-inner">
+            <p class="landing-v2-eyebrow">Für Schulklassen gemacht</p>
+            <h1>Klassenorga ohne Chaos.</h1>
+            <p class="landing-v2-lead">
+                Termine, Hausaufgaben, Stundenplan und Infos an einem Ort.
+                Schnell eingerichtet, klar Für alle und dauerhaft kostenlos.
             </p>
-            <div class="hero-actions">
-                <button onclick="document.getElementById('create-modal').classList.add('active')"
-                    class="btn btn-primary btn-lg">
-                    Klasse erstellen
-                </button>
-                <a href="/login" class="btn btn-secondary btn-lg">
-                    Zum Login
-                </a>
+            <div class="landing-v2-cta">
+                <a href="#create-modal" class="btn btn-primary btn-lg">Jetzt starten</a>
+                <a href="/login" class="btn btn-secondary btn-lg">Ich habe schon einen Zugang</a>
             </div>
-            <div class="hero-badge">
-                <span class="pulse"></span> 100% Kostenlos & Open Source
+            <div class="landing-v2-proof">
+                <span class="dot"></span>
+                Classly ist kostenlos und bleibt kostenlos. Open Source.
             </div>
         </div>
-        <!-- Abstract Background Elements -->
-        <div class="hero-bg-glow"></div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features-section">
-        <div class="section-container">
-            <h2 class="section-title">Warum Classly?</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">📅</div>
-                    <h3>Zentraler Kalender</h3>
-                    <p>Alle Termine auf einen Blick. Klausuren, Ausflüge und Ferien – synchronisiert für alle.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📚</div>
-                    <h3>Hausaufgaben</h3>
-                    <p>Nie wieder "Ich wusste das nicht". Hausaufgaben direkt eintragen und abhaken.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📱</div>
-                    <h3>Mobile First</h3>
-                    <p>Fühlt sich an wie eine App. Perfekt optimiert für dein Smartphone.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Datenschutz</h3>
-                    <p>Keine persönlichen Daten von Schülern nötig. Ein Link reicht für den Zugriff.</p>
-                </div>
-            </div>
+        <div class="landing-v2-hero-card">
+            <h3>Was in deiner Klasse ankommt</h3>
+            <ul>
+                <li>Ein zentraler Kalender Für alle Termine</li>
+                <li>Klare Aufgabenliste statt Chat-Chaos</li>
+                <li>Stundenplan mit Public-Link zum Teilen</li>
+                <li>Rollen Für Admin, Klassenadmin und Mitglieder</li>
+            </ul>
         </div>
     </section>
 
-    <!-- How it Works -->
-    <section class="steps-section">
-        <div class="section-container">
-            <h2 class="section-title">In 3 Schritten starten</h2>
-            <div class="steps-grid">
-                <div class="step-item">
-                    <div class="step-number">1</div>
-                    <h3>Klasse erstellen</h3>
-                    <p>Gib deiner Klasse einen Namen und leg los.</p>
-                </div>
-                <div class="step-line"></div>
-                <div class="step-item">
-                    <div class="step-number">2</div>
-                    <h3>Link teilen</h3>
-                    <p>Schick den Einladungs-Link in deinen Klassenchat.</p>
-                </div>
-                <div class="step-line"></div>
-                <div class="step-item">
-                    <div class="step-number">3</div>
-                    <h3>Organisiert sein</h3>
-                    <p>Jeder sieht sofort, was ansteht.</p>
-                </div>
+    <section class="landing-v2-features">
+        <div class="landing-v2-section-header">
+            <p class="landing-v2-eyebrow">Fokus auf Klarheit</p>
+            <h2>Alles Wichtige auf einen Blick</h2>
+        </div>
+        <div class="landing-v2-grid">
+            <article class="landing-v2-feature">
+                <h3>Kalender & Deadlines</h3>
+                <p>Klausuren, Tests, Ausflüge und Abgaben strukturiert an einem Ort.</p>
+            </article>
+            <article class="landing-v2-feature">
+                <h3>Stundenplan Für alle</h3>
+                <p>Klassenadmin pflegt den Plan, alle sehen ihn direkt und optional auch öffentlich.</p>
+            </article>
+            <article class="landing-v2-feature">
+                <h3>Einfaches Onboarding</h3>
+                <p>Klasse erstellen, Link teilen, fertig. Ohne komplizierte Einrichtung.</p>
+            </article>
+            <article class="landing-v2-feature">
+                <h3>Sicheres Fundament</h3>
+                <p>Session-Handling, CSRF-Schutz und klare Rollen Für kontrollierte Zugriffe.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="landing-v2-steps">
+        <div class="landing-v2-section-header">
+            <p class="landing-v2-eyebrow">Schneller Start</p>
+            <h2>In drei Schritten live</h2>
+        </div>
+        <div class="landing-v2-steps-row">
+            <div class="landing-v2-step">
+                <span>1</span>
+                <h3>Klasse erstellen</h3>
+                <p>Name vergeben und erste Admin-Person anlegen.</p>
+            </div>
+            <div class="landing-v2-step">
+                <span>2</span>
+                <h3>Mitglieder einladen</h3>
+                <p>Einladungslink teilen und gemeinsam starten.</p>
+            </div>
+            <div class="landing-v2-step">
+                <span>3</span>
+                <h3>Alltag steuern</h3>
+                <p>Termine, Aufgaben und Stundenplan zentral pflegen.</p>
             </div>
         </div>
     </section>
 
-    <!-- Create Class Modal -->
+    <section class="landing-v2-final">
+        <h2>Bereit Für eine klare Klassenorga?</h2>
+        <p>Erstelle in unter einer Minute deine Klasse. Classly bleibt dauerhaft kostenlos.</p>
+        <a href="#create-modal" class="btn btn-primary btn-lg">Kostenlos starten</a>
+    </section>
+
     <div id="create-modal" class="modal-backdrop">
         <div class="modal">
             <div class="modal-header">
                 <h2>Klasse erstellen</h2>
-                <button onclick="document.getElementById('create-modal').classList.remove('active')"
-                    class="btn-ghost">✕</button>
+                <a href="#" class="btn-ghost">x</a>
             </div>
             <div class="modal-body">
                 <form hx-post="/auth/create-class" hx-swap="none">
@@ -118,16 +117,16 @@
                         <input type="text" name="class_name" placeholder="z.B. 10B" required autofocus>
                     </div>
                     <div class="form-group">
-                        <label>Dein Name (als Admin)</label>
-                        <input type="text" name="user_name" placeholder="z.B. Max" required>
+                        <label>Dein Name (Admin)</label>
+                        <input type="text" name="user_name" placeholder="z.B. Alex" required>
                     </div>
 
                     <hr>
-                    <p class="text-sm text-muted mb-4">Optional: Damit du dich später per Passwort einloggen kannst.</p>
+                    <p class="text-sm text-muted mb-4">Optional: Login mit E-Mail und Passwort Für Admin-Zugang.</p>
 
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" placeholder="deine@email.de">
+                        <label>E-Mail</label>
+                        <input type="email" name="email" placeholder="name@schule.de">
                     </div>
                     <div class="form-group">
                         <label>Passwort</label>
@@ -139,15 +138,5 @@
             </div>
         </div>
     </div>
-
 </div>
-
-<script>
-    // Close modal on backdrop click
-    document.getElementById('create-modal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            this.classList.remove('active');
-        }
-    });
-</script>
 {% endblock %}
