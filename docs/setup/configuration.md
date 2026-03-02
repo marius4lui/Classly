@@ -25,7 +25,11 @@ services:
 
 ### Umgebungsvariablen
 
-Classly nutzt folgende Umgebungsvariablen zur Konfiguration:
+Classly nutzt folgende Umgebungsvariablen zur Konfiguration. Erstelle dazu die Datei `.env` in deinem Hauptverzeichnis (siehe [Installation](./installation.md)):
+
+```bash
+cp .env.example .env
+```
 
 | Variable | Standardwert | Beschreibung |
 | :--- | :--- | :--- |

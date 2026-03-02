@@ -1,6 +1,6 @@
 # 🛠️ Installation & Setup
 
-Diese Anleitung führt dich durch die Installation von Classly. Wir empfehlen die Nutzung von **Docker**, da es die Einrichtung extrem vereinfacht und alle Abhängigkeiten mitbringt.
+Diese Anleitung führt dich durch die Installation von Classly. Wir hosten ein fertiges Docker-Image für dich, sodass du nichts selbst herunterladen oder bauen musst.
 
 ---
 
@@ -9,12 +9,10 @@ Diese Anleitung führt dich durch die Installation von Classly. Wir empfehlen di
 Bevor du startest, stelle sicher, dass du folgende Dinge bereit hast:
 
 1.  **Einen Server oder PC:** Das kann ein VPS (z.B. Hetzner, DigitalOcean), ein Raspberry Pi oder dein lokaler Rechner sein.
-2.  **Docker & Docker Compose:** Die Software, die Classly ausführt.
-
-### Docker installieren
+2.  **Docker:** Die Software, die Classly als Image ausführt.
 
 <details>
-<summary>Klicke hier für Installations-Befehle (Linux)</summary>
+<summary>Klicke hier für Docker-Installationsbefehle (Linux)</summary>
 
 ```bash
 # Docker holen & installieren
@@ -27,34 +25,43 @@ sudo usermod -aG docker $USER
 ```
 </details>
 
-<details>
-<summary>Klicke hier für Windows/Mac</summary>
-
-Lade einfach [Docker Desktop](https://www.docker.com/products/docker-desktop/) herunter und installiere es.
-</details>
-
 ---
 
-## 🚀 Installation via Docker (Empfohlen)
+## 🚀 Installation via Docker Run (Empfohlen)
 
-### 1. Repository klonen
+Mit ein paar Befehlen kannst du das offizielle Classly-Image starten, ohne das GitHub-Repository herunterladen zu müssen.
 
-Lade den Code von GitHub herunter:
+### 1. Ordner & Konfiguration erstellen
+
+Erstelle einen neuen Ordner für deine Classly-Datenbank und die Konfiguration:
 
 ```bash
-git clone https://github.com/marius4lui/classly.git
+# 1. Neuen Ordner erstellen & betreten
+mkdir -p classly/data
 cd classly
+
+# 2. Konfigurationsdatei (.env) erstellen
+touch .env
 ```
 
-### 2. Starten
+*(Optional)* Du kannst einen Texteditor (z.B. `nano .env`) nutzen, um Limits und Konfigurationen festzulegen (siehe [Konfiguration](configuration.md)).
 
-Starten den Server mit einem einzigen Befehl:
+### 2. Classly starten
+
+Lade das aktuelle Image von Docker Hub herunter und starte den Server mit folgendem Befehl:
 
 ```bash
-docker compose up -d
+docker run -d \
+  --name classly \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -v $(pwd)/data:/data \
+  --env-file .env \
+  marius4lui/classly:latest
 ```
 
-Der Parameter `-d` bedeutet "detached", also im Hintergrund.
+*(Windows-Nutzer in der PowerShell: Ersetze `$(pwd)` durch `${PWD}` oder einen absoluten Pfad zur Data-Ordner.)*
+
 
 ### 3. Zugriff testen
 
@@ -63,86 +70,100 @@ Der Parameter `-d` bedeutet "detached", also im Hintergrund.
 
 Du solltest nun die Classly Startseite sehen! 🎉
 
-### 4. Setup Wizard (Recommended)
+### 4. Setup Wizard (Optional)
 
 Wenn du Classly auf einem öffentlichen Server hostest und nicht willst, dass sich Fremde registrieren, kannst du:
-1.  Ein Limit für Klassen setzen (siehe unten).
-2.  Den interaktiven Setup-Wizard nutzen, um deine Klasse zu erstellen.
+1.  Ein Limit für Klassen setzen in der `.env` (`MAX_CLASSES=1`).
+2.  Den interaktiven Setup-Wizard im Container ausführen:
 
 ```bash
-# Lade das Setup-Script und starte es
-curl -sL https://scripts.classly.site/setup.sh | bash
+docker exec -it classly bash -c "curl -sL https://scripts.classly.site/setup.sh | bash"
 ```
-Das Skript startet die interaktive Setup Mini CLI (quick/advanced), zeigt eine Vorschau und erstellt vor dem Schreiben Backups.
-Hinweis: Auf dem Server muss Python installiert sein.
-
-Mehr Details: [Setup Mini CLI](./mini-cli.md)
+Mehr Details dazu: [Setup Mini CLI](./mini-cli.md)
 
 ---
 
-## ⚙️ Limitierung (Self-Hosting)
-
-Du kannst in der `.env` Datei festlegen, wie viele Klassen auf deinem Server maximal erlaubt sind.
-
-```bash
-# .env
-MAX_CLASSES=1 
-```
-Wenn dieses Limit erreicht ist (z.B. 1), können über die Webseite keine weiteren Klassen mehr erstellt werden. Perfekt, wenn du Classly nur für deine eigene Klasse hostest!
-
 ## 🔄 Updates installieren
 
-Classly wird stetig verbessert. Um auf die neueste Version zu aktualisieren:
+Da du ein fertiges Image nutzt, ist ein Update super schnell erledigt:
 
 ```bash
-# 1. Neuesten Code holen
-git pull
+# 1. Neues Image herunterladen
+docker pull marius4lui/classly:latest
 
-# 2. Container neu bauen und starten
-docker compose up -d --build
+# 2. Alten Container stoppen & löschen (Deine Daten in ./data bleiben erhalten!)
+docker stop classly
+docker rm classly
+
+# 3. Mit dem gleichen Befehl wie vorher wieder starten:
+docker run -d \
+  --name classly \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -v $(pwd)/data:/data \
+  --env-file .env \
+  marius4lui/classly:latest
 ```
+
+---
+
+## 🐳 Installation via Docker Compose (Alternative)
+
+Falls du `docker-compose.yml` bevorzugst (z.B. für komplexere Setups oder leichtere Updates), erstelle in deinem leeren `classly` Ordner eine Datei namens `docker-compose.yml`:
+
+```yaml
+services:
+  classly:
+    image: marius4lui/classly:latest
+    container_name: classly
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    restart: unless-stopped
+```
+
+Führe anschließend einfach aus: `docker compose up -d`.
 
 ---
 
 ## 💾 Backups & Datenverwaltung
 
-Deine Daten sind wichtig! Classly speichert standardmäßig alles in einer SQLite-Datenbank (`classly.db`).
+Deine Daten sind wichtig! Classly speichert standardmäßig alles in einer SQLite-Datenbank.
 
 ### Wo liegen meine Daten?
 
-Docker speichert die Daten in einem **Volume** namens `classly_data`.
-Innerhalb des Containers liegen die Daten unter `/data`.
+Da wir beim Starten ein Volume (`$(pwd)/data`) gemappt haben, liegt deine Datenbank nun sicher und offen zugänglich auf deinem lokalen Dateisystem:
+
+Im Unterordner `classly/data/` direkt neben deiner `.env` findest du die Datei `classly.db` und Bilder.
 
 ### Backup erstellen (Wichtig!)
 
-Um ein Backup deiner Datenbank zu machen:
+Um ein Backup der Datenbank zu machen, kopier einfach diese Datei an einen sicheren Ort:
 
 ```bash
-# Kopiert die Datenbank aus dem laufenden Container in dein aktuelles Verzeichnis
-docker cp classly:/data/classly.db ./backup_$(date +%F).db
+# Kopiere die DB aus dem data-Ordner in ein Backup
+cp data/classly.db ./backup_$(date +%F).db
 ```
-
-Sichere diese Datei an einem sicheren Ort.
 
 ### Backup wiederherstellen
 
-1.  Container stoppen: `docker compose down`
-2.  Datenbank zurückspielen:
-    ```bash
-    # Kopiere dein Backup zurück in das Volume (Trick via temporärem Container oder direkt Starten und kopieren)
-    # Einfacher Weg bei laufendem Container (Daten werden live überschrieben, Vorsicht!):
-    
-    docker compose up -d
-    docker cp ./dein-backup.db classly:/data/classly.db
-    docker compose restart
-    ```
+1.  Container stoppen: `docker stop classly` (bzw. `docker compose down`)
+2.  Backup-Datei nach `data/classly.db` zurück kopieren und die alte überschreiben.
+3.  Container wieder starten: `docker start classly` (bzw. `docker compose up -d`)
 
 ---
 
 ## ❓ Häufige Probleme
 
-**Container startet nicht / "Permission denied"**
-Stelle sicher, dass du in der `docker` Gruppe bist (`sudo usermod -aG docker $USER`) oder benutze `sudo` (nicht empfohlen).
+**Container startet nicht / "Permission denied" auf /data**
+Stelle sicher, dass du in der `docker` Gruppe bist (`sudo usermod -aG docker $USER`), oder dass der von dir erstellte `./data` Ordner für den Docker-Container beschreibbar ist.
 
 **Port 8000 ist belegt**
-Du kannst den Port in der `docker-compose.yml` ändern. Siehe dazu [Konfiguration](configuration.md).
+Du kannst den Port beim `docker run` Befehl ändern: `-p 3000:8000` bindet Classly an Port 3000. Bei Docker Compose passt du analog den linken Portwert an. Siehe dazu [Konfiguration](configuration.md).
+
+---
+
+> _Tipp für Entwickler:_ Falls du stattdessen selbst das gesamte Repository klonen und den Container aus dem Quellcode kompilieren / lokal bauen möchtest, findest du die ursprüngliche Anleitung [im Legacy-Setup](./installation-legacy.md).

@@ -30,9 +30,9 @@ Classly ist eine **Web-App für Schulklassen**. Statt zehn verschiedener WhatsAp
 Du willst es sofort ausprobieren?
 
 ```bash
-git clone https://github.com/marius4lui/classly.git
-cd classly
-docker compose up -d
+mkdir -p classly/data && cd classly
+touch .env
+docker run -d --name classly -p 8000:8000 -v $(pwd)/data:/data --env-file .env marius4lui/classly:latest
 ```
 
 Öffne dann `http://localhost:8000` im Browser.

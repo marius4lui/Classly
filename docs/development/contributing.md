@@ -38,6 +38,9 @@ source venv/bin/activate
 
 # Abhängigkeiten installieren
 pip install -r requirements.txt
+
+# Konfiguration (Standardwerte kopieren)
+cp .env.example .env
 ```
 
 ### 2. Server starten

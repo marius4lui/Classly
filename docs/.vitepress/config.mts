@@ -34,6 +34,7 @@ export default defineConfig({
             {
                 text: 'Versionen',
                 items: [
+                    { text: 'v1.0.2', link: '/versions/v1.0.2/' },
                     { text: 'v1.0.1', link: '/versions/v1.0.1/' },
                     { text: 'v1', link: '/versions/v1/' }
                 ]
@@ -58,6 +59,7 @@ export default defineConfig({
                     text: 'Einrichtung & Hosting',
                     items: [
                         { text: 'Installation', link: '/setup/installation' },
+                        { text: 'Installation (Legacy)', link: '/setup/installation-legacy' },
                         { text: 'Konfiguration', link: '/setup/configuration' },
                         { text: 'Setup Mini CLI', link: '/setup/mini-cli' }
                     ]

@@ -6,6 +6,7 @@
 
 services:
   classly:
+    image: classly
     build: .
     ports:
       - "${PORT:-8000}:8000"
