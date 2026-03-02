@@ -91,6 +91,16 @@ export default defineConfig({
                         { text: '🤖 AI-Integration', link: '/development/api-integration' }
                     ]
                 }
+            ],
+            '/versions/': [
+                {
+                    text: 'Versionen',
+                    items: [
+                        { text: 'v1.0.2', link: '/versions/v1.0.2/' },
+                        { text: 'v1.0.1', link: '/versions/v1.0.1/' },
+                        { text: 'v1', link: '/versions/v1/' }
+                    ]
+                }
             ]
         },
 
