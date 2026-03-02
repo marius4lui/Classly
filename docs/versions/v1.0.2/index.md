@@ -1,35 +1,31 @@
-# Classly v1.0.2
+# Classly v1.0.2 – Changelog
 
-Release date: 2026-03-02
+**Release date:** 2026-03-02
 
-## Highlights
+## Summary
 
-- Offizielles Docker-Image `marius4lui/classly` veröffentlicht.
-- Neue Haupt-Installationsanleitung auf Basis von `docker run` – kein Repository-Clone mehr nötig.
-- Env-Konfiguration (`cp .env.example .env`) in allen relevanten Docs und README ergänzt.
-- Alte Installationsanleitung (Klonen + Build) als Legacy-Seite erhalten.
+Offizielles Docker-Image `marius4lui/classly` auf Docker Hub veröffentlicht. Die Installationsdokumentation wurde vollständig überarbeitet: Neue Nutzer brauchen kein Git-Repository mehr zu klonen, sondern starten Classly direkt per `docker run` gegen das fertige Image.
 
-## Changelog
+## Änderungen
 
-### Setup & Hosting
+### Docker & Hosting
 
-- Offizielles Docker Hub Image: `marius4lui/classly:latest`
-- Neue primäre Installationsanleitung `docs/setup/installation.md`:
-  - Dokumentiert explizit das Erstellen des Daten-Ordners (`mkdir -p classly/data`)
-  - Dokumentiert das Erstellen der `.env`-Datei (`touch .env`)
-  - Hauptbefehl ist jetzt `docker run` direkt gegen das veröffentlichte Image
-  - Beinhaltet separaten Abschnitt für Updates via `docker pull` + `docker run`
-  - Alternative Docker Compose-Variante ohne Klonen dokumentiert
-- Alte `installation.md` (Klonen + `docker compose build`) umbenannt zu `docs/setup/installation-legacy.md` und bleibt für Entwickler erhalten
-- `docker-compose.yml`: `image: classly` addiert, damit der Image-Name "classly" heißt statt dem Standard "verzeichnisname-servicename"
+- **Offizielles Image:** `marius4lui/classly:latest` auf Docker Hub veröffentlicht.
+- **`docker-compose.yml`:** `image: classly` hinzugefügt, sodass das Image bei lokalem Build immer den Namen `classly` (statt `verzeichnisname-classly`) erhält.
 
-### Documentation
+### Dokumentation
 
-- `README.md` Schnellstart auf `docker run`-Oneliner umgestellt
-- `docs/setup/configuration.md`: Hinweis auf `cp .env.example .env` bei den Umgebungsvariablen ergänzt
-- `docs/development/contributing.md`: `cp .env.example .env`-Schritt in lokalen Dev-Setup ergänzt
-- `.vitepress/config.mts` Sidebar: Neuer Eintrag „Installation (Legacy)" hinzugefügt
-
-## Migration
-
-Bestehende Nutzer, die via `git clone` + `docker compose` arbeiten, können wie bisher fortzufahren. Für neue Installationen empfehlen wir den `docker run`-Weg ohne Git-Clone.
+- **`docs/setup/installation.md` (neu geschrieben):**
+  - Primäre Methode ist jetzt `docker run` direkt gegen `marius4lui/classly:latest`
+  - Schritt-für-Schritt: Ordner + `.env` anlegen, Container starten, testen
+  - Update-Workflow via `docker pull` + `docker stop/rm/run` dokumentiert
+  - Alternative Docker Compose-Variante (ohne Klonen) dokumentiert
+  - Backup-/Restore-Anleitung für lokales `./data`-Volume ergänzt
+- **`docs/setup/installation-legacy.md` (umbenannt):**
+  - Alte Anleitung (git clone + docker compose build) bleibt als Legacy-Seite bestehen
+  - Für Entwickler und fortgeschrittene Nutzer weiterhin verlinkt
+- **`docs/setup/configuration.md`:** Hinweis `cp .env.example .env` vor der Variablen-Tabelle ergänzt
+- **`docs/development/contributing.md`:** `cp .env.example .env`-Schritt in den lokalen Dev-Setup-Abschnitt eingefügt
+- **`README.md`:** Schnellstart-Codeblock auf `docker run`-Oneliner umgestellt
+- **`docs/.vitepress/config.mts`:** Sidebar-Eintrag „Installation (Legacy)" hinzugefügt
+- **`docs/versions/v1.0.2/index.md`:** Neue Versionsseite in den Docs angelegt
