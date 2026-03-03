@@ -694,15 +694,36 @@ def get_grade_statistics(db: Session, user_id: str, class_id: str):
 
 
 # --- OAuth CRUD ---
-def create_oauth_client(db: Session, client_id: str, client_secret: str, name: str, redirect_uri: str):
-    """Create a new OAuth client application"""
+def create_oauth_client(
+    db: Session,
+    client_id: str,
+    client_secret: str,
+    name: str,
+    redirect_uri: str = None,
+    redirect_uris: list[str] = None,
+):
+    """Create a new OAuth client application with one or more redirect URIs."""
+    normalized_redirect_uris = _normalize_redirect_uris(
+        redirect_uris=redirect_uris,
+        fallback_redirect_uri=redirect_uri,
+    )
     db_client = models.OAuthClient(
         client_id=client_id,
         client_secret=client_secret,
         name=name,
-        redirect_uri=redirect_uri
+        redirect_uri=normalized_redirect_uris[0],
     )
     db.add(db_client)
+    db.flush()
+
+    for allowed_redirect_uri in normalized_redirect_uris:
+        db.add(
+            models.OAuthClientRedirectUri(
+                oauth_client_id=db_client.id,
+                redirect_uri=allowed_redirect_uri,
+            )
+        )
+
     db.commit()
     db.refresh(db_client)
     return db_client
@@ -711,6 +732,111 @@ def create_oauth_client(db: Session, client_id: str, client_secret: str, name: s
 def get_oauth_client_by_client_id(db: Session, client_id: str):
     """Get an OAuth client by its client_id"""
     return db.query(models.OAuthClient).filter(models.OAuthClient.client_id == client_id).first()
+
+
+def get_oauth_redirect_uris_for_client(db: Session, oauth_client_id: str):
+    """Get all allowed redirect URIs for a client."""
+    return db.query(models.OAuthClientRedirectUri).filter(
+        models.OAuthClientRedirectUri.oauth_client_id == oauth_client_id
+    ).all()
+
+
+def oauth_client_allows_redirect_uri(
+    db: Session,
+    client: models.OAuthClient,
+    redirect_uri: str,
+) -> bool:
+    """Return True when the redirect URI is explicitly registered for the client."""
+    redirect_entries = get_oauth_redirect_uris_for_client(db, client.id)
+    if redirect_entries:
+        return any(entry.redirect_uri == redirect_uri for entry in redirect_entries)
+    return client.redirect_uri == redirect_uri
+
+
+def add_redirect_uri_to_oauth_client(
+    db: Session,
+    client: models.OAuthClient,
+    redirect_uri: str,
+):
+    """Register a redirect URI for an existing OAuth client if not present."""
+    existing = db.query(models.OAuthClientRedirectUri).filter(
+        models.OAuthClientRedirectUri.oauth_client_id == client.id,
+        models.OAuthClientRedirectUri.redirect_uri == redirect_uri,
+    ).first()
+    if existing:
+        return existing
+
+    entry = models.OAuthClientRedirectUri(
+        oauth_client_id=client.id,
+        redirect_uri=redirect_uri,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def ensure_oauth_client(
+    db: Session,
+    client_id: str,
+    client_secret: str,
+    name: str,
+    redirect_uris: list[str],
+):
+    """Create or update an OAuth client and ensure all redirect URIs exist."""
+    client = get_oauth_client_by_client_id(db, client_id)
+    normalized_redirect_uris = _normalize_redirect_uris(
+        redirect_uris=redirect_uris,
+        fallback_redirect_uri=None,
+    )
+
+    if not client:
+        return create_oauth_client(
+            db,
+            client_id=client_id,
+            client_secret=client_secret,
+            name=name,
+            redirect_uris=normalized_redirect_uris,
+        )
+
+    changed = False
+    if client.client_secret != client_secret:
+        client.client_secret = client_secret
+        changed = True
+    if client.name != name:
+        client.name = name
+        changed = True
+    if client.redirect_uri != normalized_redirect_uris[0]:
+        client.redirect_uri = normalized_redirect_uris[0]
+        changed = True
+    if changed:
+        db.commit()
+        db.refresh(client)
+
+    for redirect_uri in normalized_redirect_uris:
+        add_redirect_uri_to_oauth_client(db, client, redirect_uri)
+
+    return client
+
+
+def _normalize_redirect_uris(
+    redirect_uris: list[str] = None,
+    fallback_redirect_uri: str = None,
+) -> list[str]:
+    values = redirect_uris or []
+    if fallback_redirect_uri:
+        values = [*values, fallback_redirect_uri]
+
+    normalized = []
+    for value in values:
+        candidate = (value or "").strip()
+        if candidate and candidate not in normalized:
+            normalized.append(candidate)
+
+    if not normalized:
+        raise ValueError("At least one redirect URI is required.")
+
+    return normalized
 
 
 def create_authorization_code(db: Session, client_id: str, user_id: str, redirect_uri: str, scope: str = "read:events", expires_in_seconds: int = 600):

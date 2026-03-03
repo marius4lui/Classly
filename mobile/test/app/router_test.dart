@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('unauthenticated user lands on instance select', (tester) async {
+  testWidgets('unauthenticated user lands on login', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -18,7 +18,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Instanz waehlen'), findsOneWidget);
+    expect(find.text('Mit Classly anmelden'), findsOneWidget);
   });
 
   testWidgets('authenticated user lands on kalender', (tester) async {

@@ -25,7 +25,7 @@ class PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = onPressed == null || isLoading;
     final child = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isLoading)
@@ -42,7 +42,14 @@ class PrimaryButton extends StatelessWidget {
           )
         else if (leading != null)
           Padding(padding: const EdgeInsets.only(right: 10), child: leading),
-        Text(label),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ],
     );
 

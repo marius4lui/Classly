@@ -57,8 +57,8 @@ https://classly.site/api/oauth/authorize
 ```dart
 final authUrl = Uri.parse(
   'https://classly.site/api/oauth/authorize'
-  '?client_id=habiter-app'
-  '&redirect_uri=habiter://auth/callback'
+  '?client_id=classly-mobile'
+  '&redirect_uri=classly://auth/callback'
   '&scope=read:events'
   '&response_type=code'
 );
@@ -71,8 +71,8 @@ launchUrl(authUrl);
 
 ```javascript
 const authUrl = 'https://classly.site/api/oauth/authorize' +
-  '?client_id=my-app' +
-  '&redirect_uri=myapp://callback' +
+  '?client_id=classly-mobile' +
+  '&redirect_uri=classly://auth/callback' +
   '&scope=read:events' +
   '&response_type=code';
 
@@ -88,7 +88,7 @@ Der Benutzer wird zur Classly-Login-Seite weitergeleitet und meldet sich an.
 Nach erfolgreichem Login wird der Benutzer zur `redirect_uri` weitergeleitet:
 
 ```
-habiter://auth/callback?code=abc123def456...
+classly://auth/callback?code=abc123def456...
 ```
 
 ---
@@ -194,13 +194,23 @@ OAuth 2.0 hat einen vereinfachten Scope-Set. Für granulare Berechtigungen verwe
 
 ## Client-Registrierung
 
-Aktuell werden die folgenden Clients unterstützt:
+Classly unterstützt mehrere OAuth-Clients. Jeder Client kann eine oder mehrere explizit registrierte Redirect-URIs besitzen.
 
-| Client-ID | Beschreibung | Redirect-URI |
-|-----------|--------------|--------------|
-| `habiter-app` | Habiter Mobile App | `habiter://auth/callback` |
+Wichtige Regeln:
 
-Um einen neuen Client zu registrieren, erstelle ein [GitHub Issue](https://github.com/marius4lui/Classly/issues).
+- `client_id` muss registriert sein
+- `redirect_uri` muss exakt zu einer registrierten URI des Clients passen
+- dieselbe Prüfung passiert in `/api/oauth/authorize` und `/api/oauth/token`
+- es gibt keine Wildcards oder Prefix-Matches
+
+Offizieller Mobile-Client:
+
+| Client-ID | Beschreibung | Erlaubte Redirect-URIs |
+|-----------|--------------|------------------------|
+| `classly-mobile` | Offizielle Classly Mobile App | `classly://auth/callback` |
+| `habiter-app` | Legacy-Client mit weiterem Support | `habiter://auth/callback` |
+
+Weitere Clients können serverseitig registriert werden, zum Beispiel für Dev-, Beta- oder Partner-Apps.
 
 ---
 
@@ -214,8 +224,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ClasslyAuth {
-  static const clientId = 'my-app';
-  static const redirectUri = 'myapp://callback';
+  static const clientId = 'classly-mobile';
+  static const redirectUri = 'classly://auth/callback';
   
   // Schritt 1: Login starten
   Future<void> startLogin() async {
@@ -268,8 +278,8 @@ class ClasslyAuth {
 ```javascript
 import { Linking } from 'react-native';
 
-const CLIENT_ID = 'my-app';
-const REDIRECT_URI = 'myapp://callback';
+const CLIENT_ID = 'classly-mobile';
+const REDIRECT_URI = 'classly://auth/callback';
 
 // Schritt 1: Login starten
 const startLogin = () => {
@@ -321,6 +331,17 @@ const exchangeCode = async (code) => {
 | `invalid_client` | Unbekannte Client-ID | Client registrieren |
 | `invalid_grant` | Code abgelaufen oder ungültig | Neuen Login starten |
 | `redirect_uri_mismatch` | URI stimmt nicht überein | Exakt gleiche URI verwenden |
+
+### Mehrere Clients und Redirect-URIs
+
+Classly kann mehrere OAuth-Clients gleichzeitig verwalten, zum Beispiel:
+
+- `classly-mobile` für die offizielle Mobile-App
+- `habiter-app` als Legacy-Client mit weiterem Support
+- `classly-mobile-dev` für lokale oder interne Builds
+- weitere Partner- oder Integrations-Clients
+
+Ein Client kann serverseitig mehrere Redirect-URIs erhalten. Die Validierung bleibt dabei strikt: nur explizit registrierte Redirect-URIs sind erlaubt.
 
 ### Token-Ablauf
 

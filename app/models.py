@@ -320,6 +320,23 @@ class OAuthClient(Base):
     name = Column(String, nullable=False)
     redirect_uri = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    redirect_uris = relationship(
+        "OAuthClientRedirectUri",
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )
+
+
+class OAuthClientRedirectUri(Base):
+    """Allowed redirect URIs for an OAuth client."""
+    __tablename__ = "oauth_client_redirect_uris"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    oauth_client_id = Column(String, ForeignKey("oauth_clients.id"), nullable=False)
+    redirect_uri = Column(String, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    client = relationship("OAuthClient", back_populates="redirect_uris")
 
 
 class OAuthAuthorizationCode(Base):

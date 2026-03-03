@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum SessionStatus { loading, unauthenticated, authenticated }
 
+const defaultClasslyBaseUrl = 'https://classly.site';
+
 class SessionBootstrapState {
   const SessionBootstrapState._({
     required this.status,
@@ -55,7 +57,9 @@ class SessionBootstrapState {
 class SessionBootstrapController extends Notifier<SessionBootstrapState> {
   @override
   SessionBootstrapState build() {
-    return const SessionBootstrapState.unauthenticated();
+    return const SessionBootstrapState.unauthenticated(
+      baseUrl: defaultClasslyBaseUrl,
+    );
   }
 
   void setBaseUrl(String baseUrl) {
@@ -78,7 +82,7 @@ class SessionBootstrapController extends Notifier<SessionBootstrapState> {
 
   void clearSession({bool clearBaseUrl = false}) {
     state = SessionBootstrapState.unauthenticated(
-      baseUrl: clearBaseUrl ? null : state.baseUrl,
+      baseUrl: clearBaseUrl ? defaultClasslyBaseUrl : state.baseUrl,
     );
   }
 }

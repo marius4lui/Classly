@@ -49,6 +49,7 @@ def run_migrations():
     db = SessionLocal()
     try:
         crud.migrate_capitalize_user_names(db)
+        auto_migrate.seed_default_oauth_clients(db)
     finally:
         db.close()
 

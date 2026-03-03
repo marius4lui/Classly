@@ -32,7 +32,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isRoot = state.matchedLocation == '/';
       final isInstance = state.matchedLocation == '/instance';
-      final isLogin = state.matchedLocation == '/login';
       final isCalendar = state.matchedLocation == '/calendar';
 
       if (session.isLoading) {
@@ -40,15 +39,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (isRoot) {
-        return session.isAuthenticated ? '/calendar' : '/instance';
+        return session.isAuthenticated ? '/calendar' : '/login';
       }
 
       if (!session.isAuthenticated && isCalendar) {
-        return '/instance';
-      }
-
-      if (!session.isAuthenticated && isLogin && session.baseUrl == null) {
-        return '/instance';
+        return '/login';
       }
 
       if (session.isAuthenticated && isInstance) {

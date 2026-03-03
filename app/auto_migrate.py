@@ -2,6 +2,8 @@
 import sqlite3
 import os
 import logging
+import secrets
+from app import crud
 from app.database import SQLALCHEMY_DATABASE_URL
 
 logger = logging.getLogger("uvicorn")
@@ -186,6 +188,56 @@ def run_auto_migrations():
                 cursor.execute("CREATE INDEX ix_oauth_clients_client_id ON oauth_clients(client_id)")
                 conn.commit()
 
+            # 9b. Create oauth_client_redirect_uris table if not exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_client_redirect_uris'")
+            if not cursor.fetchone():
+                logger.info("Migrating: Creating 'oauth_client_redirect_uris' table.")
+                cursor.execute("""
+                    CREATE TABLE oauth_client_redirect_uris (
+                        id VARCHAR PRIMARY KEY,
+                        oauth_client_id VARCHAR NOT NULL,
+                        redirect_uri VARCHAR NOT NULL,
+                        created_at DATETIME,
+                        FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id)
+                    )
+                """)
+                cursor.execute(
+                    "CREATE INDEX ix_oauth_client_redirect_uris_redirect_uri ON oauth_client_redirect_uris(redirect_uri)"
+                )
+                cursor.execute(
+                    "CREATE UNIQUE INDEX ix_oauth_client_redirect_uris_unique ON oauth_client_redirect_uris(oauth_client_id, redirect_uri)"
+                )
+                conn.commit()
+
+            # 9c. Backfill redirect URIs from oauth_clients.redirect_uri
+            cursor.execute(
+                """
+                SELECT oc.id, oc.redirect_uri
+                FROM oauth_clients oc
+                LEFT JOIN oauth_client_redirect_uris ocru
+                  ON ocru.oauth_client_id = oc.id
+                 AND ocru.redirect_uri = oc.redirect_uri
+                WHERE oc.redirect_uri IS NOT NULL
+                  AND oc.redirect_uri != ''
+                  AND ocru.id IS NULL
+                """
+            )
+            missing_redirects = cursor.fetchall()
+            if missing_redirects:
+                logger.info(
+                    "Migrating: Backfilling %s OAuth redirect URI registrations.",
+                    len(missing_redirects),
+                )
+                for oauth_client_id, redirect_uri in missing_redirects:
+                    cursor.execute(
+                        """
+                        INSERT INTO oauth_client_redirect_uris (id, oauth_client_id, redirect_uri, created_at)
+                        VALUES (?, ?, ?, datetime('now'))
+                        """,
+                        (secrets.token_urlsafe(24), oauth_client_id, redirect_uri),
+                    )
+                conn.commit()
+
             # 10. Create oauth_authorization_codes table if not exists
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_authorization_codes'")
             if not cursor.fetchone():
@@ -284,3 +336,16 @@ def run_auto_migrations():
             conn.rollback()
         finally:
             conn.close()
+
+
+def seed_default_oauth_clients(db):
+    """Ensure official OAuth clients exist after schema migrations."""
+    crud.ensure_oauth_client(
+        db,
+        client_id="classly-mobile",
+        client_secret=os.getenv("CLASSLY_MOBILE_OAUTH_CLIENT_SECRET", ""),
+        name="Classly Mobile",
+        redirect_uris=[
+            "classly://auth/callback",
+        ],
+    )

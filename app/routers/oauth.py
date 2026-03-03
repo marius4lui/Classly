@@ -57,7 +57,7 @@ def oauth_authorize(
         client = crud.get_oauth_client_by_client_id(db, client_id)
         if not client:
             raise HTTPException(status_code=400, detail="Invalid OAuth client")
-        if client.redirect_uri != redirect_uri:
+        if not crud.oauth_client_allows_redirect_uri(db, client, redirect_uri):
             raise HTTPException(status_code=400, detail="Invalid redirect_uri")
 
     # Check if user is logged in via session cookie
@@ -146,7 +146,7 @@ def oauth_token(
         client = crud.get_oauth_client_by_client_id(db, client_id)
         if not client:
             raise HTTPException(status_code=400, detail="Invalid OAuth client")
-        if client.redirect_uri != redirect_uri:
+        if not crud.oauth_client_allows_redirect_uri(db, client, redirect_uri):
             raise HTTPException(status_code=400, detail="Invalid redirect_uri")
     if os.getenv("OAUTH_REQUIRE_CLIENT_SECRET", "true").lower() == "true":
         if not client:
