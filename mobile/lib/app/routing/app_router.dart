@@ -1,4 +1,6 @@
 import 'package:classly_mobile/app/bootstrap/bootstrap.dart';
+import 'package:classly_mobile/features/auth/presentation/instance_select_screen.dart';
+import 'package:classly_mobile/features/auth/presentation/login_screen.dart';
 import 'package:classly_mobile/features/auth/presentation/session_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,9 +15,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (context, state) => const SessionGate()),
       GoRoute(
         path: '/instance',
-        builder: (context, state) =>
-            const _RoutePlaceholderScreen(title: 'Instanz waehlen'),
+        builder: (context, state) => const InstanceSelectScreen(),
       ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/calendar',
         builder: (context, state) =>
@@ -25,6 +27,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isRoot = state.matchedLocation == '/';
       final isInstance = state.matchedLocation == '/instance';
+      final isLogin = state.matchedLocation == '/login';
       final isCalendar = state.matchedLocation == '/calendar';
 
       if (session.isLoading) {
@@ -36,6 +39,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (!session.isAuthenticated && isCalendar) {
+        return '/instance';
+      }
+
+      if (!session.isAuthenticated && isLogin && session.baseUrl == null) {
         return '/instance';
       }
 
