@@ -1,4 +1,3 @@
-import 'package:classly_mobile/app/bootstrap/bootstrap.dart';
 import 'package:classly_mobile/features/auth/data/auth_api.dart';
 import 'package:classly_mobile/features/auth/data/auth_repository_impl.dart';
 import 'package:classly_mobile/features/auth/data/session_storage.dart';
