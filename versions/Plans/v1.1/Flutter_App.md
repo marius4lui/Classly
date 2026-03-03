@@ -1,224 +1,376 @@
 <!--
 Classly Flutter App Plan
-Location: versions/v1.1/Flutter_App.md
+Location: versions/Plans/v1.1/Flutter_App.md
 Audience: Maintainer/Contributor team (Product + Engineering)
+Updated: 2026-03-03
 -->
 
-# Classly Flutter App (v1.1) - Komplettplan
+# Classly Flutter App (v1.1) - Produkt- und Architekturplan
+
+## Summary
+
+Classly bekommt eine eigene Flutter-App fuer iOS und Android. Die App uebernimmt das **visuelle und UX-seitige Referenzbild** von `C:\Users\Marius\Projekte\Dev\MVPs\plane-mobile`, uebernimmt aber **keine fremde Business-Logik**. Alle produktiven Flows, Datenmodelle und Integrationen muessen aus Classly abgeleitet werden.
+
+Kurzform:
+
+- **UI/UX Referenz:** `plane-mobile`
+- **Produktlogik und Features:** Classly
+- **Technische Umsetzung:** neue Flutter-Codebasis unter `mobile/`
+
+## Umsetzungsstand (2026-03-03)
+
+Die Codebasis unter `mobile/` ist fuer den read-only MVP bereits angelegt und umfasst aktuell:
+
+- Flutter-App-Shell mit Riverpod, GoRouter, Dio, Freezed/JSON und Secure Storage
+- Instanz-Auswahl, Login-Shell und OAuth-Callback-Handling
+- Event- und Subject-Mapping aus der Legacy API
+- Read-only Sync-Pipeline mit stale-while-revalidate-Verhalten
+- Kalender-, Event-, Fach-, Settings- und Diagnostics-Screens
+- Filter-, Such- und Logout-/Switch-Instance-Logik
+
+Wichtige Statushinweise:
+
+- Die Session-Speicherung ist sicher umgesetzt, der Event-/Subject-Cache ist aktuell als austauschbare lokale Store-Abstraktion umgesetzt.
+- Fuer produktiven OAuth-Login braucht das Backend weiterhin einen registrierten Mobile-Client und je nach Server-Config ein passendes `client_secret`.
+
+---
 
 ## Zielbild
 
-Eine native Mobile-App (iOS/Android) für Classly, die:
+Eine native Mobile-App, die:
 
-- sich gegen eine beliebige Classly-Instanz (Self-Hosted oder classly.site) verbinden kann
-- Events (KA/TEST/HA/INFO) schnell und offline-first konsumierbar macht
-- Push-Notifications, Widgets und System-Integrationen (Kalender, Share) bereitstellt
+- sich gegen eine beliebige Classly-Instanz verbinden kann
+- den read-only Event-Konsum fuer Schueler/Lehrkraefte schnell und offline-first macht
+- sich optisch und in der Interaktion wie `plane-mobile` anfuehlt
+- spaeter Push, Widgets und optional Write-Support erhaelt
 
-Wichtig: Der aktuelle Backend-Stand (FastAPI) hat zwei relevante Schnittstellen:
+Wichtige Produktregel:
 
-- **OAuth 2.0** (`/api/oauth/*`) für Mobile-Login, Scope aktuell effektiv **read-only** (`read:events`). Siehe `docs/development/api-oauth.md`.
-- **Legacy API** (`/api/*`) für Mobile/Integrationen, aktuell **read-only**: `GET /api/events`, `GET /api/subjects`. Siehe `docs/development/api-legacy.md`.
-- **API v1** (`/api/v1/*`) für CRUD (inkl. `events:write`), aber Auth über **API-Key** (Bearer) statt End-User OAuth. Siehe `docs/development/api-v1.md`.
+- aus `plane-mobile` werden nur **relevante visuelle Muster und Interaktionsmuster** uebernommen
+- nicht uebernommen werden Projekt-, Workspace-, Issue-, Dashboard- und andere Plane-spezifische Konzepte
 
-Konsequenz: Eine vollwertige Mobile-App (mit Event-Erstellen/Bearbeiten) braucht entweder:
+---
 
-1. einen **API-Key Mode** (User erzeugt API-Key in Classly und traegt ihn in der App ein), oder
-2. Backend-Erweiterungen: **OAuth Scopes + Write-Endpunkte** für Integration Tokens (empfohlen, wenn End-User UX wichtiger ist).
+## Design-Leitlinie
+
+### Was genau aus `plane-mobile` uebernommen werden soll
+
+- Screen-Rhythmus und Spacing
+- Formular-Layout und CTA-Hierarchie
+- Card-Stil fuer Listen und Detailcontainer
+- Bottom-Navigation-Gefuehl
+- Sheet-Muster fuer Filter und Aktionen
+- Loading-, Empty- und Error-States
+- Theme-Grundrichtung fuer helle/dunkle Oberflaechen
+
+### Was explizit nicht uebernommen werden soll
+
+- bestehende Provider-Architektur
+- Service- und Repository-Implementierungen
+- Auth-Flows ausser als visuelle Referenz
+- Plane-Domainobjekte wie Projects, Issues, Workspaces, Cycles, Modules
+- bestehende API-Client-Logik
+
+### Design Translation fuer Classly
+
+- `plane` Onboarding -> `Classly InstanceSelect + Login`
+- `plane` Dashboard -> `Classly Kalender`
+- `plane` Listen- und Card-Muster -> `Classly Event-Liste`
+- `plane` Filter-Bottom-Sheets -> `Classly Event-Filter`
+- `plane` Settings/Profile Patterns -> `Classly Einstellungen`
+
+---
+
+## Classly-Funktionsbasis
+
+Aktueller Backend-Stand:
+
+- **OAuth 2.0** ueber `/api/oauth/*` fuer Mobile Login
+- **Legacy API** ueber `/api/*` fuer read-only Daten
+- **API v1** ueber `/api/v1/*` fuer CRUD mit API-Key
+
+Konsequenz fuer den Mobile Scope:
+
+- MVP bleibt read-only
+- Write wird spaeter entweder mit API-Key-Mode oder per Backend-Erweiterung gebaut
 
 ---
 
 ## Scope
 
-### MVP (Phase 1, read-only, realistisch ohne Backend-Änderungen)
+### MVP / Phase 1
 
-- Instanz-Auswahl (Base URL)
-- OAuth Login (External Browser + Deep Link Callback)
-- Event-Liste + Tages-/Wochenansicht
-- Filter (Typ/Fach/Zeitraum), Suche
-- Pull-to-refresh + Delta Sync über `updated_since`
-- Offline Cache (Events/Subjects/UserInfo)
-- Settings: Logout, Instanz wechseln, Cache Löschen, About/Version
+- Base-URL / Instanz-Auswahl
+- OAuth Login im System-Browser
+- Deep Link Callback
+- Userinfo laden
+- Event-Liste
+- einfache Kalender-/Wochenansicht
+- Filter nach Typ, Fach, Zeitraum
+- Suche
+- Pull-to-refresh
+- Delta-Sync mit `updated_since`
+- Session-Kontext persistent, Event-/Subject-Cache im MVP zunaechst als lokale Store-Abstraktion mit spaeterer Drift-Haertung
+- Einstellungen: Logout, Instanz wechseln, Cache leeren, App-Version
 
-### V1 (Phase 2, "produktreif")
+### Phase 2
 
-- Push Notifications Registrierung über `/api/push/register` (benoetigt Integration Token)
-- Lokale Benachrichtigungen (z.B. "morgen Hausaufgaben") auf Basis gecachter Daten
-- Deep Links (z.B. `classly://event/<id>` innerhalb App)
-- Home Screen Widgets (iOS/Android): naechste 3 Events, heute
-- Accessibility (Screenreader, Dynamic Type, Kontrast)
-- Mehrsprachigkeit (de/en, vorbereitet für weitere)
+- lokale Benachrichtigungen auf Basis gecachter Daten
+- Deep Links innerhalb der App
+- Widgets fuer "Heute" und "Naechste Events"
+- Accessibility Ausbau
+- Mehrsprachigkeit de/en
+- UI-Polish und Performance-Haertung
 
-### V2 (Phase 3, write & collaboration)
+### Phase 3
 
-Option A (ohne Backend-Aenderung):
-
-- API-Key Mode für API v1: CRUD für Events, Anzeigen von Users, Timetable
-
-Option B (mit Backend-Aenderung, bessere UX):
-
-- OAuth Scopes erweitern (`events:read`, `events:write`, `subjects:read`, `timetable:read` etc.)
-- API v1 für OAuth Tokens freischalten oder parallele "mobile v1" Endpunkte anbieten
-- PKCE im OAuth Flow (Security)
-
----
-
-## Nicht-Ziele (bewusst raus)
-
-- Vollstaendige Feature-Paritaet mit Web UI in Phase 1
-- Admin-UI für Klassen-/User-Verwaltung (erst Phase 3+)
-- Complex Editor für Topics/Links an Events (erst wenn API dafür stabil ist)
+- Write-Support per API-Key oder erweitertem OAuth
+- Push-Registrierung
+- Event CRUD
+- spaetere Kollaborationsfunktionen
 
 ---
 
-## Personas & Kern-User-Flows
+## Non-Goals
 
-### Persona A: Schueler/in (read-first)
-
-1. App oeffnen -> Instanz eingeben/waehlen
-2. Login -> Kalenderansicht -> Events für naechste Tage sehen
-3. Filter nach Fach/Typ -> Event Details -> Link oeffnen/teilen
-
-### Persona B: Klassen-Admin (write)
-
-1. Login -> Events erstellen/bearbeiten -> Push/Reminder relevant
-2. (API-Key Mode) Key generieren -> in App hinterlegen -> CRUD
+- 1:1 Port von `plane-mobile`
+- Uebernahme fremder Business-Logik
+- komplette Web-Feature-Paritaet in Phase 1
+- Admin-Funktionen fuer User-/Klassenverwaltung im MVP
+- komplexer Event-Editor im ersten Release
 
 ---
 
-## Informationsarchitektur (Screens)
+## Personas und Kernfluesse
+
+### Persona A: Schueler/in
+
+1. App oeffnen
+2. Classly-Instanz eingeben oder waehlen
+3. Login ueber Classly OAuth
+4. Event-Liste oder Kalender sehen
+5. Nach Fach/Typ filtern
+6. Event-Details und Links aufrufen
+
+### Persona B: Lehrkraft / Klassenverantwortliche
+
+1. App oeffnen
+2. Login
+3. Tages- oder Wochenereignisse pruefen
+4. Push/Reminder spaeter nutzen
+5. optional spaeter Write-Funktionen nutzen
+
+---
+
+## Informationsarchitektur
 
 ### Onboarding
 
-- `InstanceSelect`: Base URL eingeben (z.B. `https://classly.site` oder eigene Domain)
-- `Login`: "Mit Classly anmelden" (oeffnet Browser zu `/api/oauth/authorize`)
-- `CallbackHandler`: nimmt `code` entgegen, tauscht gegen `access_token`
+- `Splash`
+- `InstanceSelect`
+- `Login`
+- `CallbackHandler`
+- `SessionBootstrap`
 
-### Hauptnavigation (Bottom Nav)
+### Hauptnavigation
 
 - `Kalender`
-- `Events` (Liste, sortiert nach Datum, sticky "Heute")
-- `Faecher` (read-only; für Filter)
+- `Events`
+- `Faecher`
 - `Einstellungen`
 
-### Detail/Utility
+### Utility / Detail
 
 - `EventDetail`
 - `FilterSheet`
-- `Debug/Diagnostics` (optional, hidden: Logs, letzte Sync-Zeit, Token Status)
+- `Search`
+- `Diagnostics` (optional, hidden)
 
 ---
 
-## Datenmodell (App-intern)
+## Screen-Mapping: Plane UI -> Classly UI
 
-### Entities (Domain)
+### 1. Onboarding und Login
+
+Referenz aus `plane-mobile`:
+
+- grosse, klare Formblocs
+- starke CTA-Flaeche
+- reduzierte, ruhige Anordnung
+- deutliche Success/Error-Baender
+
+Classly-Umsetzung:
+
+- Instanz-Eingabe vor dem Login
+- Login-CTA startet OAuth statt Plane-Auth
+- optional sekundare Instanz-Historie / zuletzt verwendet
+- Session-Context nach Login sichtbar machen
+
+### 2. Home / Hauptscreen
+
+Referenz aus `plane-mobile`:
+
+- tab-basierte Primärnavigation
+- klare Inhaltsblöcke
+- Karten mit leichter Trennung und ruhiger Hierarchie
+
+Classly-Umsetzung:
+
+- Bottom Nav mit 4 Tabs statt Plane-5er-Navigation
+- Standard-Einstieg in `Kalender`
+- Events-Tab fuer dichte Liste
+
+### 3. Listen und Detail
+
+Referenz aus `plane-mobile`:
+
+- kompakte Cards
+- saubere Typografie
+- klare Trennung von Meta-Daten und Hauptinhalt
+
+Classly-Umsetzung:
+
+- `EventCard` mit Typ-Badge, Fach, Datum, Kurztext
+- `EventDetail` als Screen oder modal Sheet
+- typfarbige visuelle Marker fuer KA/TEST/HA/INFO
+
+### 4. Filter und Utility
+
+Referenz aus `plane-mobile`:
+
+- Bottom Sheets fuer Auswahl und Filter
+
+Classly-Umsetzung:
+
+- Filter-Sheet fuer Typ, Fach, Zeitraum
+- spaeter Sortierung und gespeicherte Filter
+
+---
+
+## Datenmodell
+
+### Domain Entities
 
 - `UserSession`
   - `baseUrl`
-  - `accessToken` (Integration Token aus OAuth)
-  - `classId`
+  - `accessToken`
   - `scope`
-  - `userInfo` (aus `/api/oauth/userinfo`)
+  - `userInfo`
 - `Event`
-  - `id`, `type`, `date`, `subjectName`, `title`, `updatedAt`, `createdAt`
-  - optional: `priority`, `topics`, `links` (Legacy `/api/events` liefert bereits `topics`/`links` in diesem Repo-Stand)
+  - `id`
+  - `type`
+  - `date`
+  - `title`
+  - `subjectName`
+  - `updatedAt`
+  - `createdAt`
+  - optional `priority`, `topics`, `links`
 - `Subject`
-  - `id`, `name`, `color`
+  - `id`
+  - `name`
+  - `color`
 
-### Storage (Offline)
+### Lokale Persistenz
 
-- Secure: `accessToken` in `flutter_secure_storage`
-- Cache/DB: Events/Subjects in lokaler DB (Drift/Isar)
-- Preferences: Base URL, UI Settings, letzte Sync Timestamp
+- Secure Storage:
+  - Access Token
+- lokale Datenbank:
+  - Events
+  - Subjects
+- Shared Preferences / simple settings:
+  - Base URL
+  - letzte Sync-Zeit
+  - UI-Preferences
 
 ---
 
-## API-Integration (konkret)
+## API-Integration
 
-### Base URL
+### OAuth Flow
 
-- Nutzer-configured, z.B. `https://classly.site`
-- Alle Requests relativ dazu, Pfade:
-  - OAuth: `/api/oauth/authorize`, `/api/oauth/token`, `/api/oauth/userinfo`
-  - Daten (read-only): `/api/events`, `/api/subjects`
-  - Push (spaeter): `/api/push/register`, `/api/push/unregister`
+1. App baut Authorize URL
+2. App oeffnet System-Browser
+3. Callback via Deep Link
+4. Token Exchange
+5. Access Token sicher speichern
+6. `userinfo` laden
+7. App bootstrappt Session
 
-### Auth Flow (Phase 1)
-
-1. App baut authorize URL:
-   - `GET {baseUrl}/api/oauth/authorize?client_id=classly-flutter&redirect_uri=classly://auth/callback&scope=read:events&response_type=code`
-2. App oeffnet System-Browser (kein WebView, damit Login/Magic Link sauber funktioniert).
-3. OS deep-linkt zur App: `classly://auth/callback?code=...`
-4. App tauscht Code:
-   - `POST {baseUrl}/api/oauth/token` (x-www-form-urlencoded)
-5. App speichert `access_token` (secure storage).
-6. App laedt `GET {baseUrl}/api/oauth/userinfo` und zeigt Class/User Context.
-
-Hinweis Security:
-
-- Der aktuelle Backend-Token-Exchange kennt **kein PKCE**. für Phase 1 ok, aber Phase 2/3 sollte PKCE im Backend nachgeruestet werden.
-
-### Data Sync (Phase 1)
+### Read-Only Sync
 
 - Initial:
   - `GET /api/subjects`
   - `GET /api/events?limit=500`
 - Delta:
-  - `GET /api/events?updated_since=<lastSyncIso>&limit=500`
-- Konflikte: read-only -> keine
+  - `GET /api/events?updated_since=<iso>&limit=500`
 
-### Write Support (Phase 3 Optionen)
+### Spaeterer Write-Support
 
-- API-Key Mode:
-  - `Authorization: Bearer cl_live_...`
-  - `GET/POST/PUT/DELETE /api/v1/events`
-- OAuth Write:
-  - Backend muss Scopes/Autorisierung und Endpunkte bereitstellen (siehe Abschnitt "Backend Roadmap")
+- Option A:
+  - API-Key Mode fuer `/api/v1/events`
+- Option B:
+  - OAuth Scopes und Endpunkte erweitern
 
 ---
 
-## App-Architektur (Flutter)
+## App-Architektur
 
-Empfehlung: Clean-ish Architecture, pragmatisch, testbar.
+Empfehlung: neue Classly-Mobile-App unter `mobile/` mit klarer Feature-Trennung.
 
-- Presentation: Flutter UI + State (Riverpod)
-- Application: UseCases (FetchEvents, SyncEvents, Login, Logout)
-- Domain: Entities + Repositories (Interfaces)
-- Infrastructure: API Client (Dio), DTOs, Storage (Drift/Isar), Auth/Deep Links
+### Architekturprinzip
+
+- visuelle Referenz von Plane
+- technische Struktur neu
+- keine Copy-Paste-Architektur aus der Referenz-App
+
+### Layer
+
+- `presentation`
+  - Screens, Widgets, State Binding
+- `application`
+  - Use Cases wie `login`, `syncEvents`, `logout`
+- `domain`
+  - Entities, Repository Interfaces
+- `infrastructure`
+  - Dio Client, DTOs, Mappers, Storage, Deep Links
 
 ### State Management
 
-- `flutter_riverpod` + `riverpod_generator`
-- Async loading states über `AsyncValue`
+- `flutter_riverpod`
+- `AsyncValue`
+- Feature-spezifische Provider statt globalem Provider-Monolith
 
 ### Routing
 
-- `go_router` (Deep Link Support, Guard für Auth)
+- `go_router`
+- Route Guards fuer Session
+- Deep Link Handling von Anfang an mitdenken
 
 ### Networking
 
-- `dio` + Interceptors:
-  - Auth header injection
-  - Retry bei transient errors (mit Backoff)
-  - 401 -> Session invalid -> Logout/Relogin Flow
+- `dio`
+- Interceptors fuer:
+  - Auth Header
+  - Retry / Backoff
+  - Session Invalidierung bei 401
 
-### Serialization
+### Modellierung
 
-- `freezed` + `json_serializable`
-- DateTime: strikt ISO 8601, server sends z.T. `Z` -> `DateTime.parse`
+- `freezed`
+- `json_serializable`
 
 ---
 
-## Projektstruktur (Vorschlag)
+## Projektstruktur
 
-Repo-Scope: eigener Flutter Ordner im Repo (z.B. `mobile/`), damit Backend/Web nicht vermischt wird.
-
-```
+```text
 mobile/
   pubspec.yaml
   lib/
     main.dart
     app/
-      config/            # env, baseUrl handling
+      bootstrap/
+      config/
       routing/
       theme/
       l10n/
@@ -228,8 +380,17 @@ mobile/
         domain/
         presentation/
       events/
+        data/
+        domain/
+        presentation/
       subjects/
+        data/
+        domain/
+        presentation/
       settings/
+        data/
+        domain/
+        presentation/
     shared/
       http/
       storage/
@@ -241,130 +402,119 @@ mobile/
 
 ---
 
-## UI/Design System
+## Design System fuer die neue App
 
-Ziel: schnell, klar, "schul-kompatibel".
+### Grundrichtung
 
-- Farb-Codierung für Event Types (KA/TEST/HA/INFO)
-- Typography: gut lesbar, Large Text support
-- Komponenten:
-  - EventCard, SubjectChip, EmptyState, ErrorState, Skeletons
-- Kalender:
-  - Phase 1: Liste + einfache Week Strip (Custom)
-  - Phase 2: optional Paket wie `table_calendar` (mit Design Anpassung)
+- visuell nah an `plane-mobile`
+- inhaltlich klar auf Schule, Termine, Hausaufgaben und Klassenkontext ausgerichtet
 
----
+### Komponenten
 
-## Push & Notifications (Phase 2)
+- `PrimaryButton`
+- `SecondaryButton`
+- `AppTextField`
+- `EventCard`
+- `SubjectChip`
+- `WeekStrip`
+- `SectionHeader`
+- `EmptyState`
+- `ErrorState`
+- `LoadingSkeleton`
+- `BottomFilterSheet`
 
-### Remote Push (Backend -> Device)
+### UI-Regeln
 
-- Android: FCM
-- iOS: APNs (meist via FCM Bridge)
-- App registriert Device Token nach Login:
-  - `POST /api/push/register` (platform: `fcm` oder `apns`)
-- App deregistriert beim Logout:
-  - `DELETE /api/push/unregister`
+- starke Lesbarkeit
+- wenig visuelles Rauschen
+- grosse Touch-Ziele
+- konsistente Abstaende
+- farbliche Event-Typ-Unterscheidung
 
-### Lokale Reminder (On-device)
+### Event-Type Farben
 
-- Regel: "Morgen" oder "naechste Woche" Zusammenfassung
-- Engine: Background fetch (platform-limited), ansonsten beim App-open neu planen
+- `KA`
+- `TEST`
+- `HA`
+- `INFO`
+
+Die finalen Farben sollen aus dem Plane-Look abgeleitet werden, aber fuer Bildungs- und Kalenderkontext besser differenzierbar sein.
 
 ---
 
 ## Offline-Strategie
 
-- "Stale-while-revalidate":
-  - UI zeigt Cache sofort
-  - Sync im Hintergrund
-- Datenintegritaet:
-  - Events nach `id` upserten
-  - Deleted Events: Backend liefert aktuell keine Tombstones im read-only Flow
-    - Phase 1: kompletter Refetch 1x/Tag oder bei "Force Refresh"
-    - Phase 2: Backend-Delta mit Deleted IDs (Empfehlung)
+- Stale-while-revalidate
+- Cache zuerst anzeigen
+- Hintergrundsync beim Screen-Start und Pull-to-refresh
+- Upsert ueber Event-ID
+- periodischer Full-Refresh gegen fehlende Delete-Tombstones
 
 ---
 
-## Observability & Qualitaet
-
-- Logging:
-  - minimaler client-side log (debug screen)
-- Crash Reporting:
-  - optional Sentry (konfigurierbar, für self-hosting sensibel)
-- Analytics:
-  - default off, opt-in
+## Qualitaet und Beobachtbarkeit
 
 ### Tests
 
-- Unit: parsing, sync logic, date grouping, filtering
-- Widget tests: states (loading/empty/error)
-- Integration tests: login callback parsing, list rendering
+- Unit:
+  - DTO Parsing
+  - Mappers
+  - Sync-Logik
+  - Filterlogik
+  - Date Grouping
+- Widget:
+  - Loading
+  - Empty
+  - Error
+  - EventCard Rendering
+  - Login Flow UI
+- Integration:
+  - Deep Link Parsing
+  - Session Bootstrap
+  - Event-Listenaufbau aus Cache
 
 ### CI
 
 - `flutter analyze`
 - `flutter test`
-- Build check Android/iOS (signing optional)
+- spaeter Build Checks fuer Android/iOS
 
 ---
 
-## Backend Roadmap (damit Mobile wirklich "voll")
+## Risiken
 
-Wenn die App Events erstellen/bearbeiten soll ohne API-Key UX:
-
-1. OAuth PKCE:
-   - `/api/oauth/token` akzeptiert `code_verifier`
-   - `/api/oauth/authorize` erzeugt code_challenge binding
-2. Scope System:
-   - statt `read:events` -> `events:read`/`events:write` analog API v1
-3. Write Endpoints für Integration Token:
-   - entweder API v1 für OAuth Tokens freischalten
-   - oder neue Endpoints `/api/mobile/v1/events` mit identischen DTOs
-4. Delta Sync inkl. Deletes:
-   - `GET /api/events?updated_since=...` liefert `deleted_event_ids: []`
+- zu starke visuelle Naehe zu Plane kann fachlich falsche Erwartungen erzeugen
+- OAuth ohne PKCE ist nur eine Zwischenloesung
+- fehlende Delete-Tombstones erschweren perfekten Delta-Sync
+- Write-Support ist ohne Backend-Arbeit oder API-Key-UX nicht sauber loesbar
 
 ---
 
-## Meilensteine (konkret)
+## Entscheidungen fuer die Umsetzung
 
-### M0: Repo/Tooling (0.5-1 Tag)
+### Festgelegt
 
-- Flutter Projekt anlegen (`mobile/`)
-- Flavor/Config: Dev/Prod, BaseUrl-Override
-- Lints + formatter + CI skeleton
+- neue Flutter-App statt Fork oder Port
+- Plane nur als UI/UX-Referenz
+- MVP read-only
+- Self-hosted Instanzen bleiben first-class citizen
+- `drift` ist als Persistenz-Basis in der Mobile-App vorgesehen; die aktuelle MVP-Implementierung nutzt davor noch austauschbare In-Memory-Stores fuer Events und Subjects
 
-### M1: Auth + Read-Only Data (2-4 Tage)
+### Noch offen
 
-- Deep Link Setup (iOS + Android)
-- OAuth Flow (authorize -> callback -> token)
-- `userinfo` anzeigen
-- Events/Subjects laden + Cache + UI
-
-### M2: UX Polish (2-4 Tage)
-
-- Filter/Search
-- Empty/Error states
-- Performance (list virtualization, memoization)
-- i18n (de/en)
-
-### M3: Notifications + Widgets (3-6 Tage)
-
-- Push registration + permission flows
-- Local reminders
-- Widgets
-
-### M4: Write Support (nach Strategie)
-
-- API-Key Mode (schnell) oder OAuth+Backend (sauber)
+- genaue Farbpalette und Font-Setup fuer den finalen Mobile Design System Layer
+- ob API-Key-Mode ueberhaupt in Phase 3 gewollt ist
+- welche Reminder-Regeln produktseitig sinnvoll sind
 
 ---
 
-## Offene Entscheidungen (bitte als Issue-Liste tracken)
+## Naechste sinnvolle Umsetzungsreihenfolge
 
-- Soll die App **nur** Classly Cloud (classly.site) targeten oder explizit Self-Hosted Instanzen als 1st-class citizen?
-- Welche Strategie für Write:
-  - API-Key Mode (sofort möglich, UX weniger gut)
-  - OAuth erweitern (Backend Arbeit, beste UX)
-- Push: welche Events triggern Notifications (nur neue? auch Updates/Deletes?)
-- Datenschutz: Default-off Telemetrie, Crash reporting opt-in?
+1. neues `mobile/` Projekt anlegen
+2. Theme- und Design-System aus Plane-Look nachbauen, aber technisch sauber neu strukturieren
+3. Routing und Session-Guard aufsetzen
+4. `InstanceSelect` und OAuth Login umsetzen
+5. Legacy read-only Sync fuer Events und Subjects aufbauen
+6. Event-Liste und Kalender-UI auf MVP-Level liefern
+7. Offline-Cache und Delta-Sync haerten
+8. Filter, Suche, Settings und Diagnostics abschliessen
