@@ -1,4 +1,5 @@
 import 'package:classly_mobile/app/bootstrap/bootstrap.dart';
+import 'package:classly_mobile/features/auth/presentation/callback_handler_screen.dart';
 import 'package:classly_mobile/features/auth/presentation/instance_select_screen.dart';
 import 'package:classly_mobile/features/auth/presentation/login_screen.dart';
 import 'package:classly_mobile/features/auth/presentation/session_gate.dart';
@@ -18,6 +19,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const InstanceSelectScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, state) =>
+            CallbackHandlerScreen(callbackUri: state.uri),
+      ),
       GoRoute(
         path: '/calendar',
         builder: (context, state) =>

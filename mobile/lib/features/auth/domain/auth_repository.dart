@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:classly_mobile/features/auth/domain/user_session.dart';
 
 abstract class AuthRepository {
   Future<String?> getSavedBaseUrl();
@@ -6,8 +6,21 @@ abstract class AuthRepository {
   Future<void> saveBaseUrl(String baseUrl);
 
   Uri buildAuthorizeUri({required String baseUrl});
+
+  Future<UserSession> completeOAuthCallback(Uri callbackUri, {String? baseUrl});
+
+  Future<void> saveSession(UserSession session);
+
+  Future<UserSession?> restoreSession();
+
+  Future<void> clearSession();
 }
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  throw UnimplementedError('AuthRepository provider must be overridden.');
-});
+class AuthFlowException implements Exception {
+  const AuthFlowException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}

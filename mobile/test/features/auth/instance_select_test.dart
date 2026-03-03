@@ -1,6 +1,8 @@
 import 'package:classly_mobile/app/bootstrap/bootstrap.dart';
 import 'package:classly_mobile/features/auth/domain/auth_repository.dart';
+import 'package:classly_mobile/features/auth/domain/user_session.dart';
 import 'package:classly_mobile/features/auth/presentation/instance_select_screen.dart';
+import 'package:classly_mobile/features/auth/providers/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,7 +82,24 @@ class _FakeAuthRepository implements AuthRepository {
   Future<String?> getSavedBaseUrl() async => savedBaseUrl;
 
   @override
+  Future<UserSession> completeOAuthCallback(
+    Uri callbackUri, {
+    String? baseUrl,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> clearSession() async {}
+
+  @override
   Future<void> saveBaseUrl(String baseUrl) async {
     savedBaseUrl = baseUrl;
   }
+
+  @override
+  Future<UserSession?> restoreSession() async => null;
+
+  @override
+  Future<void> saveSession(UserSession session) async {}
 }
