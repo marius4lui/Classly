@@ -1,7 +1,7 @@
 import 'package:classly_mobile/app/app.dart';
 import 'package:classly_mobile/app/bootstrap/bootstrap.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('unauthenticated user lands on instance select', (tester) async {
