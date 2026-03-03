@@ -13,7 +13,7 @@ abstract class AuthRepository {
 
   Future<UserSession?> restoreSession();
 
-  Future<void> clearSession();
+  Future<void> clearSession({bool clearBaseUrl = false});
 }
 
 class AuthFlowException implements Exception {

@@ -90,7 +90,7 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> clearSession() async {}
+  Future<void> clearSession({bool clearBaseUrl = false}) async {}
 
   @override
   Future<void> saveBaseUrl(String baseUrl) async {

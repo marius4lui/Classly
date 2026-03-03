@@ -27,8 +27,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> clearSession() {
-    return _sessionStorage.clearSession();
+  Future<void> clearSession({bool clearBaseUrl = false}) {
+    return _sessionStorage.clearSession(clearBaseUrl: clearBaseUrl);
   }
 
   @override

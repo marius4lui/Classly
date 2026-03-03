@@ -13,7 +13,7 @@ abstract class SessionStorage {
 
   Future<UserSession?> readSession();
 
-  Future<void> clearSession();
+  Future<void> clearSession({bool clearBaseUrl = false});
 }
 
 class SecureSessionStorage implements SessionStorage {
@@ -25,8 +25,11 @@ class SecureSessionStorage implements SessionStorage {
   final FlutterSecureStorage _storage;
 
   @override
-  Future<void> clearSession() async {
+  Future<void> clearSession({bool clearBaseUrl = false}) async {
     await _storage.delete(key: _sessionKey);
+    if (clearBaseUrl) {
+      await _storage.delete(key: _baseUrlKey);
+    }
   }
 
   @override
@@ -61,8 +64,11 @@ class InMemorySessionStorage implements SessionStorage {
   UserSession? _session;
 
   @override
-  Future<void> clearSession() async {
+  Future<void> clearSession({bool clearBaseUrl = false}) async {
     _session = null;
+    if (clearBaseUrl) {
+      _baseUrl = null;
+    }
   }
 
   @override
