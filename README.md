@@ -12,7 +12,7 @@
 
 Classly ist eine **Web-App für Schulklassen**. Statt zehn verschiedener WhatsApp-Gruppen und Fotos von der Tafel, hast du **einen Link**, unter dem alle Termine (Klassenarbeiten, Tests, Hausaufgaben) übersichtlich zu finden sind.
 
-👉 **[Hier geht's zur kompletten Dokumentation!](docs/index.md)**
+👉 **[Hier geht's zur kompletten Dokumentation!](https://docs.classly.site)**
 
 ### ✨ Features
 
