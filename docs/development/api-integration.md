@@ -133,6 +133,24 @@ Ein Skill ist eine strukturierte Anleitung, die KI-Agenten hilft, die Classly AP
 2. **Einbinden**: Füge es deinem AI-Agent als Kontext hinzu
 3. **API-Key**: Stelle sicher, dass `CLASSLY_API_KEY` verfügbar ist
 
+#### Copy-paste Prompt für Agenten
+
+```text
+Set up Classly API access for this workspace.
+
+1. Download these files into a local `Tools/Classly` folder:
+   - `https://github.com/marius4lui/Classly/releases/latest/download/classly_client.py`
+   - `https://github.com/marius4lui/Classly/releases/latest/download/SKILL.md`
+2. Read `SKILL.md` and use it as the Classly API reference.
+3. Create a local `.env.example` with:
+   - `CLASSLY_API_KEY=`
+   - `CLASSLY_BASE_URL=https://classly.site`
+4. Ask me for my Classly API token before making authenticated requests.
+5. After I provide the token, store it in a local `.env` file as `CLASSLY_API_KEY=...`.
+6. Use `classly_client.py` for listing classes, events, users, subjects, and timetable data.
+7. Prefer minimal setup only for using the API, not for deploying or self-hosting Classly.
+```
+
 #### Beispiel: Claude mit MCP
 
 ```json
