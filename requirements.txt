@@ -13,3 +13,4 @@ slowapi
 questionary
 ruamel.yaml
 rich
+starlette<1.0.0
