@@ -37,9 +37,10 @@ class AppwriteRepository(BaseRepository):
         user.is_registered = prefs.get("is_registered", False)
         user.language = prefs.get("language", "de")
 
+        registration = doc.get("registration")
         user.created_at = (
-            datetime.fromisoformat(doc.get("registration").replace("Z", "+00:00"))
-            if doc.get("registration")
+            datetime.fromisoformat(registration.replace("Z", "+00:00"))
+            if registration
             else datetime.now()
         )
 
@@ -54,9 +55,10 @@ class AppwriteRepository(BaseRepository):
         c.join_enabled = doc.get("join_enabled")
         c.timetable_public_enabled = doc.get("timetable_public_enabled", False)
         c.timetable_public_token = doc.get("timetable_public_token")
+        created_at = doc.get("$createdAt")
         c.created_at = (
-            datetime.fromisoformat(doc.get("$createdAt").replace("Z", "+00:00"))
-            if doc.get("$createdAt")
+            datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            if created_at
             else datetime.now()
         )
         return c
@@ -221,7 +223,7 @@ class AppwriteRepository(BaseRepository):
         timetable_public_enabled: bool | None = None,
         timetable_public_token: str | None = None,
     ) -> Optional[models.Class]:
-        data = {}
+        data: dict[str, str | bool] = {}
         if owner_id is not None:
             data["owner_id"] = owner_id
         if join_token is not None:

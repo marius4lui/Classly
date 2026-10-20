@@ -114,12 +114,16 @@ def update_user_role(db: Session, user_id: str, role: models.UserRole):
 def register_user(db: Session, user_id: str, email: str, password: str):
     user = get_user(db, user_id)
     if user:
-        email = email.strip() if email else None
-        password = password.strip() if password else None
-        if not email or not password or len(password) < 8:
+        normalized_email = email.strip() if email else None
+        normalized_password = password.strip() if password else None
+        if (
+            not normalized_email
+            or not normalized_password
+            or len(normalized_password) < 8
+        ):
             return None
-        user.email = email
-        user.password_hash = hash_password(password)
+        user.email = normalized_email
+        user.password_hash = hash_password(normalized_password)
         user.is_registered = True
         db.commit()
         return user
@@ -237,7 +241,9 @@ def revoke_api_key(db: Session, key_id: str, revoked_by: str | None = None) -> b
     return True
 
 
-def rotate_api_key(db: Session, key_id: str) -> tuple:
+def rotate_api_key(
+    db: Session, key_id: str
+) -> tuple[models.IntegrationToken, str] | None:
     """
     Rotiert einen API-Key: Erstellt neuen Token, alter bleibt 24h aktiv.
 

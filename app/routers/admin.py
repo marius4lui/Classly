@@ -42,7 +42,7 @@ def admin_quotas_overview(
     total_events = repo.count_events(user.class_id)
     total_subjects = repo.count_subjects(user.class_id)
 
-    db_size_mb = 0
+    db_size_mb = 0.0
     # Basic size check for SQL/Appwrite generic
     if os.path.exists("classly.db"):  # Check actual DB file if SQL default
         db_size_mb = os.path.getsize("classly.db") / (1024 * 1024)
@@ -180,7 +180,7 @@ def set_user_role(
 def create_login_token(
     response: Response,
     user_id: str = Form(None),  # Existing user
-    user_name: str = Form(None),  # New user name
+    user_name: str | None = Form(None),  # New user name
     max_uses: int = Form(None),
     expires_hours: int = Form(None),
     role: str = Form("member"),

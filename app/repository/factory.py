@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterator
 from app.database import SessionLocal
 from app.repository.base import BaseRepository
 from app.repository.sql import SqlAlchemyRepository
@@ -8,7 +9,7 @@ from app.repository.appwrite import AppwriteRepository
 _appwrite_repo = None
 
 
-def get_repository() -> BaseRepository:
+def get_repository() -> Iterator[BaseRepository]:
     """
     Dependency provider for FastAPI.
     Returns the appropriate repository based on APPWRITE env var.

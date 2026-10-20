@@ -31,7 +31,7 @@ def _strict_client_validation() -> bool:
     return os.getenv("OAUTH_STRICT_CLIENT_VALIDATION", "true").lower() == "true"
 
 
-def _extract_bearer_token(authorization: str) -> str:
+def _extract_bearer_token(authorization: str | None) -> str | None:
     """Extract Bearer token from Authorization header"""
     if not authorization:
         return None

@@ -168,7 +168,9 @@ async def csrf_middleware(request: Request, call_next):
             ):
                 try:
                     form = await request.form()
-                    form_token = form.get(CSRF_FORM_FIELD)
+                    value = form.get(CSRF_FORM_FIELD)
+                    if isinstance(value, str):
+                        form_token = value
                 except Exception:
                     form_token = None
             submitted = form_token

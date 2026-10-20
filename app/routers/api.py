@@ -8,7 +8,7 @@ from app.core.auth import get_current_user
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-def _extract_bearer_token(authorization: str) -> str:
+def _extract_bearer_token(authorization: str | None) -> str | None:
     if not authorization:
         return None
     parts = authorization.split()

@@ -15,7 +15,7 @@ from app import crud
 router = APIRouter(prefix="/api/push", tags=["push"])
 
 
-def _extract_bearer_token(authorization: str) -> str:
+def _extract_bearer_token(authorization: str | None) -> str | None:
     """Extract Bearer token from Authorization header"""
     if not authorization:
         return None
