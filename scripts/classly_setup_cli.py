@@ -21,20 +21,22 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, NoReturn, Tuple
 
 try:
     import questionary
 except Exception:  # pragma: no cover - optional import guard
-    questionary = None
+    _QUESTIONARY_AVAILABLE = False
+else:
+    _QUESTIONARY_AVAILABLE = True
 
 try:
     from ruamel.yaml import YAML
     from ruamel.yaml.comments import CommentedMap, CommentedSeq
 except Exception:  # pragma: no cover - optional import guard
-    YAML = None
-    CommentedMap = dict  # type: ignore[assignment]
-    CommentedSeq = list  # type: ignore[assignment]
+    _RUAMEL_AVAILABLE = False
+else:
+    _RUAMEL_AVAILABLE = True
 
 
 DEFAULT_ENV_FILE = ".env"
@@ -61,13 +63,13 @@ class WizardConfig:
     timezone: str
 
 
-def _die(message: str, code: int = 1) -> None:
+def _die(message: str, code: int = 1) -> NoReturn:
     print(f"Error: {message}", file=sys.stderr)
     raise SystemExit(code)
 
 
 def _require_ruamel() -> None:
-    if YAML is None:
+    if not _RUAMEL_AVAILABLE:
         _die(
             "ruamel.yaml is required. Install dependencies: pip install -r requirements.txt"
         )
@@ -322,12 +324,14 @@ def _validate_config(config: WizardConfig) -> List[str]:
 
 
 def _ask_text(message: str, default: str = "") -> str:
-    if questionary is None:
+    if not _QUESTIONARY_AVAILABLE:
         _die("questionary is required for interactive mode. Install requirements.txt.")
     return questionary.text(message, default=default).ask() or ""
 
 
 def _ask_int(message: str, default: int) -> int:
+    if not _QUESTIONARY_AVAILABLE:
+        _die("questionary is required for interactive mode. Install requirements.txt.")
     while True:
         raw = questionary.text(message, default=str(default)).ask() or str(default)
         try:
@@ -337,7 +341,7 @@ def _ask_int(message: str, default: int) -> int:
 
 
 def _ask_select(message: str, choices: List[str], default: str) -> str:
-    if questionary is None:
+    if not _QUESTIONARY_AVAILABLE:
         _die("questionary is required for interactive mode. Install requirements.txt.")
     return (
         questionary.select(message, choices=choices, default=default).ask() or default
@@ -345,7 +349,7 @@ def _ask_select(message: str, choices: List[str], default: str) -> str:
 
 
 def _ask_confirm(message: str, default: bool = True) -> bool:
-    if questionary is None:
+    if not _QUESTIONARY_AVAILABLE:
         _die("questionary is required for interactive mode. Install requirements.txt.")
     return bool(questionary.confirm(message, default=default).ask())
 

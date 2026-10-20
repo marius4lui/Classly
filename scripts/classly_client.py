@@ -139,7 +139,7 @@ class ClasslyClient:
         Returns:
             Liste von Event-Dictionaries
         """
-        params = {"limit": limit}
+        params: Dict[str, int | str] = {"limit": limit}
         if updated_since:
             params["updated_since"] = updated_since
 

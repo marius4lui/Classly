@@ -66,22 +66,6 @@ def setup_appwrite():
     return Databases(client), Users(client)
 
 
-def wait_for_attribute(db_service, collection_id, key):
-    """Polls attribute status until it is 'available'."""
-    print(f"    ⏳ Warte auf Attribut '{key}'...", end="", flush=True)
-    for _ in range(30):
-        try:
-            attr = db_service.get_attribute(APPWRITE_DB_ID, collection_id, key)
-            if attr["status"] == "available":
-                print(" ✅")
-                return
-        except:
-            pass
-        time.sleep(2)
-        print(".", end="", flush=True)
-    print(" ⚠️ (Timeout, mache weiter)")
-
-
 def migrate_to_appwrite(sqlite_conn, db_service, users_service):
     print("🚀 Starte Migration zu Appwrite...")
 
