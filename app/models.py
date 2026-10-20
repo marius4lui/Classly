@@ -3,7 +3,6 @@ import datetime
 import uuid
 import secrets
 from sqlalchemy import (
-    Column,
     String,
     Integer,
     ForeignKey,
@@ -11,17 +10,19 @@ from sqlalchemy import (
     Boolean,
     Enum,
     Float,
-    Time,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
+# Keep legacy nullability explicit: Python defaults do not imply NOT NULL.
+# Optional annotations reflect values that can already exist in stored rows.
 
-def generate_uuid():
+
+def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
-def generate_token():
+def generate_token() -> str:
     return secrets.token_urlsafe(32)
 
 
@@ -49,67 +50,127 @@ class Priority(str, enum.Enum):
 class Class(Base):
     __tablename__ = "classes"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    name = Column(String, nullable=False)
-    join_token = Column(String, unique=True, index=True, nullable=False)
-    owner_id = Column(String, nullable=True)
-    join_enabled = Column(Boolean, default=True)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    join_token: Mapped[str] = mapped_column(
+        String, unique=True, index=True, nullable=False
+    )
+    owner_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    join_enabled: Mapped[bool | None] = mapped_column(
+        Boolean, default=True, nullable=True
+    )
     # Public share link for timetable (read-only). Token should be non-guessable.
-    timetable_public_enabled = Column(Boolean, default=False)
-    timetable_public_token = Column(String, nullable=True, index=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    timetable_public_enabled: Mapped[bool | None] = mapped_column(
+        Boolean, default=False, nullable=True
+    )
+    timetable_public_token: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
-    users = relationship("User", back_populates="clazz")
-    events = relationship("Event", back_populates="clazz")
-    subjects = relationship("Subject", back_populates="clazz")
-    login_tokens = relationship("LoginToken", back_populates="clazz")
-    audit_logs = relationship("AuditLog", back_populates="clazz")
-    integration_tokens = relationship("IntegrationToken", back_populates="clazz")
+    users: Mapped[list["User"]] = relationship("User", back_populates="clazz")
+    events: Mapped[list["Event"]] = relationship("Event", back_populates="clazz")
+    subjects: Mapped[list["Subject"]] = relationship("Subject", back_populates="clazz")
+    login_tokens: Mapped[list["LoginToken"]] = relationship(
+        "LoginToken", back_populates="clazz"
+    )
+    audit_logs: Mapped[list["AuditLog"]] = relationship(
+        "AuditLog", back_populates="clazz"
+    )
+    integration_tokens: Mapped[list["IntegrationToken"]] = relationship(
+        "IntegrationToken", back_populates="clazz"
+    )
+
+    timetable_settings: Mapped[list["TimetableSettings"]] = relationship(
+        back_populates="clazz"
+    )
+    timetable_slots: Mapped[list["TimetableSlot"]] = relationship(
+        back_populates="clazz"
+    )
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    name = Column(String, nullable=False)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.MEMBER)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
+    role: Mapped[UserRole | None] = mapped_column(
+        Enum(UserRole), default=UserRole.MEMBER, nullable=True
+    )
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
     # Session token for cookie auth
-    session_token = Column(String, default=generate_token)
+    session_token: Mapped[str | None] = mapped_column(
+        String, default=generate_token, nullable=True
+    )
 
     # Admin auth fields (optional - only for registered admins)
-    email = Column(String, unique=True, nullable=True, index=True)
-    password_hash = Column(String, nullable=True)
-    is_registered = Column(Boolean, default=False)
+    email: Mapped[str | None] = mapped_column(
+        String, unique=True, nullable=True, index=True
+    )
+    password_hash: Mapped[str | None] = mapped_column(String, nullable=True)
+    is_registered: Mapped[bool | None] = mapped_column(
+        Boolean, default=False, nullable=True
+    )
 
     # Preferences
-    language = Column(String, default="de")
+    language: Mapped[str | None] = mapped_column(String, default="de", nullable=True)
 
     # CalDAV fields
-    caldav_token = Column(String, default=generate_token)
-    caldav_enabled = Column(Boolean, default=False)
-    caldav_write = Column(Boolean, default=False)
+    caldav_token: Mapped[str | None] = mapped_column(
+        String, default=generate_token, nullable=True
+    )
+    caldav_enabled: Mapped[bool | None] = mapped_column(
+        Boolean, default=False, nullable=True
+    )
+    caldav_write: Mapped[bool | None] = mapped_column(
+        Boolean, default=False, nullable=True
+    )
 
-    clazz = relationship("Class", back_populates="users")
-    events = relationship("Event", back_populates="author")
-    integration_tokens = relationship(
+    clazz: Mapped["Class"] = relationship("Class", back_populates="users")
+    events: Mapped[list["Event"]] = relationship("Event", back_populates="author")
+    integration_tokens: Mapped[list["IntegrationToken"]] = relationship(
         "IntegrationToken",
         back_populates="user",
         foreign_keys="IntegrationToken.user_id",
     )
 
+    preferences: Mapped[list["UserPreferences"]] = relationship(back_populates="user")
+    grades: Mapped[list["Grade"]] = relationship(back_populates="user")
+    timetable_selections: Mapped[list["UserTimetableSelection"]] = relationship(
+        back_populates="user"
+    )
+    device_tokens: Mapped[list["DeviceToken"]] = relationship(back_populates="user")
+
 
 class Subject(Base):
     __tablename__ = "subjects"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    name = Column(String, nullable=False)
-    color = Column(String, default="#666666")
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    color: Mapped[str | None] = mapped_column(String, default="#666666", nullable=True)
 
-    clazz = relationship("Class", back_populates="subjects")
+    clazz: Mapped["Class"] = relationship("Class", back_populates="subjects")
+
+    timetable_slots: Mapped[list["TimetableSlot"]] = relationship(
+        back_populates="subject"
+    )
 
 
 class LoginToken(Base):
@@ -117,31 +178,51 @@ class LoginToken(Base):
 
     __tablename__ = "login_tokens"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    token = Column(String, unique=True, index=True, default=generate_token)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
+    token: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, default=generate_token, nullable=True
+    )
 
     # Link to existing user OR name for new user
-    user_id = Column(String, ForeignKey("users.id"), nullable=True)  # Existing user
-    user_name = Column(String, nullable=True)  # Name for new user if user_id is None
+    user_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("users.id"), nullable=True
+    )  # Existing user
+    user_name: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # Name for new user if user_id is None
 
     # Usage limits
-    max_uses = Column(Integer, nullable=True)  # None = unlimited
-    uses = Column(Integer, default=0)
+    max_uses: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )  # None = unlimited
+    uses: Mapped[int | None] = mapped_column(Integer, default=0, nullable=True)
 
     # Role for new users
-    role = Column(Enum(UserRole), default=UserRole.MEMBER)
+    role: Mapped[UserRole | None] = mapped_column(
+        Enum(UserRole), default=UserRole.MEMBER, nullable=True
+    )
 
     # Expiration
-    expires_at = Column(DateTime, nullable=True)
+    expires_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
 
     # Metadata
-    created_by = Column(String, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_by: Mapped[str] = mapped_column(
+        String, ForeignKey("users.id"), nullable=False
+    )
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
-    clazz = relationship("Class", back_populates="login_tokens")
-    user = relationship("User", foreign_keys=[user_id])
-    creator = relationship("User", foreign_keys=[created_by])
+    clazz: Mapped["Class"] = relationship("Class", back_populates="login_tokens")
+    user: Mapped["User | None"] = relationship("User", foreign_keys=[user_id])
+    creator: Mapped["User"] = relationship("User", foreign_keys=[created_by])
 
 
 class IntegrationToken(Base):
@@ -149,71 +230,112 @@ class IntegrationToken(Base):
 
     __tablename__ = "integration_tokens"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
 
     # Menschenlesbarer Name für den Key
-    name = Column(String, nullable=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Legacy: Klartext-Token (für Rückwärtskompatibilität)
-    token = Column(String, unique=True, index=True, default=generate_token)
+    token: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, default=generate_token, nullable=True
+    )
 
     # NEU: Hash-basierte Speicherung (SHA-256)
-    token_hash = Column(String, unique=True, index=True, nullable=True)
-    token_prefix = Column(String, nullable=True)  # z.B. "cl_...abc" für Identifikation
+    token_hash: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, nullable=True
+    )
+    token_prefix: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # z.B. "cl_...abc" für Identifikation
 
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
 
     # Von welchem Admin erstellt (für Audit)
-    created_by = Column(String, ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(
+        String, ForeignKey("users.id"), nullable=True
+    )
 
     # Granulare Scopes (z.B. "classes:read,events:read,events:write")
-    scopes = Column(String, default="read:events")
+    scopes: Mapped[str | None] = mapped_column(
+        String, default="read:events", nullable=True
+    )
 
     # Rate-Limiting pro Key
-    rate_limit_per_minute = Column(Integer, default=60)
+    rate_limit_per_minute: Mapped[int | None] = mapped_column(
+        Integer, default=60, nullable=True
+    )
 
     # IP-Allowlist (JSON-Array als String, z.B. '["192.168.1.0/24"]')
-    ip_allowlist = Column(String, nullable=True)
+    ip_allowlist: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    expires_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    last_used_at = Column(DateTime, nullable=True)
-    revoked = Column(Boolean, default=False)
-    revoked_at = Column(DateTime, nullable=True)
+    expires_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
+    last_used_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    revoked: Mapped[bool | None] = mapped_column(Boolean, default=False, nullable=True)
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
 
-    user = relationship(
+    user: Mapped["User"] = relationship(
         "User", foreign_keys=[user_id], back_populates="integration_tokens"
     )
-    creator = relationship("User", foreign_keys=[created_by])
-    clazz = relationship("Class", back_populates="integration_tokens")
+    creator: Mapped["User | None"] = relationship("User", foreign_keys=[created_by])
+    clazz: Mapped["Class"] = relationship("Class", back_populates="integration_tokens")
 
 
 class Event(Base):
     __tablename__ = "events"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    type = Column(Enum(EventType), nullable=False)
-    priority = Column(Enum(Priority), default=Priority.MEDIUM)
-    subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
-    subject_name = Column(String, nullable=True)
-    title = Column(String, nullable=True)
-    date = Column(DateTime, nullable=True)
-    author_id = Column(String, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(
-        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
+    type: Mapped[EventType] = mapped_column(Enum(EventType), nullable=False)
+    priority: Mapped[Priority | None] = mapped_column(
+        Enum(Priority), default=Priority.MEDIUM, nullable=True
+    )
+    subject_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("subjects.id"), nullable=True
+    )
+    subject_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
+    date: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    author_id: Mapped[str] = mapped_column(
+        String, ForeignKey("users.id"), nullable=False
+    )
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
+    updated_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime,
+        default=datetime.datetime.utcnow,
+        onupdate=datetime.datetime.utcnow,
+        nullable=True,
     )
 
-    clazz = relationship("Class", back_populates="events")
-    author = relationship("User", back_populates="events")
-    topics = relationship(
+    clazz: Mapped["Class"] = relationship("Class", back_populates="events")
+    author: Mapped["User"] = relationship("User", back_populates="events")
+    topics: Mapped[list["EventTopic"]] = relationship(
         "EventTopic", back_populates="event", cascade="all, delete-orphan"
     )
-    links = relationship(
+    links: Mapped[list["EventLink"]] = relationship(
         "EventLink", back_populates="event", cascade="all, delete-orphan"
     )
+
+    grades: Mapped[list["Grade"]] = relationship(back_populates="event")
 
 
 class EventTopic(Base):
@@ -221,19 +343,33 @@ class EventTopic(Base):
 
     __tablename__ = "event_topics"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    event_id = Column(String, ForeignKey("events.id"), nullable=False)
-    topic_type = Column(String, nullable=False)  # e.g. "Vokabeln", "Grammatik"
-    content = Column(String, nullable=True)  # e.g. "Page 20" (legacy?)
-    count = Column(Integer, nullable=True)  # Legacy: e.g. 50 words
-    pages = Column(String, nullable=True)  # e.g. "S. 10-15"
-    order = Column(Integer, default=0)
-    parent_id = Column(
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    event_id: Mapped[str] = mapped_column(
+        String, ForeignKey("events.id"), nullable=False
+    )
+    topic_type: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # e.g. "Vokabeln", "Grammatik"
+    content: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # e.g. "Page 20" (legacy?)
+    count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )  # Legacy: e.g. 50 words
+    pages: Mapped[str | None] = mapped_column(String, nullable=True)  # e.g. "S. 10-15"
+    order: Mapped[int | None] = mapped_column(Integer, default=0, nullable=True)
+    parent_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("event_topics.id"), nullable=True
     )  # For hierarchical structure
 
-    event = relationship("Event", back_populates="topics")
-    parent = relationship("EventTopic", remote_side=[id], backref="children")
+    event: Mapped["Event"] = relationship("Event", back_populates="topics")
+    parent: Mapped["EventTopic | None"] = relationship(
+        "EventTopic", remote_side=[id], back_populates="children"
+    )
+
+    children: Mapped[list["EventTopic"]] = relationship(back_populates="parent")
 
 
 class EventLink(Base):
@@ -241,12 +377,16 @@ class EventLink(Base):
 
     __tablename__ = "event_links"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    event_id = Column(String, ForeignKey("events.id"), nullable=False)
-    url = Column(String, nullable=False)
-    label = Column(String, nullable=False)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    event_id: Mapped[str] = mapped_column(
+        String, ForeignKey("events.id"), nullable=False
+    )
+    url: Mapped[str] = mapped_column(String, nullable=False)
+    label: Mapped[str] = mapped_column(String, nullable=False)
 
-    event = relationship("Event", back_populates="links")
+    event: Mapped["Event"] = relationship("Event", back_populates="links")
 
 
 class AuditAction(str, enum.Enum):
@@ -270,30 +410,50 @@ class AuditLog(Base):
 
     __tablename__ = "audit_logs"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=True)
-    action = Column(Enum(AuditAction), nullable=False)
-    target_id = Column(String, nullable=True)  # Event ID, User ID, etc.
-    data = Column(String, nullable=True)  # JSON for extra details
-    permanent = Column(Boolean, default=False)  # Event-related logs are permanent
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
+    user_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("users.id"), nullable=True
+    )
+    action: Mapped[AuditAction] = mapped_column(Enum(AuditAction), nullable=False)
+    target_id: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # Event ID, User ID, etc.
+    data: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # JSON for extra details
+    permanent: Mapped[bool | None] = mapped_column(
+        Boolean, default=False, nullable=True
+    )  # Event-related logs are permanent
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
-    clazz = relationship("Class", back_populates="audit_logs")
-    user = relationship("User")
+    clazz: Mapped["Class"] = relationship("Class", back_populates="audit_logs")
+    user: Mapped["User | None"] = relationship("User")
 
 
 class UserPreferences(Base):
     __tablename__ = "user_preferences"
 
-    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
-    filter_subjects = Column(String, default="[]")  # JSON list of subjects
-    filter_event_types = Column(String, default="[]")  # JSON list of types
-    filter_priority = Column(
-        String, default="[]"
+    user_id: Mapped[str] = mapped_column(
+        String, ForeignKey("users.id"), primary_key=True, nullable=False
+    )
+    filter_subjects: Mapped[str | None] = mapped_column(
+        String, default="[]", nullable=True
+    )  # JSON list of subjects
+    filter_event_types: Mapped[str | None] = mapped_column(
+        String, default="[]", nullable=True
+    )  # JSON list of types
+    filter_priority: Mapped[str | None] = mapped_column(
+        String, default="[]", nullable=True
     )  # JSON list of priorities (high, medium, low)
 
-    user = relationship("User", backref="preferences")
+    user: Mapped["User"] = relationship("User", back_populates="preferences")
 
 
 class Grade(Base):
@@ -301,15 +461,25 @@ class Grade(Base):
 
     __tablename__ = "grades"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    event_id = Column(String, ForeignKey("events.id"), nullable=False)
-    grade = Column(Float, nullable=False)  # 1.0 - 6.0 (German grading scale)
-    weight = Column(Float, default=1.0)  # Weight for averaging (e.g. KA=1.0, Test=0.5)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    event_id: Mapped[str] = mapped_column(
+        String, ForeignKey("events.id"), nullable=False
+    )
+    grade: Mapped[float] = mapped_column(
+        Float, nullable=False
+    )  # 1.0 - 6.0 (German grading scale)
+    weight: Mapped[float | None] = mapped_column(
+        Float, default=1.0, nullable=True
+    )  # Weight for averaging (e.g. KA=1.0, Test=0.5)
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
-    user = relationship("User", backref="grades")
-    event = relationship("Event", backref="grades")
+    user: Mapped["User"] = relationship("User", back_populates="grades")
+    event: Mapped["Event"] = relationship("Event", back_populates="grades")
 
 
 # === Timetable Models ===
@@ -320,16 +490,32 @@ class TimetableSettings(Base):
 
     __tablename__ = "timetable_settings"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    class_id = Column(String, ForeignKey("classes.id"), unique=True, nullable=False)
-    slot_duration = Column(Integer, default=45)  # Minuten pro Stunde
-    break_duration = Column(Integer, default=15)  # Minuten Pause
-    day_start_hour = Column(Integer, default=8)  # Startzeit Stunde (08:00)
-    day_start_minute = Column(Integer, default=0)
-    day_end_hour = Column(Integer, default=16)  # Endzeit Stunde (16:00)
-    day_end_minute = Column(Integer, default=0)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), unique=True, nullable=False
+    )
+    slot_duration: Mapped[int | None] = mapped_column(
+        Integer, default=45, nullable=True
+    )  # Minuten pro Stunde
+    break_duration: Mapped[int | None] = mapped_column(
+        Integer, default=15, nullable=True
+    )  # Minuten Pause
+    day_start_hour: Mapped[int | None] = mapped_column(
+        Integer, default=8, nullable=True
+    )  # Startzeit Stunde (08:00)
+    day_start_minute: Mapped[int | None] = mapped_column(
+        Integer, default=0, nullable=True
+    )
+    day_end_hour: Mapped[int | None] = mapped_column(
+        Integer, default=16, nullable=True
+    )  # Endzeit Stunde (16:00)
+    day_end_minute: Mapped[int | None] = mapped_column(
+        Integer, default=0, nullable=True
+    )
 
-    clazz = relationship("Class", backref="timetable_settings")
+    clazz: Mapped["Class"] = relationship("Class", back_populates="timetable_settings")
 
 
 class TimetableSlot(Base):
@@ -337,19 +523,37 @@ class TimetableSlot(Base):
 
     __tablename__ = "timetable_slots"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    weekday = Column(Integer, nullable=False)  # 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr
-    slot_number = Column(
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    class_id: Mapped[str] = mapped_column(
+        String, ForeignKey("classes.id"), nullable=False
+    )
+    weekday: Mapped[int] = mapped_column(
+        Integer, nullable=False
+    )  # 0=Mo, 1=Di, 2=Mi, 3=Do, 4=Fr
+    slot_number: Mapped[int] = mapped_column(
         Integer, nullable=False
     )  # 1, 2, 3... (Stundennummer des Tages)
-    subject_id = Column(String, ForeignKey("subjects.id"), nullable=True)
-    subject_name = Column(String, nullable=True)  # Fallback/Override für Fachname
-    group_name = Column(String, nullable=True)  # z.B. "Bili", "Grundkurs", "LK"
-    room = Column(String, nullable=True)
+    subject_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("subjects.id"), nullable=True
+    )
+    subject_name: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # Fallback/Override für Fachname
+    group_name: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # z.B. "Bili", "Grundkurs", "LK"
+    room: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    clazz = relationship("Class", backref="timetable_slots")
-    subject = relationship("Subject", backref="timetable_slots")
+    clazz: Mapped["Class"] = relationship("Class", back_populates="timetable_slots")
+    subject: Mapped["Subject | None"] = relationship(
+        "Subject", back_populates="timetable_slots"
+    )
+
+    user_selections: Mapped[list["UserTimetableSelection"]] = relationship(
+        back_populates="slot"
+    )
 
 
 class UserTimetableSelection(Base):
@@ -357,12 +561,18 @@ class UserTimetableSelection(Base):
 
     __tablename__ = "user_timetable_selections"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    slot_id = Column(String, ForeignKey("timetable_slots.id"), nullable=False)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    slot_id: Mapped[str] = mapped_column(
+        String, ForeignKey("timetable_slots.id"), nullable=False
+    )
 
-    user = relationship("User", backref="timetable_selections")
-    slot = relationship("TimetableSlot", backref="user_selections")
+    user: Mapped["User"] = relationship("User", back_populates="timetable_selections")
+    slot: Mapped["TimetableSlot"] = relationship(
+        "TimetableSlot", back_populates="user_selections"
+    )
 
 
 # === OAuth Models ===
@@ -373,13 +583,19 @@ class OAuthClient(Base):
 
     __tablename__ = "oauth_clients"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    client_id = Column(String, unique=True, index=True, nullable=False)
-    client_secret = Column(String, nullable=False)
-    name = Column(String, nullable=False)
-    redirect_uri = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    redirect_uris = relationship(
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    client_id: Mapped[str] = mapped_column(
+        String, unique=True, index=True, nullable=False
+    )
+    client_secret: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    redirect_uri: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
+    redirect_uris: Mapped[list["OAuthClientRedirectUri"]] = relationship(
         "OAuthClientRedirectUri",
         back_populates="client",
         cascade="all, delete-orphan",
@@ -391,12 +607,20 @@ class OAuthClientRedirectUri(Base):
 
     __tablename__ = "oauth_client_redirect_uris"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    oauth_client_id = Column(String, ForeignKey("oauth_clients.id"), nullable=False)
-    redirect_uri = Column(String, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    oauth_client_id: Mapped[str] = mapped_column(
+        String, ForeignKey("oauth_clients.id"), nullable=False
+    )
+    redirect_uri: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
-    client = relationship("OAuthClient", back_populates="redirect_uris")
+    client: Mapped["OAuthClient"] = relationship(
+        "OAuthClient", back_populates="redirect_uris"
+    )
 
 
 class OAuthAuthorizationCode(Base):
@@ -404,17 +628,25 @@ class OAuthAuthorizationCode(Base):
 
     __tablename__ = "oauth_authorization_codes"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    code = Column(String, unique=True, index=True, default=generate_token)
-    client_id = Column(String, nullable=False)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    redirect_uri = Column(String, nullable=False)
-    scope = Column(String, default="read:events")
-    expires_at = Column(DateTime, nullable=False)
-    used = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    code: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, default=generate_token, nullable=True
+    )
+    client_id: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    redirect_uri: Mapped[str] = mapped_column(String, nullable=False)
+    scope: Mapped[str | None] = mapped_column(
+        String, default="read:events", nullable=True
+    )
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    used: Mapped[bool | None] = mapped_column(Boolean, default=False, nullable=True)
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
 
-    user = relationship("User")
+    user: Mapped["User"] = relationship("User")
 
 
 # === Push Notification Models ===
@@ -425,13 +657,20 @@ class DeviceToken(Base):
 
     __tablename__ = "device_tokens"
 
-    id = Column(String, primary_key=True, default=generate_uuid)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    device_token = Column(String, nullable=False, index=True)
-    platform = Column(String, nullable=False)  # "fcm" or "apns"
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(
-        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=generate_uuid, nullable=False
+    )
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    device_token: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    platform: Mapped[str] = mapped_column(String, nullable=False)  # "fcm" or "apns"
+    created_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, nullable=True
+    )
+    updated_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime,
+        default=datetime.datetime.utcnow,
+        onupdate=datetime.datetime.utcnow,
+        nullable=True,
     )
 
-    user = relationship("User", backref="device_tokens")
+    user: Mapped["User"] = relationship("User", back_populates="device_tokens")

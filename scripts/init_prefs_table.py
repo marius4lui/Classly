@@ -3,5 +3,5 @@ from app.models import UserPreferences, Class, AuditLog
 
 # Create table
 print("Creating user_preferences table...")
-UserPreferences.__table__.create(bind=engine, checkfirst=True)
+Base.metadata.tables["user_preferences"].create(bind=engine, checkfirst=True)
 print("Done!")
