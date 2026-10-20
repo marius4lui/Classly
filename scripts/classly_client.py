@@ -60,7 +60,7 @@ class ClasslyClient:
         client.create_event(type="HA", date="2026-02-15", title="Aufgabe")
     """
 
-    def __init__(self, api_key: str = None, base_url: str = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None):
         """
         Initialisiert den Classly Client.
 
@@ -126,7 +126,9 @@ class ClasslyClient:
     # EVENTS
     # =========================================================================
 
-    def get_events(self, limit: int = 200, updated_since: str = None) -> List[Dict]:
+    def get_events(
+        self, limit: int = 200, updated_since: str | None = None
+    ) -> List[Dict]:
         """
         Ruft alle Events der Klasse ab.
 
@@ -149,7 +151,7 @@ class ClasslyClient:
         return self._request("GET", f"/events/{event_id}")
 
     def create_event(
-        self, type: str, date: str, title: str, subject: str = None
+        self, type: str, date: str, title: str, subject: str | None = None
     ) -> Dict:
         """
         Erstellt ein neues Event.
@@ -234,7 +236,7 @@ class ClasslyClient:
     # STUNDENPLAN
     # =========================================================================
 
-    def get_timetable(self, weekday: int = None) -> Dict:
+    def get_timetable(self, weekday: int | None = None) -> Dict:
         """
         Ruft den Stundenplan ab.
 

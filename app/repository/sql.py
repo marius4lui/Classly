@@ -20,8 +20,8 @@ class SqlAlchemyRepository(BaseRepository):
         name: str,
         class_id: str,
         role: models.UserRole = models.UserRole.MEMBER,
-        email: str = None,
-        password: str = None,
+        email: str | None = None,
+        password: str | None = None,
     ) -> models.User:
         return crud.create_user(self.db, name, class_id, role, email, password)
 
@@ -50,11 +50,11 @@ class SqlAlchemyRepository(BaseRepository):
     def update_class(
         self,
         class_id: str,
-        owner_id: str = None,
-        join_token: str = None,
-        join_enabled: bool = None,
-        timetable_public_enabled: bool = None,
-        timetable_public_token: str = None,
+        owner_id: str | None = None,
+        join_token: str | None = None,
+        join_enabled: bool | None = None,
+        timetable_public_enabled: bool | None = None,
+        timetable_public_token: str | None = None,
     ) -> Optional[models.Class]:
         c = crud.get_class(self.db, class_id)
         if c:
@@ -85,10 +85,10 @@ class SqlAlchemyRepository(BaseRepository):
         self,
         class_id: str,
         created_by: str,
-        user_id: str = None,
-        user_name: str = None,
-        max_uses: int = None,
-        expires_at: datetime.datetime = None,
+        user_id: str | None = None,
+        user_name: str | None = None,
+        max_uses: int | None = None,
+        expires_at: datetime.datetime | None = None,
         role: models.UserRole = models.UserRole.MEMBER,
     ) -> models.LoginToken:
         return crud.create_login_token(
@@ -121,9 +121,9 @@ class SqlAlchemyRepository(BaseRepository):
         author_id: str,
         type: models.EventType,
         date: datetime.datetime,
-        subject_id: str = None,
-        subject_name: str = None,
-        title: str = None,
+        subject_id: str | None = None,
+        subject_name: str | None = None,
+        title: str | None = None,
         priority: models.Priority = models.Priority.MEDIUM,
     ) -> models.Event:
         return crud.create_event(
@@ -144,11 +144,11 @@ class SqlAlchemyRepository(BaseRepository):
     def update_event(
         self,
         event_id: str,
-        type: models.EventType = None,
-        subject_name: str = None,
-        title: str = None,
-        date: datetime.datetime = None,
-        priority: models.Priority = None,
+        type: models.EventType | None = None,
+        subject_name: str | None = None,
+        title: str | None = None,
+        date: datetime.datetime | None = None,
+        priority: models.Priority | None = None,
     ) -> Optional[models.Event]:
         return crud.update_event(
             self.db, event_id, type, subject_name, title, date, priority
@@ -161,8 +161,8 @@ class SqlAlchemyRepository(BaseRepository):
         self,
         class_id: str,
         limit: int = 100,
-        updated_since: datetime.datetime = None,
-        type: models.EventType = None,
+        updated_since: datetime.datetime | None = None,
+        type: models.EventType | None = None,
     ) -> List[models.Event]:
         query = self.db.query(models.Event).filter(models.Event.class_id == class_id)
         if updated_since:
@@ -182,11 +182,11 @@ class SqlAlchemyRepository(BaseRepository):
         self,
         event_id: str,
         topic_type: str,
-        content: str = None,
-        count: int = None,
-        pages: str = None,
+        content: str | None = None,
+        count: int | None = None,
+        pages: str | None = None,
         order: int = 0,
-        parent_id: str = None,
+        parent_id: str | None = None,
     ) -> models.EventTopic:
         return crud.create_event_topic(
             self.db, event_id, topic_type, content, count, pages, order, parent_id
@@ -239,8 +239,8 @@ class SqlAlchemyRepository(BaseRepository):
         class_id: str,
         user_id: str,
         action: models.AuditAction,
-        target_id: str = None,
-        data: str = None,
+        target_id: str | None = None,
+        data: str | None = None,
         permanent: bool = False,
     ) -> models.AuditLog:
         return crud.create_audit_log(
@@ -261,7 +261,7 @@ class SqlAlchemyRepository(BaseRepository):
         user_id: str,
         class_id: str,
         scopes: str = "read:events",
-        expires_at: datetime.datetime = None,
+        expires_at: datetime.datetime | None = None,
     ) -> models.IntegrationToken:
         return crud.create_integration_token(
             self.db, user_id, class_id, scopes, expires_at

@@ -46,8 +46,8 @@ def create_user(
     name: str,
     class_id: str,
     role: models.UserRole = models.UserRole.MEMBER,
-    email: str = None,
-    password: str = None,
+    email: str | None = None,
+    password: str | None = None,
 ):
     # Capitalize each word in the name
     name = capitalize_name(name)
@@ -152,9 +152,9 @@ def create_api_key(
     class_id: str,
     created_by: str,
     scopes: str,
-    expires_at: datetime.datetime = None,
+    expires_at: datetime.datetime | None = None,
     rate_limit: int = 60,
-    ip_allowlist: str = None,
+    ip_allowlist: str | None = None,
 ) -> tuple:
     """
     Erstellt einen neuen API-Key mit Hash-Speicherung.
@@ -226,7 +226,7 @@ def list_api_keys_for_class(db: Session, class_id: str):
     )
 
 
-def revoke_api_key(db: Session, key_id: str, revoked_by: str = None) -> bool:
+def revoke_api_key(db: Session, key_id: str, revoked_by: str | None = None) -> bool:
     """Widerruft einen API-Key."""
     key = db.query(models.IntegrationToken).filter_by(id=key_id).first()
     if not key:
@@ -274,7 +274,7 @@ def create_integration_token(
     user_id: str,
     class_id: str,
     scopes: str = "read:events",
-    expires_at: datetime.datetime = None,
+    expires_at: datetime.datetime | None = None,
 ):
     """Legacy: Erstellt einen Integration Token (Klartext-Speicherung)."""
     token = models.IntegrationToken(
@@ -322,7 +322,7 @@ def list_integration_tokens_for_user(db: Session, user_id: str):
     )
 
 
-def revoke_integration_token(db: Session, token_id: str, user_id: str = None):
+def revoke_integration_token(db: Session, token_id: str, user_id: str | None = None):
     query = db.query(models.IntegrationToken).filter(
         models.IntegrationToken.id == token_id
     )
@@ -374,10 +374,10 @@ def create_login_token(
     db: Session,
     class_id: str,
     created_by: str,
-    user_id: str = None,
-    user_name: str = None,
-    max_uses: int = None,
-    expires_at: datetime.datetime = None,
+    user_id: str | None = None,
+    user_name: str | None = None,
+    max_uses: int | None = None,
+    expires_at: datetime.datetime | None = None,
     role: models.UserRole = models.UserRole.MEMBER,
 ):
     """Create a login token for a specific user (existing or new by name)"""
@@ -448,9 +448,9 @@ def create_event(
     author_id: str,
     type: models.EventType,
     date: datetime.datetime,
-    subject_id: str = None,
-    subject_name: str = None,
-    title: str = None,
+    subject_id: str | None = None,
+    subject_name: str | None = None,
+    title: str | None = None,
     priority: models.Priority = models.Priority.MEDIUM,
 ):
     db_event = models.Event(
@@ -525,11 +525,11 @@ def get_event(db: Session, event_id: str):
 def update_event(
     db: Session,
     event_id: str,
-    type: models.EventType = None,
-    subject_name: str = None,
-    title: str = None,
-    date: datetime.datetime = None,
-    priority: models.Priority = None,
+    type: models.EventType | None = None,
+    subject_name: str | None = None,
+    title: str | None = None,
+    date: datetime.datetime | None = None,
+    priority: models.Priority | None = None,
 ):
     event = get_event(db, event_id)
     if event:
@@ -554,11 +554,11 @@ def create_event_topic(
     db: Session,
     event_id: str,
     topic_type: str,
-    content: str = None,
-    count: int = None,
-    pages: str = None,
+    content: str | None = None,
+    count: int | None = None,
+    pages: str | None = None,
     order: int = 0,
-    parent_id: str = None,
+    parent_id: str | None = None,
 ):
     db_topic = models.EventTopic(
         event_id=event_id,
@@ -632,8 +632,8 @@ def create_audit_log(
     class_id: str,
     user_id: str,
     action: models.AuditAction,
-    target_id: str = None,
-    data: str = None,
+    target_id: str | None = None,
+    data: str | None = None,
     permanent: bool = False,
 ):
     db_log = models.AuditLog(
@@ -874,8 +874,8 @@ def create_oauth_client(
     client_id: str,
     client_secret: str,
     name: str,
-    redirect_uri: str = None,
-    redirect_uris: list[str] = None,
+    redirect_uri: str | None = None,
+    redirect_uris: list[str] | None = None,
 ):
     """Create a new OAuth client application with one or more redirect URIs."""
     normalized_redirect_uris = _normalize_redirect_uris(
@@ -1005,8 +1005,8 @@ def ensure_oauth_client(
 
 
 def _normalize_redirect_uris(
-    redirect_uris: list[str] = None,
-    fallback_redirect_uri: str = None,
+    redirect_uris: list[str] | None = None,
+    fallback_redirect_uri: str | None = None,
 ) -> list[str]:
     values = redirect_uris or []
     if fallback_redirect_uri:
@@ -1124,7 +1124,7 @@ def get_device_tokens_for_user(db: Session, user_id: str):
     )
 
 
-def delete_device_token(db: Session, device_token: str, user_id: str = None):
+def delete_device_token(db: Session, device_token: str, user_id: str | None = None):
     """Delete a device token"""
     query = db.query(models.DeviceToken).filter(
         models.DeviceToken.device_token == device_token

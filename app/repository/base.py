@@ -19,8 +19,8 @@ class BaseRepository(ABC):
         name: str,
         class_id: str,
         role: models.UserRole = models.UserRole.MEMBER,
-        email: str = None,
-        password: str = None,
+        email: str | None = None,
+        password: str | None = None,
     ) -> models.User:
         pass
 
@@ -56,11 +56,11 @@ class BaseRepository(ABC):
     def update_class(
         self,
         class_id: str,
-        owner_id: str = None,
-        join_token: str = None,
-        join_enabled: bool = None,
-        timetable_public_enabled: bool = None,
-        timetable_public_token: str = None,
+        owner_id: str | None = None,
+        join_token: str | None = None,
+        join_enabled: bool | None = None,
+        timetable_public_enabled: bool | None = None,
+        timetable_public_token: str | None = None,
     ) -> Optional[models.Class]:
         pass
 
@@ -81,10 +81,10 @@ class BaseRepository(ABC):
         self,
         class_id: str,
         created_by: str,
-        user_id: str = None,
-        user_name: str = None,
-        max_uses: int = None,
-        expires_at: datetime.datetime = None,
+        user_id: str | None = None,
+        user_name: str | None = None,
+        max_uses: int | None = None,
+        expires_at: datetime.datetime | None = None,
         role: models.UserRole = models.UserRole.MEMBER,
     ) -> models.LoginToken:
         pass
@@ -109,9 +109,9 @@ class BaseRepository(ABC):
         author_id: str,
         type: models.EventType,
         date: datetime.datetime,
-        subject_id: str = None,
-        subject_name: str = None,
-        title: str = None,
+        subject_id: str | None = None,
+        subject_name: str | None = None,
+        title: str | None = None,
         priority: models.Priority = models.Priority.MEDIUM,
     ) -> models.Event:
         pass
@@ -124,11 +124,11 @@ class BaseRepository(ABC):
     def update_event(
         self,
         event_id: str,
-        type: models.EventType = None,
-        subject_name: str = None,
-        title: str = None,
-        date: datetime.datetime = None,
-        priority: models.Priority = None,
+        type: models.EventType | None = None,
+        subject_name: str | None = None,
+        title: str | None = None,
+        date: datetime.datetime | None = None,
+        priority: models.Priority | None = None,
     ) -> Optional[models.Event]:
         pass
 
@@ -141,8 +141,8 @@ class BaseRepository(ABC):
         self,
         class_id: str,
         limit: int = 100,
-        updated_since: datetime.datetime = None,
-        type: models.EventType = None,
+        updated_since: datetime.datetime | None = None,
+        type: models.EventType | None = None,
     ) -> List[models.Event]:
         pass
 
@@ -156,11 +156,11 @@ class BaseRepository(ABC):
         self,
         event_id: str,
         topic_type: str,
-        content: str = None,
-        count: int = None,
-        pages: str = None,
+        content: str | None = None,
+        count: int | None = None,
+        pages: str | None = None,
         order: int = 0,
-        parent_id: str = None,
+        parent_id: str | None = None,
     ) -> models.EventTopic:
         pass
 
@@ -217,8 +217,8 @@ class BaseRepository(ABC):
         class_id: str,
         user_id: str,
         action: models.AuditAction,
-        target_id: str = None,
-        data: str = None,
+        target_id: str | None = None,
+        data: str | None = None,
         permanent: bool = False,
     ) -> models.AuditLog:
         pass
@@ -234,7 +234,7 @@ class BaseRepository(ABC):
         user_id: str,
         class_id: str,
         scopes: str = "read:events",
-        expires_at: datetime.datetime = None,
+        expires_at: datetime.datetime | None = None,
     ) -> models.IntegrationToken:
         pass
 

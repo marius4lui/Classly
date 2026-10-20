@@ -1,0 +1,3 @@
+[tool.mypy]
+# The app uses namespace packages; preserve their full module names during discovery.
+explicit_package_bases = true

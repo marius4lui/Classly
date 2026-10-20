@@ -24,7 +24,7 @@ class APIKeyAuth:
             ...
     """
 
-    def __init__(self, required_scope: APIScope = None):
+    def __init__(self, required_scope: APIScope | None = None):
         self.required_scope = required_scope
 
     def __call__(

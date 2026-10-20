@@ -345,8 +345,8 @@ def delete_subject(
 @router.get("/feed/rss")
 def get_rss_feed(
     request: Request,
-    class_id: str = None,
-    token: str = None,
+    class_id: str | None = None,
+    token: str | None = None,
     repo: BaseRepository = Depends(get_repository),
 ):
     if not class_id:
@@ -411,8 +411,8 @@ def get_rss_feed(
 
 @router.get("/feed/xml")
 def get_xml_feed(
-    class_id: str = None,
-    token: str = None,
+    class_id: str | None = None,
+    token: str | None = None,
     repo: BaseRepository = Depends(get_repository),
 ):
     if not class_id:

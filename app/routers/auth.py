@@ -315,7 +315,9 @@ def logout_get():
 
 @router.get("/auth/migrate-session")
 def migrate_session(
-    request: Request, token: str = None, repo: BaseRepository = Depends(get_repository)
+    request: Request,
+    token: str | None = None,
+    repo: BaseRepository = Depends(get_repository),
 ):
     """
     Migrates a session from another domain.
