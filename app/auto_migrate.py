@@ -1,4 +1,3 @@
-
 import sqlite3
 import os
 import logging
@@ -8,6 +7,7 @@ from app.database import SQLALCHEMY_DATABASE_URL
 
 logger = logging.getLogger("uvicorn")
 
+
 def run_auto_migrations():
     """
     Automatically runs necessary DB migrations (ALTER TABLEs, etc.)
@@ -16,13 +16,13 @@ def run_auto_migrations():
     # Parse DB path from URL (sqlite:///./classly.db -> ./classly.db)
     if "sqlite" in SQLALCHEMY_DATABASE_URL:
         db_path = SQLALCHEMY_DATABASE_URL.replace("sqlite:///", "")
-        
+
         if not os.path.exists(db_path):
             return
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         try:
             # 1. Check Priority Column in Events
             logger.info("Checking schema migrations...")
@@ -32,40 +32,64 @@ def run_auto_migrations():
             class_columns = [info[1] for info in cursor.fetchall()]
 
             if "timetable_public_enabled" not in class_columns:
-                logger.info("Migrating: Adding 'timetable_public_enabled' column to classes table.")
-                cursor.execute("ALTER TABLE classes ADD COLUMN timetable_public_enabled BOOLEAN DEFAULT 0")
+                logger.info(
+                    "Migrating: Adding 'timetable_public_enabled' column to classes table."
+                )
+                cursor.execute(
+                    "ALTER TABLE classes ADD COLUMN timetable_public_enabled BOOLEAN DEFAULT 0"
+                )
                 conn.commit()
 
             if "timetable_public_token" not in class_columns:
-                logger.info("Migrating: Adding 'timetable_public_token' column to classes table.")
-                cursor.execute("ALTER TABLE classes ADD COLUMN timetable_public_token VARCHAR")
+                logger.info(
+                    "Migrating: Adding 'timetable_public_token' column to classes table."
+                )
+                cursor.execute(
+                    "ALTER TABLE classes ADD COLUMN timetable_public_token VARCHAR"
+                )
                 try:
-                    cursor.execute("CREATE INDEX ix_classes_timetable_public_token ON classes(timetable_public_token)")
+                    cursor.execute(
+                        "CREATE INDEX ix_classes_timetable_public_token ON classes(timetable_public_token)"
+                    )
                 except Exception:
                     pass
                 conn.commit()
 
             cursor.execute("PRAGMA table_info(events)")
             columns = [info[1] for info in cursor.fetchall()]
-             
+
             if "priority" not in columns:
                 logger.info("Migrating: Adding 'priority' column to events table.")
-                cursor.execute("ALTER TABLE events ADD COLUMN priority VARCHAR DEFAULT 'MEDIUM'")
+                cursor.execute(
+                    "ALTER TABLE events ADD COLUMN priority VARCHAR DEFAULT 'MEDIUM'"
+                )
                 conn.commit()
 
             # 2. Migrate lowercase priority values to uppercase
-            cursor.execute("SELECT COUNT(*) FROM events WHERE priority IN ('high', 'medium', 'low')")
+            cursor.execute(
+                "SELECT COUNT(*) FROM events WHERE priority IN ('high', 'medium', 'low')"
+            )
             count = cursor.fetchone()[0]
 
             if count > 0:
-                logger.info(f"Migrating: Converting {count} priority values to uppercase.")
-                cursor.execute("UPDATE events SET priority = 'HIGH' WHERE priority = 'high'")
-                cursor.execute("UPDATE events SET priority = 'MEDIUM' WHERE priority = 'medium'")
-                cursor.execute("UPDATE events SET priority = 'LOW' WHERE priority = 'low'")
+                logger.info(
+                    f"Migrating: Converting {count} priority values to uppercase."
+                )
+                cursor.execute(
+                    "UPDATE events SET priority = 'HIGH' WHERE priority = 'high'"
+                )
+                cursor.execute(
+                    "UPDATE events SET priority = 'MEDIUM' WHERE priority = 'medium'"
+                )
+                cursor.execute(
+                    "UPDATE events SET priority = 'LOW' WHERE priority = 'low'"
+                )
                 conn.commit()
 
             # 3. Check if grades table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='grades'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='grades'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'grades' table.")
                 cursor.execute("""
@@ -89,11 +113,15 @@ def run_auto_migrations():
                 grade_columns = [info[1] for info in cursor.fetchall()]
                 if "weight" not in grade_columns:
                     logger.info("Migrating: Adding 'weight' column to grades table.")
-                    cursor.execute("ALTER TABLE grades ADD COLUMN weight FLOAT DEFAULT 1.0")
+                    cursor.execute(
+                        "ALTER TABLE grades ADD COLUMN weight FLOAT DEFAULT 1.0"
+                    )
                     conn.commit()
 
             # 5. Create timetable_settings table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='timetable_settings'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='timetable_settings'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'timetable_settings' table.")
                 cursor.execute("""
@@ -112,7 +140,9 @@ def run_auto_migrations():
                 conn.commit()
 
             # 6. Create timetable_slots table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='timetable_slots'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='timetable_slots'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'timetable_slots' table.")
                 cursor.execute("""
@@ -129,11 +159,15 @@ def run_auto_migrations():
                         FOREIGN KEY (subject_id) REFERENCES subjects(id)
                     )
                 """)
-                cursor.execute("CREATE INDEX ix_timetable_slots_class_id ON timetable_slots(class_id)")
+                cursor.execute(
+                    "CREATE INDEX ix_timetable_slots_class_id ON timetable_slots(class_id)"
+                )
                 conn.commit()
 
             # 7. Create user_timetable_selections table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_timetable_selections'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user_timetable_selections'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'user_timetable_selections' table.")
                 cursor.execute("""
@@ -145,11 +179,15 @@ def run_auto_migrations():
                         FOREIGN KEY (slot_id) REFERENCES timetable_slots(id)
                     )
                 """)
-                cursor.execute("CREATE INDEX ix_user_timetable_selections_user_id ON user_timetable_selections(user_id)")
+                cursor.execute(
+                    "CREATE INDEX ix_user_timetable_selections_user_id ON user_timetable_selections(user_id)"
+                )
                 conn.commit()
 
             # 8. Create integration_tokens table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='integration_tokens'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='integration_tokens'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'integration_tokens' table.")
                 cursor.execute("""
@@ -167,12 +205,18 @@ def run_auto_migrations():
                         FOREIGN KEY (class_id) REFERENCES classes(id)
                     )
                 """)
-                cursor.execute("CREATE INDEX ix_integration_tokens_token ON integration_tokens(token)")
-                cursor.execute("CREATE INDEX ix_integration_tokens_user_id ON integration_tokens(user_id)")
+                cursor.execute(
+                    "CREATE INDEX ix_integration_tokens_token ON integration_tokens(token)"
+                )
+                cursor.execute(
+                    "CREATE INDEX ix_integration_tokens_user_id ON integration_tokens(user_id)"
+                )
                 conn.commit()
 
             # 9. Create oauth_clients table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_clients'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_clients'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'oauth_clients' table.")
                 cursor.execute("""
@@ -185,11 +229,15 @@ def run_auto_migrations():
                         created_at DATETIME
                     )
                 """)
-                cursor.execute("CREATE INDEX ix_oauth_clients_client_id ON oauth_clients(client_id)")
+                cursor.execute(
+                    "CREATE INDEX ix_oauth_clients_client_id ON oauth_clients(client_id)"
+                )
                 conn.commit()
 
             # 9b. Create oauth_client_redirect_uris table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_client_redirect_uris'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_client_redirect_uris'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'oauth_client_redirect_uris' table.")
                 cursor.execute("""
@@ -210,8 +258,7 @@ def run_auto_migrations():
                 conn.commit()
 
             # 9c. Backfill redirect URIs from oauth_clients.redirect_uri
-            cursor.execute(
-                """
+            cursor.execute("""
                 SELECT oc.id, oc.redirect_uri
                 FROM oauth_clients oc
                 LEFT JOIN oauth_client_redirect_uris ocru
@@ -220,8 +267,7 @@ def run_auto_migrations():
                 WHERE oc.redirect_uri IS NOT NULL
                   AND oc.redirect_uri != ''
                   AND ocru.id IS NULL
-                """
-            )
+                """)
             missing_redirects = cursor.fetchall()
             if missing_redirects:
                 logger.info(
@@ -239,7 +285,9 @@ def run_auto_migrations():
                 conn.commit()
 
             # 10. Create oauth_authorization_codes table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_authorization_codes'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_authorization_codes'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'oauth_authorization_codes' table.")
                 cursor.execute("""
@@ -256,11 +304,15 @@ def run_auto_migrations():
                         FOREIGN KEY (user_id) REFERENCES users(id)
                     )
                 """)
-                cursor.execute("CREATE INDEX ix_oauth_authorization_codes_code ON oauth_authorization_codes(code)")
+                cursor.execute(
+                    "CREATE INDEX ix_oauth_authorization_codes_code ON oauth_authorization_codes(code)"
+                )
                 conn.commit()
 
             # 11. Create device_tokens table if not exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='device_tokens'")
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='device_tokens'"
+            )
             if not cursor.fetchone():
                 logger.info("Migrating: Creating 'device_tokens' table.")
                 cursor.execute("""
@@ -274,63 +326,95 @@ def run_auto_migrations():
                         FOREIGN KEY (user_id) REFERENCES users(id)
                     )
                 """)
-                cursor.execute("CREATE INDEX ix_device_tokens_device_token ON device_tokens(device_token)")
-                cursor.execute("CREATE INDEX ix_device_tokens_user_id ON device_tokens(user_id)")
+                cursor.execute(
+                    "CREATE INDEX ix_device_tokens_device_token ON device_tokens(device_token)"
+                )
+                cursor.execute(
+                    "CREATE INDEX ix_device_tokens_user_id ON device_tokens(user_id)"
+                )
                 conn.commit()
 
             # 12. Add new columns to integration_tokens for API-Key system
             cursor.execute("PRAGMA table_info(integration_tokens)")
             token_columns = [info[1] for info in cursor.fetchall()]
-            
+
             # Add 'name' column
             if "name" not in token_columns:
-                logger.info("Migrating: Adding 'name' column to integration_tokens table.")
+                logger.info(
+                    "Migrating: Adding 'name' column to integration_tokens table."
+                )
                 cursor.execute("ALTER TABLE integration_tokens ADD COLUMN name VARCHAR")
                 conn.commit()
-            
+
             # Add 'token_hash' column
             if "token_hash" not in token_columns:
-                logger.info("Migrating: Adding 'token_hash' column to integration_tokens table.")
-                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN token_hash VARCHAR")
+                logger.info(
+                    "Migrating: Adding 'token_hash' column to integration_tokens table."
+                )
+                cursor.execute(
+                    "ALTER TABLE integration_tokens ADD COLUMN token_hash VARCHAR"
+                )
                 # Create index for token_hash lookups
                 try:
-                    cursor.execute("CREATE UNIQUE INDEX ix_integration_tokens_token_hash ON integration_tokens(token_hash)")
+                    cursor.execute(
+                        "CREATE UNIQUE INDEX ix_integration_tokens_token_hash ON integration_tokens(token_hash)"
+                    )
                 except Exception:
                     pass  # Index might already exist
                 conn.commit()
-            
+
             # Add 'token_prefix' column
             if "token_prefix" not in token_columns:
-                logger.info("Migrating: Adding 'token_prefix' column to integration_tokens table.")
-                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN token_prefix VARCHAR")
+                logger.info(
+                    "Migrating: Adding 'token_prefix' column to integration_tokens table."
+                )
+                cursor.execute(
+                    "ALTER TABLE integration_tokens ADD COLUMN token_prefix VARCHAR"
+                )
                 conn.commit()
-            
+
             # Add 'created_by' column
             if "created_by" not in token_columns:
-                logger.info("Migrating: Adding 'created_by' column to integration_tokens table.")
-                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN created_by VARCHAR")
+                logger.info(
+                    "Migrating: Adding 'created_by' column to integration_tokens table."
+                )
+                cursor.execute(
+                    "ALTER TABLE integration_tokens ADD COLUMN created_by VARCHAR"
+                )
                 conn.commit()
-            
+
             # Add 'rate_limit_per_minute' column
             if "rate_limit_per_minute" not in token_columns:
-                logger.info("Migrating: Adding 'rate_limit_per_minute' column to integration_tokens table.")
-                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN rate_limit_per_minute INTEGER DEFAULT 60")
+                logger.info(
+                    "Migrating: Adding 'rate_limit_per_minute' column to integration_tokens table."
+                )
+                cursor.execute(
+                    "ALTER TABLE integration_tokens ADD COLUMN rate_limit_per_minute INTEGER DEFAULT 60"
+                )
                 conn.commit()
-            
+
             # Add 'ip_allowlist' column
             if "ip_allowlist" not in token_columns:
-                logger.info("Migrating: Adding 'ip_allowlist' column to integration_tokens table.")
-                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN ip_allowlist VARCHAR")
+                logger.info(
+                    "Migrating: Adding 'ip_allowlist' column to integration_tokens table."
+                )
+                cursor.execute(
+                    "ALTER TABLE integration_tokens ADD COLUMN ip_allowlist VARCHAR"
+                )
                 conn.commit()
-            
+
             # Add 'revoked_at' column
             if "revoked_at" not in token_columns:
-                logger.info("Migrating: Adding 'revoked_at' column to integration_tokens table.")
-                cursor.execute("ALTER TABLE integration_tokens ADD COLUMN revoked_at DATETIME")
+                logger.info(
+                    "Migrating: Adding 'revoked_at' column to integration_tokens table."
+                )
+                cursor.execute(
+                    "ALTER TABLE integration_tokens ADD COLUMN revoked_at DATETIME"
+                )
                 conn.commit()
 
             # Add other migrations here as needed
-            
+
         except Exception as e:
             logger.error(f"Auto migration failed: {e}")
             conn.rollback()

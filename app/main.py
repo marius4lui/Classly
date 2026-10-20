@@ -54,12 +54,12 @@ def run_migrations():
         db.close()
 
 
-
 run_migrations()
 
 # Check for Auto-Migration to Appwrite
 if os.getenv("AUTOMIGRATE_TO") == "appwrite":
     from app.core.migration import migrate_to_appwrite
+
     migrate_to_appwrite()
 
 
@@ -72,7 +72,11 @@ from fastapi.middleware.cors import CORSMiddleware
 def _cors_allow_origins() -> list[str]:
     raw = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
     if not raw:
-        return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
+        return [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
@@ -92,8 +96,10 @@ app.add_middleware(SlowAPIMiddleware)
 # Max File Size Middleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
+
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
 MAX_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+
 
 @app.middleware("http")
 async def check_content_length(request: Request, call_next):
@@ -102,7 +108,12 @@ async def check_content_length(request: Request, call_next):
         try:
             length = int(content_length)
             if length > MAX_BYTES:
-                 return JSONResponse(status_code=413, content={"detail": f"Request entity too large. Max {MAX_FILE_SIZE_MB}MB."})
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "detail": f"Request entity too large. Max {MAX_FILE_SIZE_MB}MB."
+                    },
+                )
         except ValueError:
             pass
     return await call_next(request)
@@ -121,7 +132,9 @@ async def security_headers_middleware(request: Request, call_next):
         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
     )
     if os.getenv("COOKIE_SECURE", "true").lower() == "true":
-        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
     return response
 
 
@@ -136,7 +149,11 @@ async def csrf_middleware(request: Request, call_next):
         "/openapi.json",
     ]
 
-    if csrf_enabled() and is_state_changing(request) and not is_path_exempt(request.url.path, exempt_paths):
+    if (
+        csrf_enabled()
+        and is_state_changing(request)
+        and not is_path_exempt(request.url.path, exempt_paths)
+    ):
         cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
         header_token = request.headers.get(CSRF_HEADER_NAME)
         submitted = header_token
@@ -145,7 +162,10 @@ async def csrf_middleware(request: Request, call_next):
         if not submitted:
             form_token = None
             ctype = request.headers.get("content-type", "")
-            if "application/x-www-form-urlencoded" in ctype or "multipart/form-data" in ctype:
+            if (
+                "application/x-www-form-urlencoded" in ctype
+                or "multipart/form-data" in ctype
+            ):
                 try:
                     form = await request.form()
                     form_token = form.get(CSRF_FORM_FIELD)
@@ -153,7 +173,9 @@ async def csrf_middleware(request: Request, call_next):
                     form_token = None
             submitted = form_token
         if not same_token(cookie_token, submitted):
-            return JSONResponse(status_code=403, content={"detail": "Invalid CSRF token"})
+            return JSONResponse(
+                status_code=403, content={"detail": "Invalid CSRF token"}
+            )
 
     response = await call_next(request)
     if csrf_enabled() and not request.cookies.get(CSRF_COOKIE_NAME):
@@ -166,6 +188,7 @@ async def csrf_middleware(request: Request, call_next):
             max_age=60 * 60 * 24 * 30,
         )
     return response
+
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

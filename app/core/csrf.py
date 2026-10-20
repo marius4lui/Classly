@@ -30,4 +30,3 @@ def is_state_changing(request: Request) -> bool:
 
 def is_path_exempt(path: str, exempt_prefixes: Iterable[str]) -> bool:
     return any(path.startswith(prefix) for prefix in exempt_prefixes)
-

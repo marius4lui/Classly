@@ -14,47 +14,53 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 class PreferencesUpdate(BaseModel):
     filter_subjects: List[str]
     filter_event_types: List[str]
     filter_priority: List[str] = []
 
+
 @router.get("")
 def get_preferences(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
-    prefs = db.query(UserPreferences).filter(UserPreferences.user_id == current_user.id).first()
-    
+    prefs = (
+        db.query(UserPreferences)
+        .filter(UserPreferences.user_id == current_user.id)
+        .first()
+    )
+
     if not prefs:
         # Return defaults
-        return {
-            "filter_subjects": [],
-            "filter_event_types": [],
-            "filter_priority": []
-        }
-        
+        return {"filter_subjects": [], "filter_event_types": [], "filter_priority": []}
+
     return {
         "filter_subjects": json.loads(prefs.filter_subjects or "[]"),
         "filter_event_types": json.loads(prefs.filter_event_types or "[]"),
         "filter_priority": json.loads(prefs.filter_priority or "[]"),
     }
 
+
 @router.put("")
 def update_preferences(
     data: PreferencesUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    prefs = db.query(UserPreferences).filter(UserPreferences.user_id == current_user.id).first()
-    
+    prefs = (
+        db.query(UserPreferences)
+        .filter(UserPreferences.user_id == current_user.id)
+        .first()
+    )
+
     if not prefs:
         prefs = UserPreferences(user_id=current_user.id)
         db.add(prefs)
-    
+
     prefs.filter_subjects = json.dumps(data.filter_subjects)
     prefs.filter_event_types = json.dumps(data.filter_event_types)
     prefs.filter_priority = json.dumps(data.filter_priority)
-    
+
     db.commit()
     return {"status": "ok"}

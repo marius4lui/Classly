@@ -68,7 +68,9 @@ def _die(message: str, code: int = 1) -> None:
 
 def _require_ruamel() -> None:
     if YAML is None:
-        _die("ruamel.yaml is required. Install dependencies: pip install -r requirements.txt")
+        _die(
+            "ruamel.yaml is required. Install dependencies: pip install -r requirements.txt"
+        )
 
 
 def _load_text(path: Path) -> str:
@@ -313,7 +315,9 @@ def _validate_config(config: WizardConfig) -> List[str]:
             if not val.strip():
                 errs.append(f"{key} is required when APPWRITE=true.")
         if config.automigrate_to and config.automigrate_to != "appwrite":
-            errs.append("AUTOMIGRATE_TO must be 'appwrite' or empty when APPWRITE=true.")
+            errs.append(
+                "AUTOMIGRATE_TO must be 'appwrite' or empty when APPWRITE=true."
+            )
     return errs
 
 
@@ -335,7 +339,9 @@ def _ask_int(message: str, default: int) -> int:
 def _ask_select(message: str, choices: List[str], default: str) -> str:
     if questionary is None:
         _die("questionary is required for interactive mode. Install requirements.txt.")
-    return questionary.select(message, choices=choices, default=default).ask() or default
+    return (
+        questionary.select(message, choices=choices, default=default).ask() or default
+    )
 
 
 def _ask_confirm(message: str, default: bool = True) -> bool:
@@ -348,13 +354,21 @@ def collect_config(mode: str, target: str, env_current: Dict[str, str]) -> Wizar
     is_advanced = mode == "advanced"
 
     port = _ask_int("Public HTTP port:", int(env_current.get("PORT", "8000") or "8000"))
-    max_classes = _ask_text("MAX_CLASSES (empty = unlimited):", env_current.get("MAX_CLASSES", ""))
-    migrate_from = _ask_text("MIGRATE_FROM_DOMAIN (optional):", env_current.get("MIGRATE_FROM_DOMAIN", ""))
-    migrate_to = _ask_text("MIGRATE_TO_DOMAIN (optional):", env_current.get("MIGRATE_TO_DOMAIN", ""))
+    max_classes = _ask_text(
+        "MAX_CLASSES (empty = unlimited):", env_current.get("MAX_CLASSES", "")
+    )
+    migrate_from = _ask_text(
+        "MIGRATE_FROM_DOMAIN (optional):", env_current.get("MIGRATE_FROM_DOMAIN", "")
+    )
+    migrate_to = _ask_text(
+        "MIGRATE_TO_DOMAIN (optional):", env_current.get("MIGRATE_TO_DOMAIN", "")
+    )
 
     database_url = env_current.get("DATABASE_URL", "sqlite:////data/classly.db")
-    appwrite = (env_current.get("APPWRITE", "false").lower() == "true")
-    appwrite_endpoint = env_current.get("APPWRITE_ENDPOINT", "https://cloud.appwrite.io/v1")
+    appwrite = env_current.get("APPWRITE", "false").lower() == "true"
+    appwrite_endpoint = env_current.get(
+        "APPWRITE_ENDPOINT", "https://cloud.appwrite.io/v1"
+    )
     appwrite_project_id = env_current.get("APPWRITE_PROJECT_ID", "")
     appwrite_api_key = env_current.get("APPWRITE_API_KEY", "")
     appwrite_database_id = env_current.get("APPWRITE_DATABASE_ID", "classly_db")
@@ -366,13 +380,23 @@ def collect_config(mode: str, target: str, env_current: Dict[str, str]) -> Wizar
         appwrite = _ask_confirm("Use Appwrite backend?", default=appwrite)
         if appwrite:
             database_url = _ask_text("DATABASE_URL:", default=database_url)
-            appwrite_endpoint = _ask_text("APPWRITE_ENDPOINT:", default=appwrite_endpoint)
-            appwrite_project_id = _ask_text("APPWRITE_PROJECT_ID:", default=appwrite_project_id)
+            appwrite_endpoint = _ask_text(
+                "APPWRITE_ENDPOINT:", default=appwrite_endpoint
+            )
+            appwrite_project_id = _ask_text(
+                "APPWRITE_PROJECT_ID:", default=appwrite_project_id
+            )
             appwrite_api_key = _ask_text("APPWRITE_API_KEY:", default=appwrite_api_key)
-            appwrite_database_id = _ask_text("APPWRITE_DATABASE_ID:", default=appwrite_database_id)
-            automigrate_to = _ask_select("AUTOMIGRATE_TO:", ["", "appwrite"], default=automigrate_to or "")
+            appwrite_database_id = _ask_text(
+                "APPWRITE_DATABASE_ID:", default=appwrite_database_id
+            )
+            automigrate_to = _ask_select(
+                "AUTOMIGRATE_TO:", ["", "appwrite"], default=automigrate_to or ""
+            )
         else:
-            database_url = _ask_text("DATABASE_URL:", default="sqlite:////data/classly.db")
+            database_url = _ask_text(
+                "DATABASE_URL:", default="sqlite:////data/classly.db"
+            )
             appwrite_endpoint = ""
             appwrite_project_id = ""
             appwrite_api_key = ""
@@ -417,7 +441,9 @@ def apply_plan(
     after_env = _render_env_with_updates(before_env, env_updates)
 
     target = _normalize_target(config.target, compose_file)
-    after_compose = patch_compose_content(before_compose, config, target, env_file.as_posix())
+    after_compose = patch_compose_content(
+        before_compose, config, target, env_file.as_posix()
+    )
 
     env_diff = _preview_diff(env_file, before_env, after_env)
     compose_diff = _preview_diff(compose_file, before_compose, after_compose)
@@ -519,7 +545,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("validate", help="Validate current env/compose config.")
     sub.add_parser("preview", help="Alias of quick with --preview.")
 
-    restore = sub.add_parser("restore", help="Restore files from backup snapshot directory.")
+    restore = sub.add_parser(
+        "restore", help="Restore files from backup snapshot directory."
+    )
     restore.add_argument("--backup", required=True, help="Backup directory path.")
 
     return parser

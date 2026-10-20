@@ -7,17 +7,21 @@ import secrets
 # Use argon2 instead of bcrypt (bcrypt has compatibility issues on some systems)
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def capitalize_name(name: str) -> str:
     """Capitalize each word in a name (e.g. 'max mustermann' -> 'Max Mustermann')"""
     if not name:
         return name
-    return ' '.join(word.capitalize() for word in name.strip().split())
+    return " ".join(word.capitalize() for word in name.strip().split())
+
 
 # --- Class CRUD ---
 def create_class(db: Session, name: str, join_token: str):
@@ -27,14 +31,24 @@ def create_class(db: Session, name: str, join_token: str):
     db.refresh(db_class)
     return db_class
 
+
 def get_class_by_token(db: Session, join_token: str):
     return db.query(models.Class).filter(models.Class.join_token == join_token).first()
+
 
 def get_class(db: Session, class_id: str):
     return db.query(models.Class).filter(models.Class.id == class_id).first()
 
+
 # --- User CRUD ---
-def create_user(db: Session, name: str, class_id: str, role: models.UserRole = models.UserRole.MEMBER, email: str = None, password: str = None):
+def create_user(
+    db: Session,
+    name: str,
+    class_id: str,
+    role: models.UserRole = models.UserRole.MEMBER,
+    email: str = None,
+    password: str = None,
+):
     # Capitalize each word in the name
     name = capitalize_name(name)
     db_user = models.User(name=name, class_id=class_id, role=role)
@@ -54,20 +68,30 @@ def create_user(db: Session, name: str, class_id: str, role: models.UserRole = m
 def get_user(db: Session, user_id: str):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
+
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
+
 def get_user_by_session(db: Session, session_token: str):
-    return db.query(models.User).filter(models.User.session_token == session_token).first()
+    return (
+        db.query(models.User).filter(models.User.session_token == session_token).first()
+    )
+
 
 def get_user_by_caldav_token(db: Session, caldav_token: str):
-    return db.query(models.User).filter(
-        models.User.caldav_token == caldav_token,
-        models.User.caldav_enabled == True
-    ).first()
+    return (
+        db.query(models.User)
+        .filter(
+            models.User.caldav_token == caldav_token, models.User.caldav_enabled == True
+        )
+        .first()
+    )
+
 
 def get_class_members(db: Session, class_id: str):
     return db.query(models.User).filter(models.User.class_id == class_id).all()
+
 
 def delete_user(db: Session, user_id: str):
     user = get_user(db, user_id)
@@ -77,6 +101,7 @@ def delete_user(db: Session, user_id: str):
         return True
     return False
 
+
 def update_user_role(db: Session, user_id: str, role: models.UserRole):
     user = get_user(db, user_id)
     if user:
@@ -84,6 +109,7 @@ def update_user_role(db: Session, user_id: str, role: models.UserRole):
         db.commit()
         return user
     return None
+
 
 def register_user(db: Session, user_id: str, email: str, password: str):
     user = get_user(db, user_id)
@@ -99,6 +125,7 @@ def register_user(db: Session, user_id: str, email: str, password: str):
         return user
     return None
 
+
 def regenerate_session_token(db: Session, user_id: str):
     user = get_user(db, user_id)
     if user:
@@ -107,9 +134,11 @@ def regenerate_session_token(db: Session, user_id: str):
         return user
     return None
 
+
 # --- Integration Tokens / API Keys ---
 
 import hashlib
+
 
 def hash_api_token(token: str) -> str:
     """SHA-256 Hash eines API-Tokens für sichere Speicherung."""
@@ -125,18 +154,18 @@ def create_api_key(
     scopes: str,
     expires_at: datetime.datetime = None,
     rate_limit: int = 60,
-    ip_allowlist: str = None
+    ip_allowlist: str = None,
 ) -> tuple:
     """
     Erstellt einen neuen API-Key mit Hash-Speicherung.
-    
+
     Returns:
         Tuple[IntegrationToken, str]: Das Model-Objekt und der Klartext-Token (nur einmal!)
     """
     raw_token = f"cl_live_{secrets.token_urlsafe(32)}"
     token_hash = hash_api_token(raw_token)
     token_prefix = raw_token[:12] + "..." + raw_token[-4:]
-    
+
     api_key = models.IntegrationToken(
         name=name,
         token=None,  # Kein Klartext in DB
@@ -148,12 +177,12 @@ def create_api_key(
         scopes=scopes,
         expires_at=expires_at,
         rate_limit_per_minute=rate_limit,
-        ip_allowlist=ip_allowlist
+        ip_allowlist=ip_allowlist,
     )
     db.add(api_key)
     db.commit()
     db.refresh(api_key)
-    
+
     return api_key, raw_token  # raw_token wird NUR hier zurückgegeben!
 
 
@@ -164,26 +193,37 @@ def get_api_key_by_token(db: Session, raw_token: str):
     """
     # Versuche erst Hash-Lookup (neue Keys)
     token_hash = hash_api_token(raw_token)
-    key = db.query(models.IntegrationToken).filter(
-        models.IntegrationToken.token_hash == token_hash,
-        models.IntegrationToken.revoked == False
-    ).first()
-    
+    key = (
+        db.query(models.IntegrationToken)
+        .filter(
+            models.IntegrationToken.token_hash == token_hash,
+            models.IntegrationToken.revoked == False,
+        )
+        .first()
+    )
+
     if key:
         return key
-    
+
     # Fallback: Legacy Klartext-Lookup
-    return db.query(models.IntegrationToken).filter(
-        models.IntegrationToken.token == raw_token,
-        models.IntegrationToken.revoked == False
-    ).first()
+    return (
+        db.query(models.IntegrationToken)
+        .filter(
+            models.IntegrationToken.token == raw_token,
+            models.IntegrationToken.revoked == False,
+        )
+        .first()
+    )
 
 
 def list_api_keys_for_class(db: Session, class_id: str):
     """Listet alle API-Keys einer Klasse auf."""
-    return db.query(models.IntegrationToken).filter(
-        models.IntegrationToken.class_id == class_id
-    ).order_by(models.IntegrationToken.created_at.desc()).all()
+    return (
+        db.query(models.IntegrationToken)
+        .filter(models.IntegrationToken.class_id == class_id)
+        .order_by(models.IntegrationToken.created_at.desc())
+        .all()
+    )
 
 
 def revoke_api_key(db: Session, key_id: str, revoked_by: str = None) -> bool:
@@ -200,14 +240,14 @@ def revoke_api_key(db: Session, key_id: str, revoked_by: str = None) -> bool:
 def rotate_api_key(db: Session, key_id: str) -> tuple:
     """
     Rotiert einen API-Key: Erstellt neuen Token, alter bleibt 24h aktiv.
-    
+
     Returns:
         Tuple[IntegrationToken, str] oder None bei Fehler
     """
     old_key = db.query(models.IntegrationToken).filter_by(id=key_id).first()
     if not old_key or old_key.revoked:
         return None
-    
+
     # Neuen Key erstellen
     new_key, new_raw_token = create_api_key(
         db,
@@ -218,24 +258,27 @@ def rotate_api_key(db: Session, key_id: str) -> tuple:
         scopes=old_key.scopes,
         expires_at=old_key.expires_at,
         rate_limit=old_key.rate_limit_per_minute,
-        ip_allowlist=old_key.ip_allowlist
+        ip_allowlist=old_key.ip_allowlist,
     )
-    
+
     # Alten Key mit Ablaufdatum versehen (24h Grace Period)
     old_key.expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     db.commit()
-    
+
     return new_key, new_raw_token
 
 
 # Legacy-Funktionen für Rückwärtskompatibilität
-def create_integration_token(db: Session, user_id: str, class_id: str, scopes: str = "read:events", expires_at: datetime.datetime = None):
+def create_integration_token(
+    db: Session,
+    user_id: str,
+    class_id: str,
+    scopes: str = "read:events",
+    expires_at: datetime.datetime = None,
+):
     """Legacy: Erstellt einen Integration Token (Klartext-Speicherung)."""
     token = models.IntegrationToken(
-        user_id=user_id,
-        class_id=class_id,
-        scopes=scopes,
-        expires_at=expires_at
+        user_id=user_id, class_id=class_id, scopes=scopes, expires_at=expires_at
     )
     db.add(token)
     db.commit()
@@ -245,14 +288,18 @@ def create_integration_token(db: Session, user_id: str, class_id: str, scopes: s
 
 def get_integration_token(db: Session, token_value: str):
     """Legacy: Findet Token per Klartext."""
-    return db.query(models.IntegrationToken).filter(models.IntegrationToken.token == token_value).first()
+    return (
+        db.query(models.IntegrationToken)
+        .filter(models.IntegrationToken.token == token_value)
+        .first()
+    )
 
 
 def use_integration_token(db: Session, token_value: str):
     """Validiert und verwendet einen Token (Legacy + neue Keys)."""
     # Versuche beide Methoden
     token = get_api_key_by_token(db, token_value)
-    
+
     if not token or token.revoked:
         return None
 
@@ -267,11 +314,18 @@ def use_integration_token(db: Session, token_value: str):
 
 
 def list_integration_tokens_for_user(db: Session, user_id: str):
-    return db.query(models.IntegrationToken).filter(models.IntegrationToken.user_id == user_id).order_by(models.IntegrationToken.created_at.desc()).all()
+    return (
+        db.query(models.IntegrationToken)
+        .filter(models.IntegrationToken.user_id == user_id)
+        .order_by(models.IntegrationToken.created_at.desc())
+        .all()
+    )
 
 
 def revoke_integration_token(db: Session, token_id: str, user_id: str = None):
-    query = db.query(models.IntegrationToken).filter(models.IntegrationToken.id == token_id)
+    query = db.query(models.IntegrationToken).filter(
+        models.IntegrationToken.id == token_id
+    )
     if user_id:
         query = query.filter(models.IntegrationToken.user_id == user_id)
     token = query.first()
@@ -283,6 +337,7 @@ def revoke_integration_token(db: Session, token_id: str, user_id: str = None):
         return token
     return None
 
+
 # --- Subject CRUD ---
 def create_subject(db: Session, class_id: str, name: str, color: str = "#666666"):
     db_subject = models.Subject(class_id=class_id, name=name, color=color)
@@ -291,8 +346,15 @@ def create_subject(db: Session, class_id: str, name: str, color: str = "#666666"
     db.refresh(db_subject)
     return db_subject
 
+
 def get_subjects_for_class(db: Session, class_id: str):
-    return db.query(models.Subject).filter(models.Subject.class_id == class_id).order_by(models.Subject.name).all()
+    return (
+        db.query(models.Subject)
+        .filter(models.Subject.class_id == class_id)
+        .order_by(models.Subject.name)
+        .all()
+    )
+
 
 def delete_subject(db: Session, subject_id: str):
     subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
@@ -302,11 +364,22 @@ def delete_subject(db: Session, subject_id: str):
         return True
     return False
 
+
 def get_subject(db: Session, subject_id: str):
     return db.query(models.Subject).filter(models.Subject.id == subject_id).first()
 
+
 # --- Login Token CRUD ---
-def create_login_token(db: Session, class_id: str, created_by: str, user_id: str = None, user_name: str = None, max_uses: int = None, expires_at: datetime.datetime = None, role: models.UserRole = models.UserRole.MEMBER):
+def create_login_token(
+    db: Session,
+    class_id: str,
+    created_by: str,
+    user_id: str = None,
+    user_name: str = None,
+    max_uses: int = None,
+    expires_at: datetime.datetime = None,
+    role: models.UserRole = models.UserRole.MEMBER,
+):
     """Create a login token for a specific user (existing or new by name)"""
     # Capitalize user_name if provided
     if user_name:
@@ -318,37 +391,46 @@ def create_login_token(db: Session, class_id: str, created_by: str, user_id: str
         user_name=user_name,
         max_uses=max_uses,
         expires_at=expires_at,
-        role=role
+        role=role,
     )
     db.add(db_token)
     db.commit()
     db.refresh(db_token)
     return db_token
 
+
 def get_login_token(db: Session, token: str):
     return db.query(models.LoginToken).filter(models.LoginToken.token == token).first()
 
+
 def get_login_tokens_for_class(db: Session, class_id: str):
-    return db.query(models.LoginToken).filter(models.LoginToken.class_id == class_id).order_by(models.LoginToken.created_at.desc()).all()
+    return (
+        db.query(models.LoginToken)
+        .filter(models.LoginToken.class_id == class_id)
+        .order_by(models.LoginToken.created_at.desc())
+        .all()
+    )
+
 
 def use_login_token(db: Session, token: str):
     """Returns the token if valid, increments uses, returns None if invalid/expired"""
     login_token = get_login_token(db, token)
     if not login_token:
         return None
-    
+
     # Check expiration
     if login_token.expires_at and login_token.expires_at < datetime.datetime.utcnow():
         return None
-    
+
     # Check max uses
     if login_token.max_uses is not None and login_token.uses >= login_token.max_uses:
         return None
-    
+
     # Increment uses
     login_token.uses += 1
     db.commit()
     return login_token
+
 
 def delete_login_token(db: Session, token_id: str):
     token = db.query(models.LoginToken).filter(models.LoginToken.id == token_id).first()
@@ -358,10 +440,19 @@ def delete_login_token(db: Session, token_id: str):
         return True
     return False
 
+
 # --- Event CRUD ---
-def create_event(db: Session, class_id: str, author_id: str, type: models.EventType, date: datetime.datetime, 
-                 subject_id: str = None, subject_name: str = None, title: str = None, 
-                 priority: models.Priority = models.Priority.MEDIUM):
+def create_event(
+    db: Session,
+    class_id: str,
+    author_id: str,
+    type: models.EventType,
+    date: datetime.datetime,
+    subject_id: str = None,
+    subject_name: str = None,
+    title: str = None,
+    priority: models.Priority = models.Priority.MEDIUM,
+):
     db_event = models.Event(
         class_id=class_id,
         author_id=author_id,
@@ -370,15 +461,22 @@ def create_event(db: Session, class_id: str, author_id: str, type: models.EventT
         subject_name=subject_name,
         date=date,
         title=title,
-        priority=priority
+        priority=priority,
     )
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
     return db_event
 
+
 def get_events_for_class(db: Session, class_id: str):
-    return db.query(models.Event).filter(models.Event.class_id == class_id).order_by(models.Event.date).all()
+    return (
+        db.query(models.Event)
+        .filter(models.Event.class_id == class_id)
+        .order_by(models.Event.date)
+        .all()
+    )
+
 
 def delete_event(db: Session, event_id: str):
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
@@ -387,6 +485,7 @@ def delete_event(db: Session, event_id: str):
         db.commit()
         return True
     return False
+
 
 # --- CalDAV ---
 def enable_caldav(db: Session, user_id: str, write: bool = False):
@@ -399,6 +498,7 @@ def enable_caldav(db: Session, user_id: str, write: bool = False):
         return user
     return None
 
+
 def disable_caldav(db: Session, user_id: str):
     user = get_user(db, user_id)
     if user:
@@ -406,6 +506,7 @@ def disable_caldav(db: Session, user_id: str):
         db.commit()
         return user
     return None
+
 
 def regenerate_caldav_token(db: Session, user_id: str):
     user = get_user(db, user_id)
@@ -415,26 +516,50 @@ def regenerate_caldav_token(db: Session, user_id: str):
         return user
     return None
 
+
 # --- Event Extended ---
 def get_event(db: Session, event_id: str):
     return db.query(models.Event).filter(models.Event.id == event_id).first()
 
-def update_event(db: Session, event_id: str, type: models.EventType = None, subject_name: str = None, 
-                 title: str = None, date: datetime.datetime = None, priority: models.Priority = None):
+
+def update_event(
+    db: Session,
+    event_id: str,
+    type: models.EventType = None,
+    subject_name: str = None,
+    title: str = None,
+    date: datetime.datetime = None,
+    priority: models.Priority = None,
+):
     event = get_event(db, event_id)
     if event:
-        if type: event.type = type
-        if subject_name is not None: event.subject_name = subject_name
-        if title is not None: event.title = title
-        if date: event.date = date
-        if priority: event.priority = priority
+        if type:
+            event.type = type
+        if subject_name is not None:
+            event.subject_name = subject_name
+        if title is not None:
+            event.title = title
+        if date:
+            event.date = date
+        if priority:
+            event.priority = priority
         db.commit()
         db.refresh(event)
         return event
     return None
 
+
 # --- Event Topics ---
-def create_event_topic(db: Session, event_id: str, topic_type: str, content: str = None, count: int = None, pages: str = None, order: int = 0, parent_id: str = None):
+def create_event_topic(
+    db: Session,
+    event_id: str,
+    topic_type: str,
+    content: str = None,
+    count: int = None,
+    pages: str = None,
+    order: int = 0,
+    parent_id: str = None,
+):
     db_topic = models.EventTopic(
         event_id=event_id,
         topic_type=topic_type,
@@ -442,24 +567,37 @@ def create_event_topic(db: Session, event_id: str, topic_type: str, content: str
         count=count,
         pages=pages,
         order=order,
-        parent_id=parent_id
+        parent_id=parent_id,
     )
     db.add(db_topic)
     db.commit()
     db.refresh(db_topic)
     return db_topic
 
+
 def get_topics_for_event(db: Session, event_id: str):
-    return db.query(models.EventTopic).filter(models.EventTopic.event_id == event_id).order_by(models.EventTopic.order).all()
+    return (
+        db.query(models.EventTopic)
+        .filter(models.EventTopic.event_id == event_id)
+        .order_by(models.EventTopic.order)
+        .all()
+    )
+
 
 def get_topics_hierarchical(db: Session, event_id: str):
     """Get topics in hierarchical structure (parent topics with their children)"""
-    all_topics = db.query(models.EventTopic).filter(models.EventTopic.event_id == event_id).order_by(models.EventTopic.order).all()
+    all_topics = (
+        db.query(models.EventTopic)
+        .filter(models.EventTopic.event_id == event_id)
+        .order_by(models.EventTopic.order)
+        .all()
+    )
 
     # Build hierarchy: only return root topics (parent_id is None)
     # Children are accessible via the 'children' relationship
     root_topics = [t for t in all_topics if t.parent_id is None]
     return root_topics
+
 
 def delete_topic(db: Session, topic_id: str):
     topic = db.query(models.EventTopic).filter(models.EventTopic.id == topic_id).first()
@@ -469,17 +607,15 @@ def delete_topic(db: Session, topic_id: str):
         return True
     return False
 
+
 # --- Event Links ---
 def create_event_link(db: Session, event_id: str, url: str, label: str):
-    db_link = models.EventLink(
-        event_id=event_id,
-        url=url,
-        label=label
-    )
+    db_link = models.EventLink(event_id=event_id, url=url, label=label)
     db.add(db_link)
     db.commit()
     db.refresh(db_link)
     return db_link
+
 
 def delete_link(db: Session, link_id: str):
     link = db.query(models.EventLink).filter(models.EventLink.id == link_id).first()
@@ -489,35 +625,51 @@ def delete_link(db: Session, link_id: str):
         return True
     return False
 
+
 # --- Audit Logs ---
-def create_audit_log(db: Session, class_id: str, user_id: str, action: models.AuditAction, 
-                     target_id: str = None, data: str = None, permanent: bool = False):
+def create_audit_log(
+    db: Session,
+    class_id: str,
+    user_id: str,
+    action: models.AuditAction,
+    target_id: str = None,
+    data: str = None,
+    permanent: bool = False,
+):
     db_log = models.AuditLog(
         class_id=class_id,
         user_id=user_id,
         action=action,
         target_id=target_id,
         data=data,
-        permanent=permanent
+        permanent=permanent,
     )
     db.add(db_log)
     db.commit()
     return db_log
 
+
 def cleanup_old_audit_logs(db: Session):
     """Delete non-permanent audit logs older than 90 days"""
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=90)
-    deleted = db.query(models.AuditLog).filter(
-        models.AuditLog.permanent == False,
-        models.AuditLog.created_at < cutoff
-    ).delete()
+    deleted = (
+        db.query(models.AuditLog)
+        .filter(models.AuditLog.permanent == False, models.AuditLog.created_at < cutoff)
+        .delete()
+    )
     db.commit()
     return deleted
 
+
 def get_audit_logs_for_class(db: Session, class_id: str, limit: int = 50):
-    return db.query(models.AuditLog).filter(
-        models.AuditLog.class_id == class_id
-    ).order_by(models.AuditLog.created_at.desc()).limit(limit).all()
+    return (
+        db.query(models.AuditLog)
+        .filter(models.AuditLog.class_id == class_id)
+        .order_by(models.AuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
 
 # --- Data Migrations ---
 def migrate_capitalize_user_names(db: Session):
@@ -532,93 +684,101 @@ def migrate_capitalize_user_names(db: Session):
         if user.name != capitalized:
             user.name = capitalized
             updated_count += 1
-    
+
     # Also update login token user names
-    tokens = db.query(models.LoginToken).filter(models.LoginToken.user_name.isnot(None)).all()
+    tokens = (
+        db.query(models.LoginToken)
+        .filter(models.LoginToken.user_name.isnot(None))
+        .all()
+    )
     for token in tokens:
         capitalized = capitalize_name(token.user_name)
         if token.user_name != capitalized:
             token.user_name = capitalized
             updated_count += 1
-    
+
     if updated_count > 0:
         db.commit()
         print(f"[Migration] Capitalized {updated_count} user names")
     return updated_count
 
+
 # --- Grade CRUD ---
-def create_grade(db: Session, user_id: str, event_id: str, grade: float, weight: float = 1.0):
+def create_grade(
+    db: Session, user_id: str, event_id: str, grade: float, weight: float = 1.0
+):
     """Create or update a grade for an event (only one grade per user per event)"""
     # Validate grade range
     if grade < 1.0 or grade > 6.0:
         return None
-    
+
     # Validate weight range
     if weight < 0.1 or weight > 2.0:
         weight = 1.0
-    
+
     # Check if grade already exists for this user/event
-    existing = db.query(models.Grade).filter(
-        models.Grade.user_id == user_id,
-        models.Grade.event_id == event_id
-    ).first()
-    
+    existing = (
+        db.query(models.Grade)
+        .filter(models.Grade.user_id == user_id, models.Grade.event_id == event_id)
+        .first()
+    )
+
     if existing:
         existing.grade = grade
         existing.weight = weight
         db.commit()
         db.refresh(existing)
         return existing
-    
+
     db_grade = models.Grade(
-        user_id=user_id,
-        event_id=event_id,
-        grade=grade,
-        weight=weight
+        user_id=user_id, event_id=event_id, grade=grade, weight=weight
     )
     db.add(db_grade)
     db.commit()
     db.refresh(db_grade)
     return db_grade
 
+
 def get_grade(db: Session, user_id: str, event_id: str):
     """Get a user's grade for a specific event"""
-    return db.query(models.Grade).filter(
-        models.Grade.user_id == user_id,
-        models.Grade.event_id == event_id
-    ).first()
+    return (
+        db.query(models.Grade)
+        .filter(models.Grade.user_id == user_id, models.Grade.event_id == event_id)
+        .first()
+    )
+
 
 def get_grades_for_user(db: Session, user_id: str):
     """Get all grades for a user"""
-    return db.query(models.Grade).filter(
-        models.Grade.user_id == user_id
-    ).all()
+    return db.query(models.Grade).filter(models.Grade.user_id == user_id).all()
+
 
 def get_grades_with_events(db: Session, user_id: str, class_id: str):
     """Get all grades for a user with event details - for the grades overview page"""
-    grades = db.query(
-        models.Grade,
-        models.Event
-    ).join(
-        models.Event, models.Grade.event_id == models.Event.id
-    ).filter(
-        models.Grade.user_id == user_id,
-        models.Event.class_id == class_id
-    ).order_by(models.Event.date.desc()).all()
-    
+    grades = (
+        db.query(models.Grade, models.Event)
+        .join(models.Event, models.Grade.event_id == models.Event.id)
+        .filter(models.Grade.user_id == user_id, models.Event.class_id == class_id)
+        .order_by(models.Event.date.desc())
+        .all()
+    )
+
     return grades
+
 
 def delete_grade(db: Session, grade_id: str, user_id: str):
     """Delete a grade (only if it belongs to the user)"""
-    grade = db.query(models.Grade).filter(
-        models.Grade.id == grade_id,
-        models.Grade.user_id == user_id
-    ).first()
+    grade = (
+        db.query(models.Grade)
+        .filter(models.Grade.id == grade_id, models.Grade.user_id == user_id)
+        .first()
+    )
     if grade:
         db.delete(grade)
         db.commit()
         return True
     return False
+
 
 def get_grade_statistics(db: Session, user_id: str, class_id: str):
     """
@@ -626,53 +786,66 @@ def get_grade_statistics(db: Session, user_id: str, class_id: str):
     Returns: { "subjects": { "subject_name": { "average": X, "count": Y, "grades": [...] } }, "overall": Z }
     """
     # Get all grades for this user, joined with events
-    results = db.query(
-        models.Grade.grade,
-        models.Grade.weight,
-        models.Grade.id,
-        models.Event.subject_name,
-        models.Event.type,
-        models.Event.date,
-        models.Event.title
-    ).join(
-        models.Event, models.Grade.event_id == models.Event.id
-    ).filter(
-        models.Grade.user_id == user_id,
-        models.Event.class_id == class_id
-    ).order_by(models.Event.date.desc()).all()
-    
+    results = (
+        db.query(
+            models.Grade.grade,
+            models.Grade.weight,
+            models.Grade.id,
+            models.Event.subject_name,
+            models.Event.type,
+            models.Event.date,
+            models.Event.title,
+        )
+        .join(models.Event, models.Grade.event_id == models.Event.id)
+        .filter(models.Grade.user_id == user_id, models.Event.class_id == class_id)
+        .order_by(models.Event.date.desc())
+        .all()
+    )
+
     if not results:
         return {"subjects": {}, "overall": None, "count": 0, "grades": []}
-    
+
     # Aggregate by subject with weighted averages
     subject_data = {}
     all_weighted_sum = 0.0
     all_weight_sum = 0.0
     all_grades_list = []
-    
-    for grade_val, weight, grade_id, subject_name, event_type, event_date, event_title in results:
+
+    for (
+        grade_val,
+        weight,
+        grade_id,
+        subject_name,
+        event_type,
+        event_date,
+        event_title,
+    ) in results:
         subject = subject_name or "Allgemein"
-        
+
         grade_info = {
             "id": grade_id,
             "grade": grade_val,
             "weight": weight,
             "type": event_type.value if event_type else "TEST",
             "date": event_date.strftime("%d.%m.%Y") if event_date else None,
-            "title": event_title
+            "title": event_title,
         }
         all_grades_list.append({**grade_info, "subject": subject})
-        
+
         if subject not in subject_data:
-            subject_data[subject] = {"grades": [], "weighted_sum": 0.0, "weight_sum": 0.0}
-        
+            subject_data[subject] = {
+                "grades": [],
+                "weighted_sum": 0.0,
+                "weight_sum": 0.0,
+            }
+
         subject_data[subject]["grades"].append(grade_info)
         subject_data[subject]["weighted_sum"] += grade_val * weight
         subject_data[subject]["weight_sum"] += weight
-        
+
         all_weighted_sum += grade_val * weight
         all_weight_sum += weight
-    
+
     # Calculate weighted averages
     subjects = {}
     for subject, data in subject_data.items():
@@ -680,16 +853,18 @@ def get_grade_statistics(db: Session, user_id: str, class_id: str):
         subjects[subject] = {
             "average": round(avg, 2),
             "count": len(data["grades"]),
-            "grades": data["grades"]
+            "grades": data["grades"],
         }
-    
-    overall = round(all_weighted_sum / all_weight_sum, 2) if all_weight_sum > 0 else None
-    
+
+    overall = (
+        round(all_weighted_sum / all_weight_sum, 2) if all_weight_sum > 0 else None
+    )
+
     return {
         "subjects": subjects,
         "overall": overall,
         "count": len(all_grades_list),
-        "grades": all_grades_list
+        "grades": all_grades_list,
     }
 
 
@@ -731,14 +906,20 @@ def create_oauth_client(
 
 def get_oauth_client_by_client_id(db: Session, client_id: str):
     """Get an OAuth client by its client_id"""
-    return db.query(models.OAuthClient).filter(models.OAuthClient.client_id == client_id).first()
+    return (
+        db.query(models.OAuthClient)
+        .filter(models.OAuthClient.client_id == client_id)
+        .first()
+    )
 
 
 def get_oauth_redirect_uris_for_client(db: Session, oauth_client_id: str):
     """Get all allowed redirect URIs for a client."""
-    return db.query(models.OAuthClientRedirectUri).filter(
-        models.OAuthClientRedirectUri.oauth_client_id == oauth_client_id
-    ).all()
+    return (
+        db.query(models.OAuthClientRedirectUri)
+        .filter(models.OAuthClientRedirectUri.oauth_client_id == oauth_client_id)
+        .all()
+    )
 
 
 def oauth_client_allows_redirect_uri(
@@ -759,10 +940,14 @@ def add_redirect_uri_to_oauth_client(
     redirect_uri: str,
 ):
     """Register a redirect URI for an existing OAuth client if not present."""
-    existing = db.query(models.OAuthClientRedirectUri).filter(
-        models.OAuthClientRedirectUri.oauth_client_id == client.id,
-        models.OAuthClientRedirectUri.redirect_uri == redirect_uri,
-    ).first()
+    existing = (
+        db.query(models.OAuthClientRedirectUri)
+        .filter(
+            models.OAuthClientRedirectUri.oauth_client_id == client.id,
+            models.OAuthClientRedirectUri.redirect_uri == redirect_uri,
+        )
+        .first()
+    )
     if existing:
         return existing
 
@@ -839,15 +1024,24 @@ def _normalize_redirect_uris(
     return normalized
 
 
-def create_authorization_code(db: Session, client_id: str, user_id: str, redirect_uri: str, scope: str = "read:events", expires_in_seconds: int = 600):
+def create_authorization_code(
+    db: Session,
+    client_id: str,
+    user_id: str,
+    redirect_uri: str,
+    scope: str = "read:events",
+    expires_in_seconds: int = 600,
+):
     """Create a temporary authorization code for OAuth flow"""
-    expires_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=expires_in_seconds)
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(
+        seconds=expires_in_seconds
+    )
     db_code = models.OAuthAuthorizationCode(
         client_id=client_id,
         user_id=user_id,
         redirect_uri=redirect_uri,
         scope=scope,
-        expires_at=expires_at
+        expires_at=expires_at,
     )
     db.add(db_code)
     db.commit()
@@ -860,23 +1054,27 @@ def use_authorization_code(db: Session, code: str, client_id: str, redirect_uri:
     Use an authorization code to get access token.
     Returns the code if valid, marks as used, returns None if invalid/expired/used.
     """
-    auth_code = db.query(models.OAuthAuthorizationCode).filter(
-        models.OAuthAuthorizationCode.code == code,
-        models.OAuthAuthorizationCode.client_id == client_id,
-        models.OAuthAuthorizationCode.redirect_uri == redirect_uri
-    ).first()
-    
+    auth_code = (
+        db.query(models.OAuthAuthorizationCode)
+        .filter(
+            models.OAuthAuthorizationCode.code == code,
+            models.OAuthAuthorizationCode.client_id == client_id,
+            models.OAuthAuthorizationCode.redirect_uri == redirect_uri,
+        )
+        .first()
+    )
+
     if not auth_code:
         return None
-    
+
     # Check if already used
     if auth_code.used:
         return None
-    
+
     # Check expiration
     if auth_code.expires_at < datetime.datetime.utcnow():
         return None
-    
+
     # Mark as used
     auth_code.used = True
     db.commit()
@@ -885,17 +1083,21 @@ def use_authorization_code(db: Session, code: str, client_id: str, redirect_uri:
 
 
 # --- Device Token CRUD ---
-def create_or_update_device_token(db: Session, user_id: str, device_token: str, platform: str):
+def create_or_update_device_token(
+    db: Session, user_id: str, device_token: str, platform: str
+):
     """
     Create or update a device token for push notifications.
     If the device_token already exists for this user, update it.
     If the device_token exists for a different user, reassign it.
     """
     # Check if device token already exists
-    existing = db.query(models.DeviceToken).filter(
-        models.DeviceToken.device_token == device_token
-    ).first()
-    
+    existing = (
+        db.query(models.DeviceToken)
+        .filter(models.DeviceToken.device_token == device_token)
+        .first()
+    )
+
     if existing:
         # Update existing token (reassign to new user if needed)
         existing.user_id = user_id
@@ -904,12 +1106,10 @@ def create_or_update_device_token(db: Session, user_id: str, device_token: str, 
         db.commit()
         db.refresh(existing)
         return existing
-    
+
     # Create new device token
     db_token = models.DeviceToken(
-        user_id=user_id,
-        device_token=device_token,
-        platform=platform
+        user_id=user_id, device_token=device_token, platform=platform
     )
     db.add(db_token)
     db.commit()
@@ -919,12 +1119,16 @@ def create_or_update_device_token(db: Session, user_id: str, device_token: str, 
 
 def get_device_tokens_for_user(db: Session, user_id: str):
     """Get all device tokens for a user"""
-    return db.query(models.DeviceToken).filter(models.DeviceToken.user_id == user_id).all()
+    return (
+        db.query(models.DeviceToken).filter(models.DeviceToken.user_id == user_id).all()
+    )
 
 
 def delete_device_token(db: Session, device_token: str, user_id: str = None):
     """Delete a device token"""
-    query = db.query(models.DeviceToken).filter(models.DeviceToken.device_token == device_token)
+    query = db.query(models.DeviceToken).filter(
+        models.DeviceToken.device_token == device_token
+    )
     if user_id:
         query = query.filter(models.DeviceToken.user_id == user_id)
     token = query.first()

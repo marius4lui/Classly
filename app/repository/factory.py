@@ -7,6 +7,7 @@ from app.repository.appwrite import AppwriteRepository
 # Global Appwrite Repo instance to reuse client connection
 _appwrite_repo = None
 
+
 def get_repository() -> BaseRepository:
     """
     Dependency provider for FastAPI.
@@ -23,6 +24,7 @@ def get_repository() -> BaseRepository:
             yield SqlAlchemyRepository(db)
         finally:
             db.close()
+
 
 # Synchronous factory for non-FastAPI contexts (scripts etc)
 def get_repository_sync() -> BaseRepository:
