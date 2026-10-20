@@ -175,10 +175,24 @@ async def csrf_middleware(request: Request, call_next):
                 or "multipart/form-data" in ctype
             ):
                 try:
-                    form = await request.form()
-                    value = form.get(CSRF_FORM_FIELD)
-                    if isinstance(value, str):
-                        form_token = value
+                    # BaseHTTPMiddleware replays Request's raw _body cache, not
+                    # parsed forms. Bound it while reading, including chunked or
+                    # misreported bodies, rather than buffering an arbitrary upload.
+                    body = bytearray()
+                    async for chunk in request.stream():
+                        if len(body) + len(chunk) > MAX_BYTES:
+                            return JSONResponse(
+                                status_code=413,
+                                content={
+                                    "detail": f"Request entity too large. Max {MAX_FILE_SIZE_MB}MB."
+                                },
+                            )
+                        body.extend(chunk)
+                    request._body = bytes(body)
+                    async with request.form() as form:
+                        value = form.get(CSRF_FORM_FIELD)
+                        if isinstance(value, str):
+                            form_token = value
                 except Exception:
                     form_token = None
             submitted = form_token
