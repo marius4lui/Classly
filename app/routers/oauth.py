@@ -6,6 +6,7 @@ Endpoints:
 - POST /api/oauth/token - Exchange authorization code for access token
 - GET /api/oauth/userinfo - Get current user info (requires Bearer token)
 """
+
 import datetime
 import os
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, Query
@@ -15,14 +16,22 @@ from app import crud, models
 from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/api/oauth", tags=["oauth"])
-SUPPORTED_OAUTH_SCOPES = {"read:events", "events:read", "events:write", "classes:read", "subjects:read", "users:read", "timetable:read"}
+SUPPORTED_OAUTH_SCOPES = {
+    "read:events",
+    "events:read",
+    "events:write",
+    "classes:read",
+    "subjects:read",
+    "users:read",
+    "timetable:read",
+}
 
 
 def _strict_client_validation() -> bool:
     return os.getenv("OAUTH_STRICT_CLIENT_VALIDATION", "true").lower() == "true"
 
 
-def _extract_bearer_token(authorization: str) -> str:
+def _extract_bearer_token(authorization: str | None) -> str | None:
     """Extract Bearer token from Authorization header"""
     if not authorization:
         return None
@@ -41,18 +50,18 @@ def oauth_authorize(
     redirect_uri: str = Query(...),
     scope: str = Query("read:events"),
     response_type: str = Query("code"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     OAuth 2.0 Authorization Endpoint.
-    
+
     Creates an authorization code for the authenticated user.
-    Requires a valid session cookie. 
+    Requires a valid session cookie.
     If not logged in, redirects to login page.
     """
     from fastapi.responses import RedirectResponse
     import urllib.parse
-    
+
     if _strict_client_validation():
         client = crud.get_oauth_client_by_client_id(db, client_id)
         if not client:
@@ -65,7 +74,7 @@ def oauth_authorize(
     current_user = None
     if session_token:
         current_user = crud.get_user_by_session(db, session_token)
-    
+
     # If not logged in, redirect to login page with return_url
     if not current_user:
         # Build current URL to return to after login
@@ -73,23 +82,25 @@ def oauth_authorize(
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "scope": scope,
-            "response_type": response_type
+            "response_type": response_type,
         }
         query_string = urllib.parse.urlencode(params)
         return_url = f"/api/oauth/authorize?{query_string}"
-        
+
         # Redirect to login
         # We assume /login can handle ?next=... parameter or we just hope the user logs in and tries again
         # For now, let's redirect to /login and use a cookie or param to remember where to go
         # A simple way is to pass ?next=.... URI encoded
         next_url = urllib.parse.quote(return_url)
         return RedirectResponse(url=f"/login?next={next_url}")
-    
+
     if response_type != "code":
-        raise HTTPException(status_code=400, detail="Only response_type=code is supported")
+        raise HTTPException(
+            status_code=400, detail="Only response_type=code is supported"
+        )
     if scope and scope not in SUPPORTED_OAUTH_SCOPES:
         raise HTTPException(status_code=400, detail="Unsupported scope")
-    
+
     # Create authorization code
     auth_code = crud.create_authorization_code(
         db,
@@ -97,14 +108,14 @@ def oauth_authorize(
         user_id=current_user.id,
         redirect_uri=redirect_uri,
         scope=scope,
-        expires_in_seconds=600  # 10 minutes
+        expires_in_seconds=600,  # 10 minutes
     )
-    
+
     # Redirect back to the client app with the code
     # e.g. habiter://auth/callback?code=...
     separator = "&" if "?" in redirect_uri else "?"
     callback_url = f"{redirect_uri}{separator}code={auth_code.code}"
-    
+
     return RedirectResponse(url=callback_url)
 
 
@@ -115,20 +126,20 @@ def oauth_token(
     client_id: str = Form(...),
     client_secret: str = Form(None),
     redirect_uri: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     OAuth 2.0 Token Endpoint.
-    
+
     Exchanges an authorization code for an access token.
-    
+
     Request:
         - grant_type: Must be "authorization_code"
         - code: The authorization code from /authorize
         - client_id: The OAuth client ID
         - client_secret: The OAuth client secret (optional for public clients)
         - redirect_uri: Must match the redirect_uri from /authorize
-    
+
     Response:
         - access_token: The Bearer token to use for API requests
         - token_type: "bearer"
@@ -136,11 +147,13 @@ def oauth_token(
         - scope: The granted scope
     """
     if grant_type != "authorization_code":
-        raise HTTPException(status_code=400, detail="Only grant_type=authorization_code is supported")
-    
+        raise HTTPException(
+            status_code=400, detail="Only grant_type=authorization_code is supported"
+        )
+
     if not code:
         raise HTTPException(status_code=400, detail="Authorization code is required")
-    
+
     client = None
     if _strict_client_validation():
         client = crud.get_oauth_client_by_client_id(db, client_id)
@@ -157,45 +170,49 @@ def oauth_token(
     # Use the authorization code
     auth_code = crud.use_authorization_code(db, code, client_id, redirect_uri)
     if not auth_code:
-        raise HTTPException(status_code=400, detail="Invalid, expired, or already used authorization code")
-    
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid, expired, or already used authorization code",
+        )
+
     # Get the user
     user = crud.get_user(db, auth_code.user_id)
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
-    
+
     # Create an integration token (access token)
     integration_token = crud.create_integration_token(
         db,
         user_id=user.id,
         class_id=user.class_id,
         scopes=auth_code.scope,
-        expires_at=None  # No expiration for OAuth tokens (revocable via API)
+        expires_at=None,  # No expiration for OAuth tokens (revocable via API)
     )
-    
+
     return {
         "access_token": integration_token.token,
         "token_type": "bearer",
-        "expires_at": integration_token.expires_at.isoformat() if integration_token.expires_at else None,
+        "expires_at": (
+            integration_token.expires_at.isoformat()
+            if integration_token.expires_at
+            else None
+        ),
         "scope": integration_token.scopes,
-        "class_id": integration_token.class_id
+        "class_id": integration_token.class_id,
     }
 
 
 @router.get("/userinfo")
-def oauth_userinfo(
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
+def oauth_userinfo(authorization: str = Header(None), db: Session = Depends(get_db)):
     """
     OAuth 2.0 UserInfo Endpoint.
-    
+
     Returns information about the authenticated user.
     Requires a valid Bearer token in the Authorization header.
-    
+
     Request:
         - Authorization: Bearer <access_token>
-    
+
     Response:
         - sub: User ID (subject)
         - name: User's display name
@@ -206,17 +223,17 @@ def oauth_userinfo(
     token_value = _extract_bearer_token(authorization)
     if not token_value:
         raise HTTPException(status_code=401, detail="Missing Bearer token")
-    
+
     token = crud.use_integration_token(db, token_value)
     if not token:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
+
     user = crud.get_user(db, token.user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    
+
     clazz = crud.get_class(db, user.class_id)
-    
+
     return {
         "sub": user.id,
         "name": user.name,
@@ -224,5 +241,5 @@ def oauth_userinfo(
         "class_id": user.class_id,
         "class_name": clazz.name if clazz else None,
         "email": user.email,  # May be null for unregistered users
-        "is_registered": user.is_registered
+        "is_registered": user.is_registered,
     }

@@ -1,0 +1,1621 @@
+{
+  "relationships": {
+    "AuditLog": {
+      "clazz": {
+        "back_populates": "audit_logs",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "audit_logs.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = audit_logs.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "user": {
+        "back_populates": null,
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "audit_logs.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = audit_logs.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "Class": {
+      "audit_logs": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "audit_logs.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = audit_logs.class_id",
+        "single_parent": false,
+        "target": "AuditLog",
+        "uselist": true,
+        "viewonly": false
+      },
+      "events": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "events.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = events.class_id",
+        "single_parent": false,
+        "target": "Event",
+        "uselist": true,
+        "viewonly": false
+      },
+      "integration_tokens": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "integration_tokens.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = integration_tokens.class_id",
+        "single_parent": false,
+        "target": "IntegrationToken",
+        "uselist": true,
+        "viewonly": false
+      },
+      "login_tokens": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "login_tokens.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = login_tokens.class_id",
+        "single_parent": false,
+        "target": "LoginToken",
+        "uselist": true,
+        "viewonly": false
+      },
+      "subjects": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "subjects.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = subjects.class_id",
+        "single_parent": false,
+        "target": "Subject",
+        "uselist": true,
+        "viewonly": false
+      },
+      "timetable_settings": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "timetable_settings.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = timetable_settings.class_id",
+        "single_parent": false,
+        "target": "TimetableSettings",
+        "uselist": true,
+        "viewonly": false
+      },
+      "timetable_slots": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "timetable_slots.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = timetable_slots.class_id",
+        "single_parent": false,
+        "target": "TimetableSlot",
+        "uselist": true,
+        "viewonly": false
+      },
+      "users": {
+        "back_populates": "clazz",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "classes.id",
+            "users.class_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = users.class_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": true,
+        "viewonly": false
+      }
+    },
+    "DeviceToken": {
+      "user": {
+        "back_populates": "device_tokens",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "device_tokens.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = device_tokens.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "Event": {
+      "author": {
+        "back_populates": "events",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "events.author_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = events.author_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      },
+      "clazz": {
+        "back_populates": "events",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "events.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = events.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "grades": {
+        "back_populates": "event",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "events.id",
+            "grades.event_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "events.id = grades.event_id",
+        "single_parent": false,
+        "target": "Grade",
+        "uselist": true,
+        "viewonly": false
+      },
+      "links": {
+        "back_populates": "event",
+        "cascade": [
+          "delete",
+          "delete-orphan",
+          "expunge",
+          "merge",
+          "refresh-expire",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "events.id",
+            "event_links.event_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "events.id = event_links.event_id",
+        "single_parent": false,
+        "target": "EventLink",
+        "uselist": true,
+        "viewonly": false
+      },
+      "topics": {
+        "back_populates": "event",
+        "cascade": [
+          "delete",
+          "delete-orphan",
+          "expunge",
+          "merge",
+          "refresh-expire",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "events.id",
+            "event_topics.event_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "events.id = event_topics.event_id",
+        "single_parent": false,
+        "target": "EventTopic",
+        "uselist": true,
+        "viewonly": false
+      }
+    },
+    "EventLink": {
+      "event": {
+        "back_populates": "links",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "event_links.event_id",
+            "events.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "events.id = event_links.event_id",
+        "single_parent": false,
+        "target": "Event",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "EventTopic": {
+      "children": {
+        "back_populates": "parent",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "event_topics.id",
+            "event_topics.parent_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "event_topics.id = event_topics.parent_id",
+        "single_parent": false,
+        "target": "EventTopic",
+        "uselist": true,
+        "viewonly": false
+      },
+      "event": {
+        "back_populates": "topics",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "event_topics.event_id",
+            "events.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "events.id = event_topics.event_id",
+        "single_parent": false,
+        "target": "Event",
+        "uselist": false,
+        "viewonly": false
+      },
+      "parent": {
+        "back_populates": "children",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "event_topics.parent_id",
+            "event_topics.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "event_topics.id = event_topics.parent_id",
+        "single_parent": false,
+        "target": "EventTopic",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "Grade": {
+      "event": {
+        "back_populates": "grades",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "grades.event_id",
+            "events.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "events.id = grades.event_id",
+        "single_parent": false,
+        "target": "Event",
+        "uselist": false,
+        "viewonly": false
+      },
+      "user": {
+        "back_populates": "grades",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "grades.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = grades.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "IntegrationToken": {
+      "clazz": {
+        "back_populates": "integration_tokens",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "integration_tokens.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = integration_tokens.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "creator": {
+        "back_populates": null,
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "integration_tokens.created_by",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = integration_tokens.created_by",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      },
+      "user": {
+        "back_populates": "integration_tokens",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "integration_tokens.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = integration_tokens.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "LoginToken": {
+      "clazz": {
+        "back_populates": "login_tokens",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "login_tokens.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = login_tokens.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "creator": {
+        "back_populates": null,
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "login_tokens.created_by",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = login_tokens.created_by",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      },
+      "user": {
+        "back_populates": null,
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "login_tokens.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = login_tokens.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "OAuthAuthorizationCode": {
+      "user": {
+        "back_populates": null,
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "oauth_authorization_codes.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = oauth_authorization_codes.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "OAuthClient": {
+      "redirect_uris": {
+        "back_populates": "client",
+        "cascade": [
+          "delete",
+          "delete-orphan",
+          "expunge",
+          "merge",
+          "refresh-expire",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "oauth_clients.id",
+            "oauth_client_redirect_uris.oauth_client_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "oauth_clients.id = oauth_client_redirect_uris.oauth_client_id",
+        "single_parent": false,
+        "target": "OAuthClientRedirectUri",
+        "uselist": true,
+        "viewonly": false
+      }
+    },
+    "OAuthClientRedirectUri": {
+      "client": {
+        "back_populates": "redirect_uris",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "oauth_client_redirect_uris.oauth_client_id",
+            "oauth_clients.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "oauth_clients.id = oauth_client_redirect_uris.oauth_client_id",
+        "single_parent": false,
+        "target": "OAuthClient",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "Subject": {
+      "clazz": {
+        "back_populates": "subjects",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "subjects.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = subjects.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "timetable_slots": {
+        "back_populates": "subject",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "subjects.id",
+            "timetable_slots.subject_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "subjects.id = timetable_slots.subject_id",
+        "single_parent": false,
+        "target": "TimetableSlot",
+        "uselist": true,
+        "viewonly": false
+      }
+    },
+    "TimetableSettings": {
+      "clazz": {
+        "back_populates": "timetable_settings",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "timetable_settings.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = timetable_settings.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "TimetableSlot": {
+      "clazz": {
+        "back_populates": "timetable_slots",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "timetable_slots.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = timetable_slots.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "subject": {
+        "back_populates": "timetable_slots",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "timetable_slots.subject_id",
+            "subjects.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "subjects.id = timetable_slots.subject_id",
+        "single_parent": false,
+        "target": "Subject",
+        "uselist": false,
+        "viewonly": false
+      },
+      "user_selections": {
+        "back_populates": "slot",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "timetable_slots.id",
+            "user_timetable_selections.slot_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "timetable_slots.id = user_timetable_selections.slot_id",
+        "single_parent": false,
+        "target": "UserTimetableSelection",
+        "uselist": true,
+        "viewonly": false
+      }
+    },
+    "User": {
+      "clazz": {
+        "back_populates": "users",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.class_id",
+            "classes.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "classes.id = users.class_id",
+        "single_parent": false,
+        "target": "Class",
+        "uselist": false,
+        "viewonly": false
+      },
+      "device_tokens": {
+        "back_populates": "user",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.id",
+            "device_tokens.user_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = device_tokens.user_id",
+        "single_parent": false,
+        "target": "DeviceToken",
+        "uselist": true,
+        "viewonly": false
+      },
+      "events": {
+        "back_populates": "author",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.id",
+            "events.author_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = events.author_id",
+        "single_parent": false,
+        "target": "Event",
+        "uselist": true,
+        "viewonly": false
+      },
+      "grades": {
+        "back_populates": "user",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.id",
+            "grades.user_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = grades.user_id",
+        "single_parent": false,
+        "target": "Grade",
+        "uselist": true,
+        "viewonly": false
+      },
+      "integration_tokens": {
+        "back_populates": "user",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.id",
+            "integration_tokens.user_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = integration_tokens.user_id",
+        "single_parent": false,
+        "target": "IntegrationToken",
+        "uselist": true,
+        "viewonly": false
+      },
+      "preferences": {
+        "back_populates": "user",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.id",
+            "user_preferences.user_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = user_preferences.user_id",
+        "single_parent": false,
+        "target": "UserPreferences",
+        "uselist": true,
+        "viewonly": false
+      },
+      "timetable_selections": {
+        "back_populates": "user",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "ONETOMANY",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "users.id",
+            "user_timetable_selections.user_id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = user_timetable_selections.user_id",
+        "single_parent": false,
+        "target": "UserTimetableSelection",
+        "uselist": true,
+        "viewonly": false
+      }
+    },
+    "UserPreferences": {
+      "user": {
+        "back_populates": "preferences",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "user_preferences.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = user_preferences.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    },
+    "UserTimetableSelection": {
+      "slot": {
+        "back_populates": "user_selections",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "user_timetable_selections.slot_id",
+            "timetable_slots.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "timetable_slots.id = user_timetable_selections.slot_id",
+        "single_parent": false,
+        "target": "TimetableSlot",
+        "uselist": false,
+        "viewonly": false
+      },
+      "user": {
+        "back_populates": "timetable_selections",
+        "cascade": [
+          "merge",
+          "save-update"
+        ],
+        "direction": "MANYTOONE",
+        "innerjoin": false,
+        "local_remote_pairs": [
+          [
+            "user_timetable_selections.user_id",
+            "users.id"
+          ]
+        ],
+        "passive_deletes": false,
+        "passive_updates": true,
+        "post_update": false,
+        "primaryjoin": "users.id = user_timetable_selections.user_id",
+        "single_parent": false,
+        "target": "User",
+        "uselist": false,
+        "viewonly": false
+      }
+    }
+  },
+  "tables": {
+    "audit_logs": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "permanent": {
+          "default": false,
+          "onupdate": null
+        }
+      },
+      "enums": {
+        "action": {
+          "create_constraint": false,
+          "name": "auditaction",
+          "native_enum": true,
+          "validate_strings": false,
+          "values": [
+            "EVENT_CREATE",
+            "EVENT_EDIT",
+            "EVENT_DELETE",
+            "TOPIC_ADD",
+            "USER_JOIN",
+            "USER_LEAVE",
+            "LOGIN",
+            "API_KEY_CREATE",
+            "API_KEY_REVOKE",
+            "API_KEY_ROTATE",
+            "API_ACCESS"
+          ]
+        }
+      },
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE audit_logs (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tuser_id VARCHAR, \n\taction auditaction NOT NULL, \n\ttarget_id VARCHAR, \n\tdata VARCHAR, \n\tpermanent BOOLEAN, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE audit_logs (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tuser_id VARCHAR, \n\taction VARCHAR(14) NOT NULL, \n\ttarget_id VARCHAR, \n\tdata VARCHAR, \n\tpermanent BOOLEAN, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n"
+    },
+    "classes": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "join_enabled": {
+          "default": true,
+          "onupdate": null
+        },
+        "timetable_public_enabled": {
+          "default": false,
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [
+        "CREATE INDEX ix_classes_timetable_public_token ON classes (timetable_public_token)",
+        "CREATE UNIQUE INDEX ix_classes_join_token ON classes (join_token)"
+      ],
+      "postgresql": "\nCREATE TABLE classes (\n\tid VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tjoin_token VARCHAR NOT NULL, \n\towner_id VARCHAR, \n\tjoin_enabled BOOLEAN, \n\ttimetable_public_enabled BOOLEAN, \n\ttimetable_public_token VARCHAR, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE classes (\n\tid VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tjoin_token VARCHAR NOT NULL, \n\towner_id VARCHAR, \n\tjoin_enabled BOOLEAN, \n\ttimetable_public_enabled BOOLEAN, \n\ttimetable_public_token VARCHAR, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id)\n)\n\n"
+    },
+    "device_tokens": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "updated_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": "None.datetime.utcnow"
+        }
+      },
+      "enums": {},
+      "indexes": [
+        "CREATE INDEX ix_device_tokens_device_token ON device_tokens (device_token)"
+      ],
+      "postgresql": "\nCREATE TABLE device_tokens (\n\tid VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tdevice_token VARCHAR NOT NULL, \n\tplatform VARCHAR NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tupdated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE device_tokens (\n\tid VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tdevice_token VARCHAR NOT NULL, \n\tplatform VARCHAR NOT NULL, \n\tcreated_at DATETIME, \n\tupdated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n"
+    },
+    "event_links": {
+      "defaults": {
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE event_links (\n\tid VARCHAR NOT NULL, \n\tevent_id VARCHAR NOT NULL, \n\turl VARCHAR NOT NULL, \n\tlabel VARCHAR NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(event_id) REFERENCES events (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE event_links (\n\tid VARCHAR NOT NULL, \n\tevent_id VARCHAR NOT NULL, \n\turl VARCHAR NOT NULL, \n\tlabel VARCHAR NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(event_id) REFERENCES events (id)\n)\n\n"
+    },
+    "event_topics": {
+      "defaults": {
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "order": {
+          "default": 0,
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE event_topics (\n\tid VARCHAR NOT NULL, \n\tevent_id VARCHAR NOT NULL, \n\ttopic_type VARCHAR NOT NULL, \n\tcontent VARCHAR, \n\tcount INTEGER, \n\tpages VARCHAR, \n\t\"order\" INTEGER, \n\tparent_id VARCHAR, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(event_id) REFERENCES events (id), \n\tFOREIGN KEY(parent_id) REFERENCES event_topics (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE event_topics (\n\tid VARCHAR NOT NULL, \n\tevent_id VARCHAR NOT NULL, \n\ttopic_type VARCHAR NOT NULL, \n\tcontent VARCHAR, \n\tcount INTEGER, \n\tpages VARCHAR, \n\t\"order\" INTEGER, \n\tparent_id VARCHAR, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(event_id) REFERENCES events (id), \n\tFOREIGN KEY(parent_id) REFERENCES event_topics (id)\n)\n\n"
+    },
+    "events": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "priority": {
+          "default": "MEDIUM",
+          "onupdate": null
+        },
+        "updated_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": "None.datetime.utcnow"
+        }
+      },
+      "enums": {
+        "priority": {
+          "create_constraint": false,
+          "name": "priority",
+          "native_enum": true,
+          "validate_strings": false,
+          "values": [
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+          ]
+        },
+        "type": {
+          "create_constraint": false,
+          "name": "eventtype",
+          "native_enum": true,
+          "validate_strings": false,
+          "values": [
+            "KA",
+            "TEST",
+            "HA",
+            "INFO"
+          ]
+        }
+      },
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE events (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\ttype eventtype NOT NULL, \n\tpriority priority, \n\tsubject_id VARCHAR, \n\tsubject_name VARCHAR, \n\ttitle VARCHAR, \n\tdate TIMESTAMP WITHOUT TIME ZONE, \n\tauthor_id VARCHAR NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tupdated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(subject_id) REFERENCES subjects (id), \n\tFOREIGN KEY(author_id) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE events (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\ttype VARCHAR(4) NOT NULL, \n\tpriority VARCHAR(6), \n\tsubject_id VARCHAR, \n\tsubject_name VARCHAR, \n\ttitle VARCHAR, \n\tdate DATETIME, \n\tauthor_id VARCHAR NOT NULL, \n\tcreated_at DATETIME, \n\tupdated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(subject_id) REFERENCES subjects (id), \n\tFOREIGN KEY(author_id) REFERENCES users (id)\n)\n\n"
+    },
+    "grades": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "weight": {
+          "default": 1.0,
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE grades (\n\tid VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tevent_id VARCHAR NOT NULL, \n\tgrade FLOAT NOT NULL, \n\tweight FLOAT, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(event_id) REFERENCES events (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE grades (\n\tid VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tevent_id VARCHAR NOT NULL, \n\tgrade FLOAT NOT NULL, \n\tweight FLOAT, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(event_id) REFERENCES events (id)\n)\n\n"
+    },
+    "integration_tokens": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "rate_limit_per_minute": {
+          "default": 60,
+          "onupdate": null
+        },
+        "revoked": {
+          "default": false,
+          "onupdate": null
+        },
+        "scopes": {
+          "default": "read:events",
+          "onupdate": null
+        },
+        "token": {
+          "default": "app.models.generate_token",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [
+        "CREATE UNIQUE INDEX ix_integration_tokens_token ON integration_tokens (token)",
+        "CREATE UNIQUE INDEX ix_integration_tokens_token_hash ON integration_tokens (token_hash)"
+      ],
+      "postgresql": "\nCREATE TABLE integration_tokens (\n\tid VARCHAR NOT NULL, \n\tname VARCHAR, \n\ttoken VARCHAR, \n\ttoken_hash VARCHAR, \n\ttoken_prefix VARCHAR, \n\tuser_id VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tcreated_by VARCHAR, \n\tscopes VARCHAR, \n\trate_limit_per_minute INTEGER, \n\tip_allowlist VARCHAR, \n\texpires_at TIMESTAMP WITHOUT TIME ZONE, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tlast_used_at TIMESTAMP WITHOUT TIME ZONE, \n\trevoked BOOLEAN, \n\trevoked_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(created_by) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE integration_tokens (\n\tid VARCHAR NOT NULL, \n\tname VARCHAR, \n\ttoken VARCHAR, \n\ttoken_hash VARCHAR, \n\ttoken_prefix VARCHAR, \n\tuser_id VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tcreated_by VARCHAR, \n\tscopes VARCHAR, \n\trate_limit_per_minute INTEGER, \n\tip_allowlist VARCHAR, \n\texpires_at DATETIME, \n\tcreated_at DATETIME, \n\tlast_used_at DATETIME, \n\trevoked BOOLEAN, \n\trevoked_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(created_by) REFERENCES users (id)\n)\n\n"
+    },
+    "login_tokens": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "role": {
+          "default": "member",
+          "onupdate": null
+        },
+        "token": {
+          "default": "app.models.generate_token",
+          "onupdate": null
+        },
+        "uses": {
+          "default": 0,
+          "onupdate": null
+        }
+      },
+      "enums": {
+        "role": {
+          "create_constraint": false,
+          "name": "userrole",
+          "native_enum": true,
+          "validate_strings": false,
+          "values": [
+            "OWNER",
+            "ADMIN",
+            "CLASS_ADMIN",
+            "MEMBER",
+            "GUEST"
+          ]
+        }
+      },
+      "indexes": [
+        "CREATE UNIQUE INDEX ix_login_tokens_token ON login_tokens (token)"
+      ],
+      "postgresql": "\nCREATE TABLE login_tokens (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\ttoken VARCHAR, \n\tuser_id VARCHAR, \n\tuser_name VARCHAR, \n\tmax_uses INTEGER, \n\tuses INTEGER, \n\trole userrole, \n\texpires_at TIMESTAMP WITHOUT TIME ZONE, \n\tcreated_by VARCHAR NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(created_by) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE login_tokens (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\ttoken VARCHAR, \n\tuser_id VARCHAR, \n\tuser_name VARCHAR, \n\tmax_uses INTEGER, \n\tuses INTEGER, \n\trole VARCHAR(11), \n\texpires_at DATETIME, \n\tcreated_by VARCHAR NOT NULL, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(created_by) REFERENCES users (id)\n)\n\n"
+    },
+    "oauth_authorization_codes": {
+      "defaults": {
+        "code": {
+          "default": "app.models.generate_token",
+          "onupdate": null
+        },
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "scope": {
+          "default": "read:events",
+          "onupdate": null
+        },
+        "used": {
+          "default": false,
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [
+        "CREATE UNIQUE INDEX ix_oauth_authorization_codes_code ON oauth_authorization_codes (code)"
+      ],
+      "postgresql": "\nCREATE TABLE oauth_authorization_codes (\n\tid VARCHAR NOT NULL, \n\tcode VARCHAR, \n\tclient_id VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tredirect_uri VARCHAR NOT NULL, \n\tscope VARCHAR, \n\texpires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, \n\tused BOOLEAN, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE oauth_authorization_codes (\n\tid VARCHAR NOT NULL, \n\tcode VARCHAR, \n\tclient_id VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tredirect_uri VARCHAR NOT NULL, \n\tscope VARCHAR, \n\texpires_at DATETIME NOT NULL, \n\tused BOOLEAN, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n"
+    },
+    "oauth_client_redirect_uris": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [
+        "CREATE INDEX ix_oauth_client_redirect_uris_redirect_uri ON oauth_client_redirect_uris (redirect_uri)"
+      ],
+      "postgresql": "\nCREATE TABLE oauth_client_redirect_uris (\n\tid VARCHAR NOT NULL, \n\toauth_client_id VARCHAR NOT NULL, \n\tredirect_uri VARCHAR NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(oauth_client_id) REFERENCES oauth_clients (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE oauth_client_redirect_uris (\n\tid VARCHAR NOT NULL, \n\toauth_client_id VARCHAR NOT NULL, \n\tredirect_uri VARCHAR NOT NULL, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(oauth_client_id) REFERENCES oauth_clients (id)\n)\n\n"
+    },
+    "oauth_clients": {
+      "defaults": {
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [
+        "CREATE UNIQUE INDEX ix_oauth_clients_client_id ON oauth_clients (client_id)"
+      ],
+      "postgresql": "\nCREATE TABLE oauth_clients (\n\tid VARCHAR NOT NULL, \n\tclient_id VARCHAR NOT NULL, \n\tclient_secret VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tredirect_uri VARCHAR NOT NULL, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE oauth_clients (\n\tid VARCHAR NOT NULL, \n\tclient_id VARCHAR NOT NULL, \n\tclient_secret VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tredirect_uri VARCHAR NOT NULL, \n\tcreated_at DATETIME, \n\tPRIMARY KEY (id)\n)\n\n"
+    },
+    "subjects": {
+      "defaults": {
+        "color": {
+          "default": "#666666",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE subjects (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tcolor VARCHAR, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE subjects (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tcolor VARCHAR, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id)\n)\n\n"
+    },
+    "timetable_settings": {
+      "defaults": {
+        "break_duration": {
+          "default": 15,
+          "onupdate": null
+        },
+        "day_end_hour": {
+          "default": 16,
+          "onupdate": null
+        },
+        "day_end_minute": {
+          "default": 0,
+          "onupdate": null
+        },
+        "day_start_hour": {
+          "default": 8,
+          "onupdate": null
+        },
+        "day_start_minute": {
+          "default": 0,
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "slot_duration": {
+          "default": 45,
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE timetable_settings (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tslot_duration INTEGER, \n\tbreak_duration INTEGER, \n\tday_start_hour INTEGER, \n\tday_start_minute INTEGER, \n\tday_end_hour INTEGER, \n\tday_end_minute INTEGER, \n\tPRIMARY KEY (id), \n\tUNIQUE (class_id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE timetable_settings (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tslot_duration INTEGER, \n\tbreak_duration INTEGER, \n\tday_start_hour INTEGER, \n\tday_start_minute INTEGER, \n\tday_end_hour INTEGER, \n\tday_end_minute INTEGER, \n\tPRIMARY KEY (id), \n\tUNIQUE (class_id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id)\n)\n\n"
+    },
+    "timetable_slots": {
+      "defaults": {
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE timetable_slots (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tweekday INTEGER NOT NULL, \n\tslot_number INTEGER NOT NULL, \n\tsubject_id VARCHAR, \n\tsubject_name VARCHAR, \n\tgroup_name VARCHAR, \n\troom VARCHAR, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(subject_id) REFERENCES subjects (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE timetable_slots (\n\tid VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\tweekday INTEGER NOT NULL, \n\tslot_number INTEGER NOT NULL, \n\tsubject_id VARCHAR, \n\tsubject_name VARCHAR, \n\tgroup_name VARCHAR, \n\troom VARCHAR, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id), \n\tFOREIGN KEY(subject_id) REFERENCES subjects (id)\n)\n\n"
+    },
+    "user_preferences": {
+      "defaults": {
+        "filter_event_types": {
+          "default": "[]",
+          "onupdate": null
+        },
+        "filter_priority": {
+          "default": "[]",
+          "onupdate": null
+        },
+        "filter_subjects": {
+          "default": "[]",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE user_preferences (\n\tuser_id VARCHAR NOT NULL, \n\tfilter_subjects VARCHAR, \n\tfilter_event_types VARCHAR, \n\tfilter_priority VARCHAR, \n\tPRIMARY KEY (user_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE user_preferences (\n\tuser_id VARCHAR NOT NULL, \n\tfilter_subjects VARCHAR, \n\tfilter_event_types VARCHAR, \n\tfilter_priority VARCHAR, \n\tPRIMARY KEY (user_id), \n\tFOREIGN KEY(user_id) REFERENCES users (id)\n)\n\n"
+    },
+    "user_timetable_selections": {
+      "defaults": {
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        }
+      },
+      "enums": {},
+      "indexes": [],
+      "postgresql": "\nCREATE TABLE user_timetable_selections (\n\tid VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tslot_id VARCHAR NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(slot_id) REFERENCES timetable_slots (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE user_timetable_selections (\n\tid VARCHAR NOT NULL, \n\tuser_id VARCHAR NOT NULL, \n\tslot_id VARCHAR NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(user_id) REFERENCES users (id), \n\tFOREIGN KEY(slot_id) REFERENCES timetable_slots (id)\n)\n\n"
+    },
+    "users": {
+      "defaults": {
+        "caldav_enabled": {
+          "default": false,
+          "onupdate": null
+        },
+        "caldav_token": {
+          "default": "app.models.generate_token",
+          "onupdate": null
+        },
+        "caldav_write": {
+          "default": false,
+          "onupdate": null
+        },
+        "created_at": {
+          "default": "None.datetime.utcnow",
+          "onupdate": null
+        },
+        "id": {
+          "default": "app.models.generate_uuid",
+          "onupdate": null
+        },
+        "is_registered": {
+          "default": false,
+          "onupdate": null
+        },
+        "language": {
+          "default": "de",
+          "onupdate": null
+        },
+        "role": {
+          "default": "member",
+          "onupdate": null
+        },
+        "session_token": {
+          "default": "app.models.generate_token",
+          "onupdate": null
+        }
+      },
+      "enums": {
+        "role": {
+          "create_constraint": false,
+          "name": "userrole",
+          "native_enum": true,
+          "validate_strings": false,
+          "values": [
+            "OWNER",
+            "ADMIN",
+            "CLASS_ADMIN",
+            "MEMBER",
+            "GUEST"
+          ]
+        }
+      },
+      "indexes": [
+        "CREATE UNIQUE INDEX ix_users_email ON users (email)"
+      ],
+      "postgresql": "\nCREATE TABLE users (\n\tid VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\trole userrole, \n\tcreated_at TIMESTAMP WITHOUT TIME ZONE, \n\tsession_token VARCHAR, \n\temail VARCHAR, \n\tpassword_hash VARCHAR, \n\tis_registered BOOLEAN, \n\tlanguage VARCHAR, \n\tcaldav_token VARCHAR, \n\tcaldav_enabled BOOLEAN, \n\tcaldav_write BOOLEAN, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id)\n)\n\n",
+      "sqlite": "\nCREATE TABLE users (\n\tid VARCHAR NOT NULL, \n\tname VARCHAR NOT NULL, \n\tclass_id VARCHAR NOT NULL, \n\trole VARCHAR(11), \n\tcreated_at DATETIME, \n\tsession_token VARCHAR, \n\temail VARCHAR, \n\tpassword_hash VARCHAR, \n\tis_registered BOOLEAN, \n\tlanguage VARCHAR, \n\tcaldav_token VARCHAR, \n\tcaldav_enabled BOOLEAN, \n\tcaldav_write BOOLEAN, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(class_id) REFERENCES classes (id)\n)\n\n"
+    }
+  }
+}

@@ -23,7 +23,7 @@ router.include_router(timetable.router)
 def api_info():
     """
     API v1 Info-Endpoint.
-    
+
     Gibt verfügbare Endpoints und Authentifizierungs-Informationen zurück.
     """
     return {
@@ -31,14 +31,14 @@ def api_info():
         "auth": {
             "type": "Bearer Token",
             "header": "Authorization: Bearer <api-key>",
-            "docs": "https://docs.classly.site/development/api"
+            "docs": "https://docs.classly.site/development/api",
         },
         "endpoints": {
             "classes": "/api/v1/classes",
             "users": "/api/v1/users",
             "events": "/api/v1/events",
             "subjects": "/api/v1/subjects",
-            "timetable": "/api/v1/timetable"
+            "timetable": "/api/v1/timetable",
         },
         "scopes": {
             "classes:read": "Klassen-Informationen lesen",
@@ -46,7 +46,6 @@ def api_info():
             "events:read": "Events lesen",
             "events:write": "Events erstellen/bearbeiten/löschen",
             "subjects:read": "Fächer lesen",
-            "timetable:read": "Stundenplan lesen"
-        }
+            "timetable:read": "Stundenplan lesen",
+        },
     }
-
