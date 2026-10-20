@@ -16,9 +16,11 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days in seconds
 
 
 def set_session_cookie(
-    response: Response, session_token: str, request: Request | None = None
+    response: Response, session_token: str | None, request: Request | None = None
 ):
     """Set session cookie with proper security settings"""
+    if not session_token:
+        raise HTTPException(status_code=401, detail="Invalid session")
     response.set_cookie(
         key="session_token",
         value=session_token,
@@ -173,10 +175,16 @@ def show_join_page(
                 raise HTTPException(status_code=404, detail="User not found")
         else:
             # New user - create with predefined name
+            if not login_token.user_name or not login_token.user_name.strip():
+                raise HTTPException(status_code=404, detail="Invalid or expired link")
             user = repo.create_user(
                 name=login_token.user_name,
                 class_id=login_token.class_id,
-                role=login_token.role,
+                role=(
+                    login_token.role
+                    if login_token.role is not None
+                    else models.UserRole.MEMBER
+                ),
             )
             # Bind token to this user - Not supported in repo interface yet?
             # Wait, bind token? `login_token.user_id = user.id`.
@@ -188,14 +196,7 @@ def show_join_page(
 
         # Create redirect response and set cookie with proper settings
         redirect = RedirectResponse(url="/", status_code=303)
-        redirect.set_cookie(
-            key="session_token",
-            value=user.session_token,
-            httponly=True,
-            max_age=COOKIE_MAX_AGE,
-            samesite="lax",
-            secure=cookie_secure(request),
-        )
+        set_session_cookie(redirect, user.session_token, request)
         return redirect
 
     raise HTTPException(status_code=404, detail="Invalid or expired link")

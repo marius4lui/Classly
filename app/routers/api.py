@@ -102,7 +102,11 @@ def get_me(auth=Depends(require_integration_auth)):
         "user": {
             "id": user.id,
             "name": user.name,
-            "role": user.role.value if hasattr(user.role, "value") else user.role,
+            "role": (
+                user.role.value
+                if isinstance(user.role, models.UserRole)
+                else (user.role or models.UserRole.MEMBER.value)
+            ),
             "class_id": user.class_id,
         },
         "token": {
@@ -176,8 +180,8 @@ def list_events(
             "type": event.type.value if hasattr(event.type, "value") else event.type,
             "priority": (
                 event.priority.value
-                if hasattr(event.priority, "value")
-                else (event.priority or "MEDIUM")
+                if isinstance(event.priority, models.Priority)
+                else (event.priority or models.Priority.MEDIUM.value)
             ),
             "subject_id": event.subject_id,
             "subject_name": event.subject_name,

@@ -6,6 +6,10 @@ from app import crud, models
 from app.database import get_db
 from sqlalchemy.orm import Session
 from app.core import calendar_utils
+from app.routers.timetable import (
+    calculate_slot_time as _calculate_slot_time,
+    timetable_settings_values,
+)
 import datetime
 import os
 
@@ -196,17 +200,6 @@ def stundenplan(
 WEEKDAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
 
 
-def _calculate_slot_time(settings: models.TimetableSettings, slot_number: int):
-    start_minutes = settings.day_start_hour * 60 + settings.day_start_minute
-    slot_start = start_minutes + (slot_number - 1) * (
-        settings.slot_duration + settings.break_duration
-    )
-    slot_end = slot_start + settings.slot_duration
-    start_h, start_m = divmod(slot_start, 60)
-    end_h, end_m = divmod(slot_end, 60)
-    return f"{start_h:02d}:{start_m:02d}", f"{end_h:02d}:{end_m:02d}"
-
-
 @router.get("/public/stundenplan/{code}")
 def public_stundenplan(request: Request, code: str, db: Session = Depends(get_db)):
     """
@@ -247,14 +240,7 @@ def public_stundenplan_data(code: str, db: Session = Depends(get_db)):
 
     settings_payload = None
     if settings:
-        settings_payload = {
-            "slot_duration": settings.slot_duration,
-            "break_duration": settings.break_duration,
-            "day_start_hour": settings.day_start_hour,
-            "day_start_minute": settings.day_start_minute,
-            "day_end_hour": settings.day_end_hour,
-            "day_end_minute": settings.day_end_minute,
-        }
+        settings_payload = timetable_settings_values(settings)
 
     result = []
     for slot in slots:

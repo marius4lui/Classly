@@ -49,13 +49,44 @@ def require_admin(user: models.User = Depends(get_current_user)):
 WEEKDAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]
 
 
-def calculate_slot_time(settings: models.TimetableSettings, slot_number: int):
+def timetable_settings_values(
+    settings: models.TimetableSettings | None,
+) -> dict[str, int]:
+    """Apply established defaults to legacy NULL values without changing storage."""
+    defaults = {
+        "slot_duration": 45,
+        "break_duration": 15,
+        "day_start_hour": 8,
+        "day_start_minute": 0,
+        "day_end_hour": 16,
+        "day_end_minute": 0,
+    }
+    if settings is None:
+        return defaults
+    values = {
+        "slot_duration": settings.slot_duration,
+        "break_duration": settings.break_duration,
+        "day_start_hour": settings.day_start_hour,
+        "day_start_minute": settings.day_start_minute,
+        "day_end_hour": settings.day_end_hour,
+        "day_end_minute": settings.day_end_minute,
+    }
+    return {
+        name: value if value is not None else defaults[name]
+        for name, value in values.items()
+    }
+
+
+def calculate_slot_time(
+    settings: models.TimetableSettings, slot_number: int
+) -> tuple[str, str]:
     """Calculate start/end time for a slot based on settings"""
-    start_minutes = settings.day_start_hour * 60 + settings.day_start_minute
+    values = timetable_settings_values(settings)
+    start_minutes = values["day_start_hour"] * 60 + values["day_start_minute"]
     slot_start = start_minutes + (slot_number - 1) * (
-        settings.slot_duration + settings.break_duration
+        values["slot_duration"] + values["break_duration"]
     )
-    slot_end = slot_start + settings.slot_duration
+    slot_end = slot_start + values["slot_duration"]
 
     start_h, start_m = divmod(slot_start, 60)
     end_h, end_m = divmod(slot_end, 60)
@@ -79,23 +110,11 @@ def get_settings(
 
     if not settings:
         # Return defaults
-        return {
-            "slot_duration": 45,
-            "break_duration": 15,
-            "day_start_hour": 8,
-            "day_start_minute": 0,
-            "day_end_hour": 16,
-            "day_end_minute": 0,
-        }
+        return timetable_settings_values(None)
 
     return {
         "id": settings.id,
-        "slot_duration": settings.slot_duration,
-        "break_duration": settings.break_duration,
-        "day_start_hour": settings.day_start_hour,
-        "day_start_minute": settings.day_start_minute,
-        "day_end_hour": settings.day_end_hour,
-        "day_end_minute": settings.day_end_minute,
+        **timetable_settings_values(settings),
     }
 
 

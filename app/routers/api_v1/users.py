@@ -5,6 +5,7 @@ Endpoints für Benutzer-Informationen.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from app import models
 from app.repository.factory import get_repository
 from app.repository.base import BaseRepository
 from .deps import require_users_read
@@ -33,7 +34,11 @@ def list_users(
             {
                 "id": user.id,
                 "name": user.name,
-                "role": user.role.value if hasattr(user.role, "value") else user.role,
+                "role": (
+                    user.role.value
+                    if isinstance(user.role, models.UserRole)
+                    else (user.role or models.UserRole.MEMBER.value)
+                ),
                 "created_at": user.created_at.isoformat() if user.created_at else None,
             }
             for user in members
@@ -57,7 +62,11 @@ def get_current_user(
         "user": {
             "id": user.id,
             "name": user.name,
-            "role": user.role.value if hasattr(user.role, "value") else user.role,
+            "role": (
+                user.role.value
+                if isinstance(user.role, models.UserRole)
+                else (user.role or models.UserRole.MEMBER.value)
+            ),
             "class_id": user.class_id,
             "created_at": user.created_at.isoformat() if user.created_at else None,
         },
@@ -99,6 +108,10 @@ def get_user(
     return {
         "id": user.id,
         "name": user.name,
-        "role": user.role.value if hasattr(user.role, "value") else user.role,
+        "role": (
+            user.role.value
+            if isinstance(user.role, models.UserRole)
+            else (user.role or models.UserRole.MEMBER.value)
+        ),
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
