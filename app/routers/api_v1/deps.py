@@ -8,7 +8,7 @@ Beinhaltet API-Key Authentifizierung mit Scope-Prüfung.
 import datetime
 import json
 from fastapi import Header, HTTPException, Request, Depends
-from app.repository.factory import get_repository
+from app.repository.factory import get_repository, require_sql_repository
 from app.repository.base import BaseRepository
 from app.core.scopes import APIScope, parse_scopes, has_scope
 from app import crud, models
@@ -56,8 +56,10 @@ class APIKeyAuth:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Keep malformed/missing credentials rejected before checking storage support.
+        sql_repo = require_sql_repository(repo)
         # Token validieren (unterstützt Hash + Legacy)
-        api_key = crud.get_api_key_by_token(repo.db, raw_token)
+        api_key = crud.get_api_key_by_token(sql_repo.db, raw_token)
         if not api_key:
             raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -91,7 +93,7 @@ class APIKeyAuth:
 
         # Last-used aktualisieren
         api_key.last_used_at = datetime.datetime.utcnow()
-        repo.db.commit()
+        sql_repo.db.commit()
 
         # User laden
         user = repo.get_user(api_key.user_id)
@@ -121,3 +123,5 @@ require_webhooks_manage = APIKeyAuth(APIScope.WEBHOOKS_MANAGE)
 
 # Ohne Scope-Anforderung (nur gültiger Token)
 require_any_auth = APIKeyAuth()
+
+require_audit_read = APIKeyAuth(APIScope.AUDIT_READ)

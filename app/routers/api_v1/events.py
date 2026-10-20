@@ -200,6 +200,9 @@ def update_event(
         priority=priority,
     )
 
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
     # Audit-Log
     repo.create_audit_log(
         class_id=class_id,
@@ -256,7 +259,7 @@ def _serialize_event(
     event: models.Event, include_topics: bool = False, include_links: bool = False
 ) -> dict:
     """Serialisiert ein Event-Model zu einem Dict."""
-    result = {
+    result: dict[str, object] = {
         "id": event.id,
         "class_id": event.class_id,
         "type": event.type.value if hasattr(event.type, "value") else event.type,

@@ -47,13 +47,18 @@ def create_event(
     except ValueError:
         event_priority = models.Priority.MEDIUM
 
+    try:
+        event_type = models.EventType(type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid event type")
+
     # Check Quota
     check_event_quota(repo, user)
 
     event = repo.create_event(
         class_id=user.class_id,
         author_id=user.id,
-        type=type,
+        type=event_type,
         subject_id=subject_id,
         subject_name=actual_subject_name,
         date=event_date,

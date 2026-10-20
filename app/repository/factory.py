@@ -1,4 +1,5 @@
 import os
+from fastapi import Depends, HTTPException
 from collections.abc import Iterator
 from app.database import SessionLocal
 from app.repository.base import BaseRepository
@@ -33,3 +34,19 @@ def get_repository_sync() -> BaseRepository:
         return AppwriteRepository()
     else:
         return SqlAlchemyRepository(SessionLocal())
+
+
+def require_sql_repository(repo: BaseRepository) -> SqlAlchemyRepository:
+    """Narrow SQL-only operations without pretending Appwrite exposes a Session."""
+    if not isinstance(repo, SqlAlchemyRepository):
+        raise HTTPException(
+            status_code=501,
+            detail="This operation is unavailable for the configured storage backend.",
+        )
+    return repo
+
+
+def get_sql_repository(
+    repo: BaseRepository = Depends(get_repository),
+) -> SqlAlchemyRepository:
+    return require_sql_repository(repo)

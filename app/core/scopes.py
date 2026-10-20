@@ -37,6 +37,9 @@ class APIScope(str, Enum):
     SUBJECTS_READ = "subjects:read"
     SUBJECTS_WRITE = "subjects:write"
 
+    # Existing (not yet mounted) audit-log router requires this dedicated scope.
+    AUDIT_READ = "audit:read"
+
     # Webhooks
     WEBHOOKS_MANAGE = "webhooks:manage"
 

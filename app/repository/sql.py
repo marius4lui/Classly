@@ -120,7 +120,7 @@ class SqlAlchemyRepository(BaseRepository):
         class_id: str,
         author_id: str,
         type: models.EventType,
-        date: datetime.datetime,
+        date: datetime.datetime | None,
         subject_id: str | None = None,
         subject_name: str | None = None,
         title: str | None = None,

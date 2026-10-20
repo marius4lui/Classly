@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from app import models
@@ -151,15 +153,15 @@ def hash_api_token(token: str) -> str:
 
 def create_api_key(
     db: Session,
-    name: str,
+    name: str | None,
     user_id: str,
     class_id: str,
-    created_by: str,
-    scopes: str,
+    created_by: str | None,
+    scopes: str | None,
     expires_at: datetime.datetime | None = None,
-    rate_limit: int = 60,
+    rate_limit: int | None = 60,
     ip_allowlist: str | None = None,
-) -> tuple:
+) -> tuple[models.IntegrationToken, str]:
     """
     Erstellt einen neuen API-Key mit Hash-Speicherung.
 
@@ -453,7 +455,7 @@ def create_event(
     class_id: str,
     author_id: str,
     type: models.EventType,
-    date: datetime.datetime,
+    date: datetime.datetime | None,
     subject_id: str | None = None,
     subject_name: str | None = None,
     title: str | None = None,
@@ -698,6 +700,8 @@ def migrate_capitalize_user_names(db: Session):
         .all()
     )
     for token in tokens:
+        if token.user_name is None:
+            continue
         capitalized = capitalize_name(token.user_name)
         if token.user_name != capitalized:
             token.user_name = capitalized
@@ -786,6 +790,12 @@ def delete_grade(db: Session, grade_id: str, user_id: str):
     return False
 
 
+class _GradeAggregate(TypedDict):
+    grades: list[dict[str, object]]
+    weighted_sum: float
+    weight_sum: float
+
+
 def get_grade_statistics(db: Session, user_id: str, class_id: str):
     """
     Get grade statistics for a user: weighted average per subject and overall.
@@ -812,7 +822,7 @@ def get_grade_statistics(db: Session, user_id: str, class_id: str):
         return {"subjects": {}, "overall": None, "count": 0, "grades": []}
 
     # Aggregate by subject with weighted averages
-    subject_data = {}
+    subject_data: dict[str, _GradeAggregate] = {}
     all_weighted_sum = 0.0
     all_weight_sum = 0.0
     all_grades_list = []
@@ -827,8 +837,10 @@ def get_grade_statistics(db: Session, user_id: str, class_id: str):
         event_title,
     ) in results:
         subject = subject_name or "Allgemein"
+        # Explicit NULLs in legacy rows use the same weight as newly created grades.
+        weight = 1.0 if weight is None else weight
 
-        grade_info = {
+        grade_info: dict[str, object] = {
             "id": grade_id,
             "grade": grade_val,
             "weight": weight,

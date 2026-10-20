@@ -8,7 +8,8 @@ from fastapi import (
     Request,
 )
 from app.repository.base import BaseRepository
-from app.repository.factory import get_repository
+from app.repository.factory import get_repository, get_sql_repository
+from app.repository.sql import SqlAlchemyRepository
 from app import models
 from app.core.auth import require_admin, require_class_admin, require_user
 from app.core import security
@@ -265,32 +266,32 @@ def download_db(
 
         # Subjects
         subjects = repo.get_subjects_for_class(cid)
-        for obj in subjects:
-            dst_db.merge(obj)
+        for subject in subjects:
+            dst_db.merge(subject)
 
         # Users & Preferences
         users = repo.get_class_members(cid)
-        for obj in users:
-            dst_db.merge(obj)
+        for member in users:
+            dst_db.merge(member)
             # Merge UserPreferences if available?
             # Current implementation of Repo might not load them fully or Appwrite might miss them.
             # We skip explicit preference merge for now unless attached.
 
         # Events & Related
         events = repo.list_events(cid, limit=10000)  # Get all
-        for obj in events:
-            dst_db.merge(obj)
+        for event in events:
+            dst_db.merge(event)
             # Topics/Links might be missing if lazy loaded and not fetched.
 
         # Login Tokens
         tokens = repo.list_login_tokens(cid)
-        for obj in tokens:
-            dst_db.merge(obj)
+        for token in tokens:
+            dst_db.merge(token)
 
         # Audit Logs
         logs = repo.list_audit_logs(cid, limit=10000)
-        for obj in logs:
-            dst_db.merge(obj)
+        for entry in logs:
+            dst_db.merge(entry)
 
         # 4. Commit and Close Logic
         dst_db.commit()
@@ -326,7 +327,7 @@ def download_db(
 def list_api_keys(
     request: Request,
     user: models.User = Depends(require_class_admin),
-    repo: BaseRepository = Depends(get_repository),
+    repo: SqlAlchemyRepository = Depends(get_sql_repository),
 ):
     """
     Seite für API-Keys der eigenen Klasse.
@@ -380,7 +381,7 @@ def create_api_key(
     scopes: list = Form([]),
     expires_days: str = Form(""),
     user: models.User = Depends(require_class_admin),
-    repo: BaseRepository = Depends(get_repository),
+    repo: SqlAlchemyRepository = Depends(get_sql_repository),
 ):
     """
     Erstellt einen neuen API-Key für die eigene Klasse.
@@ -445,7 +446,7 @@ def revoke_api_key(
     key_id: str,
     response: Response,
     user: models.User = Depends(require_class_admin),
-    repo: BaseRepository = Depends(get_repository),
+    repo: SqlAlchemyRepository = Depends(get_sql_repository),
 ):
     """
     Widerruft einen API-Key der eigenen Klasse.
@@ -480,7 +481,7 @@ def revoke_api_key(
 def rotate_api_key(
     key_id: str,
     user: models.User = Depends(require_class_admin),
-    repo: BaseRepository = Depends(get_repository),
+    repo: SqlAlchemyRepository = Depends(get_sql_repository),
 ):
     """
     Rotiert einen API-Key der eigenen Klasse.
@@ -519,7 +520,7 @@ def rotate_api_key(
 @router.get("/api-keys/json")
 def list_api_keys_json(
     user: models.User = Depends(require_class_admin),
-    repo: BaseRepository = Depends(get_repository),
+    repo: SqlAlchemyRepository = Depends(get_sql_repository),
 ):
     """
     API-Keys als JSON für HTMX/JS.

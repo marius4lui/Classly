@@ -5,7 +5,8 @@ Endpoints für Audit-Log Abfragen (nur Admins).
 """
 
 from fastapi import APIRouter, Depends, Query
-from app.repository.factory import get_repository
+from app.repository.factory import get_repository, get_sql_repository
+from app.repository.sql import SqlAlchemyRepository
 from app.repository.base import BaseRepository
 from app import models
 from .deps import require_audit_read
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/audit-log", tags=["Audit"])
 @router.get("")
 def get_audit_log(
     auth=Depends(require_audit_read),
-    repo: BaseRepository = Depends(get_repository),
+    repo: SqlAlchemyRepository = Depends(get_sql_repository),
     limit: int = Query(100, le=500, description="Max entries to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
 ):

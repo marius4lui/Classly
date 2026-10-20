@@ -12,6 +12,13 @@ from appwrite.query import Query
 from appwrite.exception import AppwriteException
 
 
+def _required_string(doc: dict, key: str) -> str:
+    value = doc.get(key)
+    if not isinstance(value, str):
+        raise ValueError(f"Invalid Appwrite document field: {key}")
+    return value
+
+
 class AppwriteRepository(BaseRepository):
     def __init__(self):
         self.client = Client()
@@ -27,8 +34,8 @@ class AppwriteRepository(BaseRepository):
 
     def _map_doc_to_user(self, doc: dict) -> models.User:
         user = models.User()
-        user.id = doc.get("$id")
-        user.name = doc.get("name")
+        user.id = _required_string(doc, "$id")
+        user.name = _required_string(doc, "name")
         user.email = doc.get("email")
 
         prefs = doc.get("prefs", {})
@@ -48,9 +55,9 @@ class AppwriteRepository(BaseRepository):
 
     def _map_doc_to_class(self, doc: dict) -> models.Class:
         c = models.Class()
-        c.id = doc.get("$id")
-        c.name = doc.get("name")
-        c.join_token = doc.get("join_token")
+        c.id = _required_string(doc, "$id")
+        c.name = _required_string(doc, "name")
+        c.join_token = _required_string(doc, "join_token")
         c.owner_id = doc.get("owner_id")
         c.join_enabled = doc.get("join_enabled")
         c.timetable_public_enabled = doc.get("timetable_public_enabled", False)
@@ -65,8 +72,8 @@ class AppwriteRepository(BaseRepository):
 
     def _map_doc_to_event(self, doc: dict) -> models.Event:
         e = models.Event()
-        e.id = doc.get("$id")
-        e.class_id = doc.get("class_id")
+        e.id = _required_string(doc, "$id")
+        e.class_id = _required_string(doc, "class_id")
         e.title = doc.get("title")
         e.type = (
             models.EventType(doc.get("type"))
@@ -80,7 +87,7 @@ class AppwriteRepository(BaseRepository):
         )
         e.subject_id = doc.get("subject_id")
         e.subject_name = doc.get("subject_name")
-        e.author_id = doc.get("author_id")
+        e.author_id = _required_string(doc, "author_id")
 
         date_str = doc.get("date")
         if date_str:
@@ -368,7 +375,7 @@ class AppwriteRepository(BaseRepository):
         class_id: str,
         author_id: str,
         type: models.EventType,
-        date: datetime,
+        date: datetime | None,
         subject_id: str | None = None,
         subject_name: str | None = None,
         title: str | None = None,
@@ -471,9 +478,9 @@ class AppwriteRepository(BaseRepository):
     # --- Topics ---
     def _map_doc_to_topic(self, doc: dict) -> models.EventTopic:
         t = models.EventTopic()
-        t.id = doc.get("$id")
-        t.event_id = doc.get("event_id")
-        t.topic_type = doc.get("topic_type")
+        t.id = _required_string(doc, "$id")
+        t.event_id = _required_string(doc, "event_id")
+        t.topic_type = _required_string(doc, "topic_type")
         t.content = doc.get("content")
         t.count = doc.get("count")
         t.pages = doc.get("pages")
@@ -576,9 +583,9 @@ class AppwriteRepository(BaseRepository):
     # --- Subjects ---
     def _map_doc_to_subject(self, doc: dict) -> models.Subject:
         s = models.Subject()
-        s.id = doc.get("$id")
-        s.class_id = doc.get("class_id")
-        s.name = doc.get("name")
+        s.id = _required_string(doc, "$id")
+        s.class_id = _required_string(doc, "class_id")
+        s.name = _required_string(doc, "name")
         s.color = doc.get("color", "#666666")
         return s
 
